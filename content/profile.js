@@ -332,10 +332,12 @@ function renderUnifiedStats(parent, d) {
   const tabsWrap = el("div", "apl-btn-group apl-stats-tabs", null);
   const btnAnime = el("button", "apl-icon-btn active", tabsWrap, "Anime");
   btnAnime.type = "button";
+  btnAnime.setAttribute("aria-pressed", "true");
   let btnManga = null;
   if (d.manga) {
     btnManga = el("button", "apl-icon-btn", tabsWrap, "Manga");
     btnManga.type = "button";
+    btnManga.setAttribute("aria-pressed", "false");
   }
 
   const body = card(parent, "Statistiques", null, tabsWrap);
@@ -389,16 +391,32 @@ function renderUnifiedStats(parent, d) {
   // Affichage initial Anime
   drawFor(d.anime || d.manga);
 
+  const fadeTransition = (fn) => {
+    content.style.opacity = "0";
+    content.style.transform = "translateY(8px)";
+    setTimeout(() => {
+      fn();
+      content.style.opacity = "1";
+      content.style.transform = "translateY(0)";
+    }, 150);
+  };
+
   btnAnime.addEventListener("click", () => {
+    if (btnAnime.classList.contains("active")) return;
     btnAnime.classList.add("active");
+    btnAnime.setAttribute("aria-pressed", "true");
     btnManga?.classList.remove("active");
-    drawFor(d.anime);
+    btnManga?.setAttribute("aria-pressed", "false");
+    fadeTransition(() => drawFor(d.anime));
   });
 
   btnManga?.addEventListener("click", () => {
+    if (btnManga.classList.contains("active")) return;
     btnManga.classList.add("active");
+    btnManga.setAttribute("aria-pressed", "true");
     btnAnime.classList.remove("active");
-    drawFor(d.manga);
+    btnAnime.setAttribute("aria-pressed", "false");
+    fadeTransition(() => drawFor(d.manga));
   });
 }
 
@@ -410,6 +428,7 @@ function renderFavorites(main, d) {
   d.favorites.forEach((f, idx) => {
     const btn = el("button", `apl-pill-btn ${idx === 0 ? "active" : ""}`, tabsWrap);
     btn.type = "button";
+    btn.setAttribute("aria-pressed", idx === 0 ? "true" : "false");
     btn.textContent = `${f.label} (${f.items.length})`;
     btn.dataset.idx = String(idx);
   });
@@ -443,8 +462,12 @@ function renderFavorites(main, d) {
 
   tabsWrap.querySelectorAll("button").forEach((btn) => {
     btn.addEventListener("click", () => {
-      tabsWrap.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+      tabsWrap.querySelectorAll("button").forEach((b) => {
+        b.classList.remove("active");
+        b.setAttribute("aria-pressed", "false");
+      });
       btn.classList.add("active");
+      btn.setAttribute("aria-pressed", "true");
       const idx = parseInt(btn.dataset.idx, 10);
       drawFav(d.favorites[idx]);
     });
