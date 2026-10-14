@@ -100,8 +100,8 @@
     const prof = detectProfile();
     const initial = (prof.name || "?").trim().charAt(0).toUpperCase();
     const profHtml = prof.mode === "user"
-      ? `<a id="myapple-profile" href="${prof.href}" title="Mon profil"><span class="avatar-wrap"><img id="myapple-avatar" alt="" hidden /><span class="avatar-fallback" aria-hidden="true">${initial}</span></span><span class="avatar-name">${prof.name}</span></a>`
-      : `<a id="myapple-profile" href="${prof.loginHref}">Login</a>
+      ? `<a id="myapple-account-link" href="${prof.href}" title="Mon profil"><span class="avatar-wrap"><img id="myapple-avatar" alt="" hidden /><span class="avatar-fallback" aria-hidden="true">${initial}</span></span><span class="avatar-name">${prof.name}</span></a>`
+      : `<a id="myapple-account-link" href="${prof.loginHref}">Login</a>
          <a id="myapple-signup" href="https://myanimelist.net/register.php">Sign Up</a>`;
     const bar = document.createElement("div");
     bar.id = "myapple-topbar";
@@ -298,6 +298,12 @@
       who.querySelector("h2").textContent = name;
       const meta = who.querySelector(".apl-meta");
       left.querySelectorAll("ul.user-status").forEach((ul) => meta.appendChild(ul));
+      // user-status mélange statuts purs et liens de nav : on trie.
+      // Statuts (sans lien) restent dans le hero, liens -> carte Navigation.
+      const navItems = [];
+      meta.querySelectorAll("li").forEach((li) => {
+        if (li.querySelector("a[href]")) navItems.push(li);
+      });
       // Badge en ligne : "Last Online Now" -> pastille verte
       const onlineLi = [...meta.querySelectorAll("li")].find((li) => /^last online/i.test((li.textContent || "").trim()));
       if (onlineLi && /now/i.test(onlineLi.textContent)) {
@@ -315,10 +321,16 @@
           actions.appendChild(a);
         }
       });
-      // Reste de la sidebar (nav : forum, reviews, clubs...) -> carte raccourcis
-      if (left.textContent.trim()) {
+      // Reste de la sidebar + liens triés -> carte Navigation
+      if (left.textContent.trim() || navItems.length) {
         const [navCard, navBody] = card("Navigation");
-        navBody.appendChild(left);
+        if (navItems.length) {
+          const navList = document.createElement("ul");
+          navList.className = "apl-navlist";
+          navItems.forEach((li) => navList.appendChild(li));
+          navBody.appendChild(navList);
+        }
+        if (left.textContent.trim()) navBody.appendChild(left);
         heroSide.appendChild(navCard);
       }
 

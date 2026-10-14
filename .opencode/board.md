@@ -34,7 +34,13 @@ Règles : 1 owner par carte, 1 writer par fichier, merge gate = `node --check` +
   (system-ui/Segoe UI), dark complet (bordures/ombres/boutons/FAB), `:focus-visible`,
   panneau `inert` + Échap + focus géré, topbar en `transform`, aspect 16/9 épisodes,
   badge En ligne AA, popup suit le thème + switches iOS + apply immédiat.
-  Owner: opencode. Gate: `node --check` OK, à valider visuellement.
+  Owner: opencode. Gate: `node --check` OK, captures relues OK.
+- [x] **qa-visual-20261014** — Captures locales via Playwright (vrais content.js+CSS
+  dans le vrai DOM MAL) : accueil clair/sombre, panel + Échap, profil clair/sombre,
+  burger 820px. Trouvé et corrigé : collision d'id `myapple-profile` (vue custom
+  jamais construite), fonds blancs en dark, h1 sous la pilule, nav mobile en vrac,
+  stats collées. Captures : `%TEMP%/opencode/shots/`.
+  Owner: opencode. Gate: `node --check` OK, captures relues OK.
 - [ ] **touch-menus** — Dropdowns au tap (mobile) en plus du hover. Scope: `content/content.js` + CSS.
 - [ ] **jikan-panel** — Top airing via API Jikan dans le panneau. Scope: nouveau module, voir README.
 - [ ] **memory-review** — Relire/promouvoir les 4 mémoires `team` (statut `unreviewed`).
