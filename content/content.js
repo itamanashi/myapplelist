@@ -36,24 +36,83 @@
     );
   }
 
-  // Profil MAL : on ne cherche QUE dans le header (pas dans les news, sinon on attrape un auteur)
+  // Profil MAL : on ne cherche QUE dans le header (pas dans les news, sinon on attrape un auteur).
+  // Connecté : le header n'a PAS de lien /profile/ direct — juste un toggle
+  // `.header-profile-link` (pseudo, sans href) + un dropdown dont l'entrée "Profile"
+  // pointe vers /profile/<pseudo>. Pas de photo dans le header : on la charge
+  // depuis la page profil (cache 24h), initiale en fallback.
   function detectProfile() {
-    const scope = document.getElementById("headerSmall") || document.getElementById("header-menu") || document;
-    const useScope = scope === document ? document : scope;
-    const profileLink = useScope.querySelector('a[href*="/profile/"]');
-    if (profileLink && useScope !== document) {
-      return { mode: "user", name: (profileLink.textContent || "Profil").trim().slice(0, 20), href: profileLink.href };
+    const scope = document.getElementById("headerSmall") || document.getElementById("header-menu");
+    if (scope) {
+      const toggle = scope.querySelector(".header-profile-link");
+      if (toggle) {
+        const name = (toggle.textContent || "Profil").trim().slice(0, 20);
+        const drop = scope.querySelector(".header-profile-dropdown");
+        let href = "";
+        if (drop) {
+          const entry = [...drop.querySelectorAll('a[href*="/profile/"]')]
+            .find((a) => /\/profile\/[^/]+\/?$/.test(a.href));
+          if (entry) href = entry.href;
+        }
+        if (!href && name) href = `https://myanimelist.net/profile/${encodeURIComponent(name)}`;
+        return { mode: "user", name, href };
+      }
+      const loginA = scope.querySelector('a[href*="login.php"]');
+      if (loginA) return { mode: "guest", loginHref: loginA.href };
     }
-    // Invité : Login / Sign Up réels du header
-    const loginA = (document.getElementById("headerSmall") || document).querySelector('a[href*="login.php"]');
-    return { mode: "guest", loginHref: loginA ? loginA.href : "https://myanimelist.net/login.php" };
+    return { mode: "guest", loginHref: "https://myanimelist.net/login.php" };
+  }
+
+  // Photo du compte : og:image de la page profil, cache 24h par pseudo.
+  // Le header MAL connecté ne contient aucune image, donc sans ça on n'aurait que l'initiale.
+  async function enhanceAvatar(imgEl, fallbackEl, prof) {
+    if (prof.mode !== "user" || !imgEl) return;
+    const KEY = "myapple_avatar_v3";
+    const show = (url) => {
+      if (!url) return;
+      imgEl.src = url;
+      imgEl.hidden = false;
+      if (fallbackEl) fallbackEl.hidden = true;
+    };
+    imgEl.addEventListener("error", () => {
+      imgEl.hidden = true;
+      if (fallbackEl) fallbackEl.hidden = false;
+    }, { once: true });
+    try {
+      const cached = (await chrome.storage.local.get(KEY))[KEY];
+      // Ancien cache (og:image = icône par défaut) invalide : on refetch la vraie photo
+      const cachedOk = cached?.url && cached?.user === prof.name
+        && Date.now() - cached.at < 864e5 && !cached.url.includes("/sp/icon/");
+      if (cachedOk) {
+        show(cached.url);
+        return;
+      }
+      const res = await fetch(prof.href, { credentials: "include" });
+      if (!res.ok) return;
+      const html = await res.text();
+      // Vraie photo : .user-image de la page profil. L'img est en lazyload
+      // (data-src seul, pas de src) → lire data-src d'abord.
+      // og:image = icône MAL par défaut, inutilisable comme photo.
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const profileImg = doc.querySelector(".user-image img");
+      const url =
+        profileImg?.getAttribute("data-src") ||
+        profileImg?.src ||
+        doc.querySelector('meta[property="og:image"]')?.content ||
+        "";
+      if (url) {
+        show(url);
+        await chrome.storage.local.set({ [KEY]: { url, user: prof.name, at: Date.now() } });
+      }
+    } catch { /* hors-ligne ou profil privé : on garde l'initiale */ }
   }
 
   function buildTopbar() {
     if (document.getElementById("myapple-topbar")) return;
     const prof = detectProfile();
+    const initial = (prof.name || "?").trim().charAt(0).toUpperCase();
     const profHtml = prof.mode === "user"
-      ? `<a id="myapple-profile" href="${prof.href}" title="Mon profil">👤 ${prof.name}</a>`
+      ? `<a id="myapple-profile" href="${prof.href}" title="Mon profil"><span class="avatar-wrap"><img id="myapple-avatar" alt="" hidden /><span class="avatar-fallback" aria-hidden="true">${initial}</span></span><span class="avatar-name">${prof.name}</span></a>`
       : `<a id="myapple-profile" href="${prof.loginHref}">Login</a>
          <a id="myapple-signup" href="https://myanimelist.net/register.php">Sign Up</a>`;
     const bar = document.createElement("div");
@@ -62,16 +121,53 @@
     bar.innerHTML = `
       <div class="logo">myapple<span>list</span></div>
       <nav>
-        <a href="https://myanimelist.net/anime/season">Season</a>
-        <a href="https://myanimelist.net/topanime.php">Top</a>
-        <a href="https://myanimelist.net/forum/">Forum</a>
+        <div class="menu"><a href="https://myanimelist.net/anime.php">Anime</a><div class="drop">
+          <a href="https://myanimelist.net/anime.php">Anime Search</a>
+          <a href="https://myanimelist.net/topanime.php">Top Anime</a>
+          <a href="https://myanimelist.net/anime/season">Seasonal Anime</a>
+          <a href="https://myanimelist.net/anime/reviews">Reviews</a>
+          <a href="https://myanimelist.net/anime/recommendations">Recommendations</a>
+        </div></div>
+        <div class="menu"><a href="https://myanimelist.net/manga.php">Manga</a><div class="drop">
+          <a href="https://myanimelist.net/manga.php">Manga Search</a>
+          <a href="https://myanimelist.net/topmanga.php">Top Manga</a>
+          <a href="https://myanimelist.net/store">Manga Store</a>
+          <a href="https://myanimelist.net/manga/reviews">Reviews</a>
+          <a href="https://myanimelist.net/manga/recommendations">Recommendations</a>
+        </div></div>
+        <div class="menu"><a href="https://myanimelist.net/forum/">Community</a><div class="drop">
+          <a href="https://myanimelist.net/forum/">Forums</a>
+          <a href="https://myanimelist.net/clubs.php">Clubs</a>
+          <a href="https://myanimelist.net/blogs.php">Blogs</a>
+          <a href="https://myanimelist.net/users.php">Users</a>
+        </div></div>
+        <div class="menu"><a href="https://myanimelist.net/news">Industry</a><div class="drop">
+          <a href="https://myanimelist.net/news">News</a>
+          <a href="https://myanimelist.net/featured">Featured Articles</a>
+          <a href="https://myanimelist.net/people.php">People</a>
+          <a href="https://myanimelist.net/character.php">Characters</a>
+          <a href="https://myanimelist.net/anime/producer">Companies</a>
+        </div></div>
+        <div class="menu"><a href="https://myanimelist.net/watch">Watch</a><div class="drop">
+          <a href="https://myanimelist.net/watch/episode">Episode Videos</a>
+          <a href="https://myanimelist.net/watch/promotion">Anime Trailers</a>
+        </div></div>
+        <div class="menu"><a href="https://myanimelist.net/store">Read</a><div class="drop">
+          <a href="https://myanimelist.net/store">Manga Store</a>
+        </div></div>
+        <div class="menu"><a href="https://myanimelist.net/about">Help</a><div class="drop">
+          <a href="https://myanimelist.net/about">About</a>
+          <a href="https://myanimelist.net/about/support">Support</a>
+          <a href="https://myanimelist.net/faq">FAQ</a>
+          <a href="https://myanimelist.net/staff">Staff</a>
+        </div></div>
       </nav>
       <input id="myapple-q" placeholder="Rechercher…" aria-label="Rechercher un anime" />
       <button id="myapple-go" class="ghost">↗</button>
-      <button id="myapple-notes">Notes</button>
       <span id="myapple-account">${profHtml}</span>
     `;
     document.body.appendChild(bar);
+    enhanceAvatar(bar.querySelector("#myapple-avatar"), bar.querySelector(".avatar-fallback"), prof);
     // Feedback instantané sur pointerdown, pas au click
     bar.addEventListener("pointerdown", (e) => {
       const b = e.target.closest("button, a");
@@ -90,11 +186,6 @@
     };
     bar.querySelector("#myapple-go").onclick = go;
     bar.querySelector("#myapple-q").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
-    bar.querySelector("#myapple-notes").onclick = async () => {
-      const s = await getState();
-      const n = await setState({ panelOpen: !s.panelOpen });
-      togglePanel(n.panelOpen);
-    };
   }
 
   function buildPanel() {
