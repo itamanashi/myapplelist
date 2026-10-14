@@ -813,6 +813,7 @@ html.mal-custom body div#myanimelist #myapple-profile .user-image img {
   margin: 0 0 8px 0 !important;
   font-size: clamp(1.6rem, 3vw, 2.2rem) !important;
   letter-spacing: -0.022em !important;
+  color: var(--apl-ink) !important; /* MAL met son propre profil en blanc (cover) */
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 #myapple-profile .apl-online {
@@ -861,7 +862,7 @@ html.mal-dark #myapple-profile .apl-online { color: #7ee787; background: rgba(12
   min-width: 0;
 }
 #myapple-profile .apl-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-#myapple-profile .apl-card > header h2 { margin: 0 !important; font-size: 17px !important; letter-spacing: -0.01em !important; }
+#myapple-profile .apl-card > header h2 { margin: 0 !important; font-size: 17px !important; letter-spacing: -0.01em !important; color: var(--apl-ink) !important; }
 #myapple-profile .apl-card > header a { font-size: 12px !important; font-weight: 700 !important; white-space: nowrap; }
 /* Lignes updates : cover + titre + date */
 #myapple-profile .statistics-updates {

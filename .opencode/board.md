@@ -13,15 +13,16 @@ Règles : 1 owner par carte, 1 writer par fichier, merge gate = `node --check` +
 - [x] **dev-profile** — `tools/dev-chrome.ps1` + `tools/qa-mal.mjs`, `.chrome-profile/` gitignoré.
   Owner: opencode. Gate: passé (55 cookies, consent OK, login OK).
 
-## Review (à valider visuellement par l'opérateur)
+## Merged (2026-10-14)
 
-- [ ] **panel-visual** — Vérifier sur `panel.php` connecté : pastille = vraie photo (pas logo),
-  "My Panel" en bandeau large, "My Statistics" remonté (pas de trou).
-  Merge gate: screenshot opérateur OK.
-- [ ] **profile-refonte** — Vérifier sur `/profile/itaminashi` : hero (avatar 96 + nom + pastille
-  En ligne + meta + pills), bio, stats, updates latérales FR, favoris, navigation.
-  Ancien conteneur masqué, bandeau h1 masqué. Mémoires : `mem_20261014_7df6c2...`, `mem_20261014_15e1136...`.
-  Merge gate: screenshot opérateur OK.
+- [x] **panel-visual** — Vérifié en local (Playwright + profil loggé `itaminashi`) :
+  pastille = vraie photo CDN (pas logo), bandeau "My Panel" sous la pilule,
+  stats lisibles clair/sombre. Captures : `%TEMP%/opencode/shots/logged-home-*.png`.
+- [x] **profile-refonte** — Vérifié en local : hero (avatar 96 + nom + pastille
+  En ligne + meta triée + pills), bio « À propos », stats, updates FR latérales,
+  Navigation (liens + compteurs). Ancien conteneur masqué. Fix au passage :
+  h2 du profil perso forcés `--apl-ink` (MAL les peint en blanc).
+  Captures : `%TEMP%/opencode/shots/logged-profile-*.png`.
 
 ## Backlog (prochaines cartes)
 
