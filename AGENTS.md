@@ -10,7 +10,8 @@ jamais masqués). En revanche on re-stylise le CSS MAL, on masque son chrome
 
 | Fichier | Rôle |
 |---|---|
-| `content/content.js` | Topbar, détection profil, panel Notes, reveal images |
+| `content/content.js` | Topbar, panel Notes, reveal images, délégation profil |
+| `content/profile.js` | Vue profil : readProfile() + hero/KPIs/favoris/timeline |
 | `content/overlay.css` | Tout le style (tokens `--apl-*`, topbar, grille, dark) |
 | `popup/*` | Popup extension (toggle actif/dark) |
 | `background/service-worker.js` | Init state |

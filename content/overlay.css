@@ -793,26 +793,40 @@ html.mal-custom body.myapple-profile div#myanimelist div#contentWrapper > div:ha
   display: none !important;
 }
 #myapple-profile { display: flex; flex-direction: column; gap: 18px; }
-/* Hero */
+/* Hero : banniere floue (1re affiche) + contenu net par-dessus */
 #myapple-profile .apl-hero {
-  display: flex; gap: 18px; align-items: flex-start;
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: 16px;
   background: var(--apl-card);
   border: 1px solid rgba(0,0,0,.06);
   border-radius: var(--apl-radius-l);
   box-shadow: 0 4px 20px rgba(0,0,0,.05);
   padding: 22px;
 }
+#myapple-profile .apl-banner {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center 20%;
+  filter: blur(28px) saturate(1.4); opacity: .38;
+  transform: scale(1.15);
+  pointer-events: none;
+}
+#myapple-profile .apl-hero-main, #myapple-profile .apl-kpis { position: relative; }
 #myapple-profile .apl-hero-main { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 20px !important; flex: 1; min-width: 0; }
-html.mal-custom body div#myanimelist #myapple-profile .user-image { width: 96px !important; flex: none !important; margin: 0 !important; float: none !important; }
-html.mal-custom body div#myanimelist #myapple-profile .user-image img {
+#myapple-profile .apl-avatar { width: 96px; flex: none; }
+#myapple-profile .apl-avatar img {
+  width: 96px; height: 96px; object-fit: cover; display: block;
   border-radius: 26px !important;
   box-shadow: var(--apl-shadow-small) !important;
 }
+@media (prefers-reduced-transparency: reduce) {
+  #myapple-profile .apl-banner { display: none; }
+}
 #myapple-profile .apl-who { min-width: 0; flex: 1; }
-#myapple-profile .apl-who h2 {
+#myapple-profile .apl-who h1 {
   margin: 0 0 8px 0 !important;
-  font-size: clamp(1.6rem, 3vw, 2.2rem) !important;
+  font-size: clamp(1.8rem, 3.4vw, 2.6rem) !important;
   letter-spacing: -0.022em !important;
+  line-height: 1.05 !important;
   color: var(--apl-ink) !important; /* MAL met son propre profil en blanc (cover) */
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
@@ -844,6 +858,64 @@ html.mal-dark #myapple-profile .apl-online { color: #7ee787; background: rgba(12
   transition: transform 160ms var(--apl-spring) !important;
 }
 #myapple-profile a.apl-btn:hover { transform: translateY(-1px) !important; }
+/* Chiffres cles : point d'entree du regard (32-40px + libelle 12px) */
+#myapple-profile .apl-kpis {
+  display: flex; flex-wrap: wrap; gap: 10px 28px;
+  border-top: 1px solid rgba(0,0,0,.07);
+  padding-top: 14px;
+}
+html.mal-dark #myapple-profile .apl-kpis { border-top-color: rgba(255,255,255,.12); }
+#myapple-profile .apl-kpi { display: flex; flex-direction: column; gap: 0; min-width: 90px; text-decoration: none !important; }
+#myapple-profile .apl-kpi > b { font-size: 34px; font-weight: 800; letter-spacing: -0.022em; line-height: 1.1; color: var(--apl-ink); }
+#myapple-profile .apl-kpi > span { font-size: 12px; color: var(--apl-muted); font-weight: 600; }
+#myapple-profile .apl-kpi-bar { min-width: 150px; }
+#myapple-profile .apl-bar { height: 6px; border-radius: 999px; background: rgba(0,0,0,.08); overflow: hidden; margin-top: 6px; }
+html.mal-dark #myapple-profile .apl-bar { background: rgba(255,255,255,.14); }
+#myapple-profile .apl-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--apl-accent); }
+#myapple-profile .apl-bar-anime > i { background: #0071e3; }
+#myapple-profile .apl-bar-manga > i { background: #a259ff; }
+/* Stats reconstruites : lignes label + valeur + barrette */
+#myapple-profile .apl-statrows { display: flex; flex-direction: column; }
+#myapple-profile a.apl-srow { text-decoration: none !important; border-radius: 10px; }
+#myapple-profile a.apl-srow:hover { background: rgba(0,0,0,.04); }
+html.mal-dark #myapple-profile a.apl-srow:hover { background: rgba(255,255,255,.07); }
+#myapple-profile .apl-srow {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center;
+  padding: 7px 8px; font-size: 13px; color: var(--apl-ink);
+}
+#myapple-profile .apl-srow > b { font-weight: 800; }
+#myapple-profile .apl-srow .apl-bar { grid-column: 1 / -1; margin-top: 2px; height: 5px; }
+#myapple-profile .apl-totals {
+  display: grid; grid-template-columns: auto auto; gap: 4px 14px; justify-content: start;
+  margin: 12px 0 0 0; padding-top: 12px; border-top: 1px solid rgba(0,0,0,.07);
+  font-size: 12.5px;
+}
+html.mal-dark #myapple-profile .apl-totals { border-top-color: rgba(255,255,255,.12); }
+#myapple-profile .apl-totals dt { color: var(--apl-muted); margin: 0; }
+#myapple-profile .apl-totals dd { margin: 0; font-weight: 700; color: var(--apl-ink); text-align: right; }
+/* Favoris : grille d'affiches */
+#myapple-profile .apl-favtitle { font-size: 13px; font-weight: 800; margin: 14px 0 8px 0; color: var(--apl-ink); }
+#myapple-profile .apl-favtitle:first-of-type { margin-top: 0; }
+#myapple-profile .apl-favgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
+#myapple-profile .apl-fav { display: block; border-radius: 12px; overflow: hidden; aspect-ratio: 3 / 4; background: rgba(0,0,0,.06); transition: transform 160ms var(--apl-spring); }
+#myapple-profile .apl-fav:hover { transform: translateY(-2px); }
+#myapple-profile .apl-fav img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Activite : timeline */
+#myapple-profile .apl-tl { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+#myapple-profile .apl-tl > li {
+  position: relative; display: flex; gap: 10px; align-items: flex-start;
+  padding: 8px 0 8px 16px; border-left: 2px solid rgba(0,0,0,.1); margin-left: 24px;
+}
+#myapple-profile .apl-tl > li::before {
+  content: ""; position: absolute; left: -5px; top: 14px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--apl-accent);
+}
+html.mal-dark #myapple-profile .apl-tl > li { border-left-color: rgba(255,255,255,.16); }
+#myapple-profile .apl-tl img { width: 40px; height: 56px; object-fit: cover; border-radius: 8px; flex: none; }
+#myapple-profile .apl-tl a { font-size: 13px; font-weight: 700; display: block; }
+#myapple-profile .apl-muted { color: var(--apl-muted) !important; font-size: 12.5px; }
+#myapple-profile .apl-muted span { display: block; font-weight: 400; }
+#myapple-profile .apl-card .user-profile-about { font-size: 13.5px; line-height: 1.6; color: var(--apl-ink); }
 /* Carte navigation (reste sidebar) */
 #myapple-profile .apl-hero-side { width: 240px; flex: none; }
 #myapple-profile .apl-hero-side .apl-card { margin: 0; }

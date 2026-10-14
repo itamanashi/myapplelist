@@ -49,6 +49,13 @@ Règles : 1 owner par carte, 1 writer par fichier, merge gate = `node --check` +
   Script rejouable : `tools/qa-final-logged.mjs`. Captures :
   `%TEMP%/opencode/shots/final-logged-*.png` + `chip-settings.png`.
   Owner: opencode. Gate: `node --check` OK, captures relues OK.
+- [x] **profile-refonte-20261015** — Le bon de l'audit profil : fini le déplacement
+  de nœuds MAL, `content/profile.js` extrait (readProfile) et reconstruit —
+  hero bannière floue + h1 + KPIs (1 643 / 150,3 j / 6,67 / 17 %), stats FR avec
+  barrettes, favoris en grille d'affiches (36), timeline d'activité, Navigation
+  sans doublons, date FR. Bugs audit corrigés : débordement, carte-dans-carte,
+  h1 manquant. Script : `tools/qa-refonte.mjs`. Captures : `refonte-profile-*.png`.
+  Owner: opencode. Gate: `node --check` OK (content.js + profile.js), captures relues OK.
 - [ ] **touch-menus** — Dropdowns au tap (mobile) en plus du hover. Scope: `content/content.js` + CSS.
 - [ ] **jikan-panel** — Top airing via API Jikan dans le panneau. Scope: nouveau module, voir README.
 - [ ] **memory-review** — Relire/promouvoir les 4 mémoires `team` (statut `unreviewed`).

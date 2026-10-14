@@ -10,7 +10,8 @@ On pose **notre** visuel par-dessus `myanimelist.net` via content-script.
 - Popup pour activer/couper, dark/light
 - `overlay.css` restyle en grille moderne façon Apple (re-style du CSS MAL,
   masquage du chrome header/footer/pubs, conteneurs racine jamais masqués).
-  La page profil réorganise les nœuds MAL existants par déplacement (pas de copie).
+  La page profil extrait les données du DOM (readProfile) et reconstruit une
+  mise en page propre (hero + KPIs + favoris + activité), sans déplacer de nœuds.
 
 ## Installer en dev
 1. `chrome://extensions` → Mode développeur ON
