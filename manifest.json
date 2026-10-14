@@ -25,7 +25,7 @@
   "content_scripts": [
     {
       "matches": ["https://myanimelist.net/*"],
-      "js": ["content/profile.js", "content/content.js"],
+      "js": ["content/list-data.js", "content/list-view.js", "content/profile.js", "content/content.js"],
       "css": ["content/overlay.css"],
       "run_at": "document_idle"
     }

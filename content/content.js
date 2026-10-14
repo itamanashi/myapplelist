@@ -48,6 +48,15 @@
       const loginA = scope.querySelector('a[href*="login.php"]');
       if (loginA) return { mode: "guest", loginHref: loginA.href };
     }
+    // Listes MAL (chrome différent : menu profil dans .list-menu-float)
+    const listProf = document.querySelector(".list-menu-float a.icon-menu.profile");
+    if (listProf && listProf.href) {
+      const m = listProf.href.match(/\/profile\/([^/?#]+)/);
+      if (m) {
+        const name = decodeURIComponent(m[1]).slice(0, 20);
+        return { mode: "user", name, href: listProf.href };
+      }
+    }
     return { mode: "guest", loginHref: "https://myanimelist.net/login.php" };
   }
 
@@ -314,7 +323,9 @@
     applyTheme(s);
     if (!s.enabled) return;
     buildTopbar(); buildPanel(); buildFab(); togglePanel(s.panelOpen);
-    revealContent(); window.__myappleProfile?.buildProfileView();
+    revealContent();
+    window.__myappleProfile?.buildProfileView();
+    window.__myappleListView?.buildListView();
     autoHideBar();
     new MutationObserver(revealContent).observe(document.documentElement, { childList: true, subtree: true });
     console.log("[myapplelist] Apple replacement actif");
