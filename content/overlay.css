@@ -922,9 +922,68 @@ html.mal-custom:root body div#myanimelist #myapple-profile ul.stats-data li {
 }
 #myapple-profile .apl-navlist a:hover { background: rgba(0,0,0,.05) !important; }
 html.mal-dark #myapple-profile .apl-navlist a:hover { background: rgba(255,255,255,.09) !important; }
+#myapple-profile .apl-hero-side:empty { display: none !important; }
 @media (max-width: 980px) {
   #myapple-profile .apl-hero, #myapple-profile .apl-cols { flex-direction: column; }
   #myapple-profile .apl-hero-side, #myapple-profile .apl-col-side { width: 100%; }
+}
+
+/* MAL peint SES titres de page en gris clair (#e0e0e0) :
+   illisibles sur nos cartes blanches en mode jour. Scope = titres uniquement
+   (jamais les .data/.light/.di-ib secondaires). Équivalent dark déjà présent. */
+html.mal-custom body div#myanimelist div#contentWrapper > h1.h1,
+html.mal-custom body div#myanimelist div#contentWrapper > div > h1.h1,
+html.mal-custom body div#myanimelist div#content .widget-header,
+html.mal-custom body div#myanimelist div#content h2.widget-header {
+  color: var(--apl-ink) !important;
+}
+/* MAL peint aussi le CORPS en clair (#e0e0e0 / #a3a3a3) : sur cartes blanches
+   le texte devient fantôme en mode jour. Scope = colonne droite connectée
+   (jamais les blocs bas type shoutbox à fond clair). */
+html.mal-custom body div#myanimelist div#content .right-column .widget,
+html.mal-custom body div#myanimelist div#content .right-column .widget p,
+html.mal-custom body div#myanimelist div#content .right-column .widget li,
+html.mal-custom body div#myanimelist div#content .right-column .widget td,
+html.mal-custom body div#myanimelist div#content .right-column .widget .data,
+html.mal-custom body div#myanimelist #myapple-profile .apl-card,
+html.mal-custom body div#myanimelist #myapple-profile ul.stats-status li,
+html.mal-custom body div#myanimelist #myapple-profile ul.stats-data li,
+html.mal-custom body div#myanimelist #myapple-profile .space,
+html.mal-custom body div#myanimelist #myapple-profile .data {
+  color: var(--apl-ink) !important;
+}
+/* Liens : MAL force sa couleur dark (#abc4ed) partout — en mode jour elle est
+   fantôme sur carte blanche. On restaure un bleu accessible (AA 4.70 déjà
+   mesuré sur --apl-accent). Le dark garde sa règle existante. */
+html.mal-custom body div#myanimelist div#content .widget a,
+html.mal-custom body div#myanimelist div#content .widget a span,
+html.mal-custom body div#myanimelist #myapple-profile .apl-card a,
+html.mal-custom body div#myanimelist div#contentWrapper a.header-right {
+  color: var(--apl-accent) !important;
+}
+/* Nos propres boutons gardent leur texte blanc (pas le bleu lien). */
+html.mal-custom body div#myanimelist #myapple-profile a.apl-btn {
+  color: #fff !important;
+}
+/* Footer de widget MAL (ex. "Settings" Recent Friend Updates) : le nœud
+   interne .btn-settings garde son fond bouton sombre en mode jour. */
+html.mal-custom body div#myanimelist div#content .widget .widget-footer,
+html.mal-custom body div#myanimelist div#content .widget .footer,
+html.mal-custom body div#myanimelist div#content .widget .widget-footer a,
+html.mal-custom body div#myanimelist div#content .widget .footer a,
+html.mal-custom body div#myanimelist div#content .widget .btn-settings {
+  border: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+html.mal-custom body div#myanimelist #myapple-profile ul.stats-data li span,
+html.mal-custom body div#myanimelist #myapple-profile .apl-meta {
+  color: var(--apl-muted) !important;
+}
+/* Sur fond clair MAL résiduel (shoutbox bas de page), le texte garde sa couleur native. */
+html.mal-custom body div#myanimelist div#content .widget .light,
+html.mal-custom body div#myanimelist div#content .widget .data.light {
+  color: inherit !important;
 }
 
 /* ===== 6. Accessibilité : équivalent doux, jamais rien de brutal ===== */

@@ -331,7 +331,9 @@
           navBody.appendChild(navList);
         }
         if (left.textContent.trim()) navBody.appendChild(left);
-        heroSide.appendChild(navCard);
+        // La carte Navigation vit dans la colonne latérale (pas dans le hero) :
+        // sinon sa hauteur étire le hero et laisse un grand vide sous l'avatar.
+        colSide.appendChild(navCard);
       }
 
       // --- Colonne principale : bio + stats
