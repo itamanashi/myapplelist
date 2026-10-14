@@ -442,11 +442,18 @@ html.mal-dark #myapple-topbar nav .drop { background: rgba(28,28,30,.92); border
   background: rgba(0,0,0,.05); color: var(--apl-ink) !important;
   display: flex; align-items: center; gap: 6px; max-width: 160px; overflow: hidden;
 }
+#myapple-account a#myapple-profile {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
 #myapple-account a#myapple-profile .avatar-wrap {
-  position: relative; width: 22px; height: 22px; border-radius: 50%; overflow: hidden;
+  position: relative; width: 20px; height: 20px; border-radius: 50%; overflow: hidden;
   background: var(--apl-accent); color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 800; flex: none;
+  display: inline-flex !important; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; flex: none !important;
+  float: none !important; margin: 0 !important;
 }
 #myapple-account a#myapple-profile .avatar-wrap img {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -454,7 +461,9 @@ html.mal-dark #myapple-topbar nav .drop { background: rgba(28,28,30,.92); border
 }
 #myapple-account a#myapple-profile .avatar-wrap img[hidden] { display: none; }
 #myapple-account a#myapple-profile .avatar-name {
+  display: inline-block !important;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  float: none !important; margin: 0 !important;
 }
 #myapple-account a#myapple-signup { background: var(--apl-accent); color: #fff !important; }
 html.mal-dark #myapple-account a { background: rgba(255,255,255,.1); color: #fff !important; }
