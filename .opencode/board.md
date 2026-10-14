@@ -18,6 +18,10 @@ Règles : 1 owner par carte, 1 writer par fichier, merge gate = `node --check` +
 - [ ] **panel-visual** — Vérifier sur `panel.php` connecté : pastille = vraie photo (pas logo),
   "My Panel" en bandeau large, "My Statistics" remonté (pas de trou).
   Merge gate: screenshot opérateur OK.
+- [ ] **profile-refonte** — Vérifier sur `/profile/itaminashi` : hero (avatar 132 + nom + pastille
+  En ligne + meta + pills), bio, stats, updates latérales FR, favoris, navigation.
+  Ancien conteneur masqué, bandeau h1 masqué. Mémoires : `mem_20261014_7df6c2...`, `mem_20261014_15e1136...`.
+  Merge gate: screenshot opérateur OK.
 
 ## Backlog (prochaines cartes)
 

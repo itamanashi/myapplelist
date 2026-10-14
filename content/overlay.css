@@ -531,7 +531,235 @@ html.mal-dark #myapple-panel .sub { color: rgba(235,235,245,.7); font-weight: 50
 html.mal-dark #myapple-panel textarea { background: rgba(255,255,255,.08); color: #fff; border-color: rgba(255,255,255,.14); }
 html.mal-dark a { color: #2997ff !important; }
 
-/* ===== 4. Accessibilité : équivalent doux, jamais rien de brutal ===== */
+/* ===== 4. PROFIL : sidebar carte + stats en barres douces (DOM MAL intact) ===== */
+/* Layout : 2 colonnes MAL (floats) -> flex moderne */
+html.mal-custom:root body div#myanimelist div#content .content-container {
+  display: flex !important;
+  gap: 18px !important;
+  align-items: flex-start !important;
+}
+html.mal-custom:root body div#myanimelist div#content .container-left {
+  float: none !important;
+  width: 264px !important;
+  flex: none !important;
+  margin: 0 !important;
+}
+html.mal-custom:root body div#myanimelist div#content .container-right {
+  float: none !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+/* Sidebar en carte Apple */
+html.mal-custom:root body div#myanimelist div#content .user-profile {
+  background: var(--apl-card) !important;
+  border: 1px solid rgba(0,0,0,.06) !important;
+  border-radius: var(--apl-radius-l) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.05) !important;
+  padding: 16px !important;
+}
+html.mal-custom:root body div#myanimelist div#content .user-image img {
+  width: 100% !important;
+  height: auto !important;
+  border-radius: var(--apl-radius-m) !important;
+  display: block !important;
+  opacity: 1 !important;
+}
+html.mal-custom:root body div#myanimelist div#content ul.user-status {
+  border-top: 1px solid rgba(0,0,0,.07) !important;
+  padding: 10px 2px !important;
+  margin: 0 0 8px 0 !important;
+}
+html.mal-custom:root body div#myanimelist div#content ul.user-status li {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  font-size: 12.5px !important;
+  padding: 3px 0 !important;
+}
+/* Boutons Anime List / Manga List en pills */
+html.mal-custom:root body div#myanimelist div#content .user-profile a[href*="/animelist/"],
+html.mal-custom:root body div#myanimelist div#content .user-profile a[href*="/mangalist/"] {
+  display: inline-block !important;
+  padding: 8px 14px !important;
+  margin: 2px 4px 2px 0 !important;
+  border-radius: 999px !important;
+  background: var(--apl-accent) !important;
+  color: #fff !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+/* Cartes stats */
+html.mal-custom:root body div#myanimelist div#content .stats.anime,
+html.mal-custom:root body div#myanimelist div#content .stats.manga {
+  background: var(--apl-card) !important;
+  border: 1px solid rgba(0,0,0,.06) !important;
+  border-radius: var(--apl-radius-l) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.05) !important;
+  padding: 16px 18px !important;
+  margin-bottom: 16px !important;
+}
+html.mal-custom:root body div#myanimelist div#content .stats h5 {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  margin: 0 0 8px 0 !important;
+}
+/* Barre de progression : segments collés, bouts arrondis */
+html.mal-custom:root body div#myanimelist div#content .stats-graph {
+  display: flex !important;
+  height: 10px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  background: rgba(0,0,0,.08) !important;
+}
+html.mal-dark:root body div#myanimelist div#content .stats-graph {
+  background: rgba(255,255,255,.12) !important;
+}
+html.mal-custom:root body div#myanimelist div#content .stats-graph .graph {
+  height: 100% !important;
+  border-radius: 0 !important;
+}
+html.mal-custom:root body div#myanimelist div#content ul.stats-status,
+html.mal-custom:root body div#myanimelist div#content ul.stats-data {
+  margin: 0 !important;
+}
+html.mal-custom:root body div#myanimelist div#content ul.stats-status li,
+html.mal-custom:root body div#myanimelist div#content ul.stats-data li {
+  padding: 4px 0 !important;
+  font-size: 12.5px !important;
+}
+/* Updates : covers arrondies */
+html.mal-custom:root body div#myanimelist div#content .container-right td img,
+html.mal-custom:root body div#myanimelist div#content .container-right .updates img {
+  border-radius: 10px !important;
+}
+@media (max-width: 980px) {
+  html.mal-custom:root body div#myanimelist div#content .content-container {
+    flex-direction: column !important;
+  }
+  html.mal-custom:root body div#myanimelist div#content .container-left {
+    width: 100% !important;
+  }
+}
+
+/* ===== 5. VUE PROFIL CUSTOM (#myapple-profile remplace le conteneur d'origine) ===== */
+html.mal-custom body.myapple-profile div#myanimelist div#content .content-container {
+  display: none !important;
+}
+html.mal-custom body.myapple-profile div#myanimelist div#contentWrapper > div:has(> h1.h1) {
+  display: none !important;
+}
+#myapple-profile { display: flex; flex-direction: column; gap: 18px; }
+/* Hero */
+#myapple-profile .apl-hero {
+  display: flex; gap: 18px; align-items: flex-start;
+  background: var(--apl-card);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: var(--apl-radius-l);
+  box-shadow: 0 4px 20px rgba(0,0,0,.05);
+  padding: 22px;
+}
+#myapple-profile .apl-hero-main { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 20px !important; flex: 1; min-width: 0; }
+html.mal-custom body div#myanimelist #myapple-profile .user-image { width: 96px !important; flex: none !important; margin: 0 !important; float: none !important; }
+html.mal-custom body div#myanimelist #myapple-profile .user-image img {
+  border-radius: 26px !important;
+  box-shadow: var(--apl-shadow-small) !important;
+}
+#myapple-profile .apl-who { min-width: 0; flex: 1; }
+#myapple-profile .apl-who h2 {
+  margin: 0 0 8px 0 !important;
+  font-size: clamp(1.6rem, 3vw, 2.2rem) !important;
+  letter-spacing: -0.022em !important;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+#myapple-profile .apl-online {
+  font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  color: #1a7f37; background: rgba(46,160,67,.14);
+  padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+}
+html.mal-dark #myapple-profile .apl-online { color: #7ee787; background: rgba(126,231,135,.14); }
+#myapple-profile .apl-meta { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-bottom: 12px; }
+#myapple-profile ul.user-status {
+  display: contents !important;
+  border: 0 !important; padding: 0 !important; margin: 0 !important;
+}
+#myapple-profile ul.user-status li {
+  display: flex !important; gap: 6px !important;
+  font-size: 12.5px !important; color: var(--apl-muted) !important;
+  padding: 0 !important; list-style: none !important;
+}
+#myapple-profile .apl-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#myapple-profile a.apl-btn {
+  display: inline-block !important;
+  padding: 8px 16px !important;
+  border-radius: 999px !important;
+  background: var(--apl-accent) !important;
+  color: #fff !important;
+  font-size: 13px !important; font-weight: 700 !important;
+  text-decoration: none !important;
+  transition: transform 160ms var(--apl-spring) !important;
+}
+#myapple-profile a.apl-btn:hover { transform: translateY(-1px) !important; }
+/* Carte navigation (reste sidebar) */
+#myapple-profile .apl-hero-side { width: 240px; flex: none; }
+#myapple-profile .apl-hero-side .apl-card { margin: 0; }
+/* Colonnes */
+#myapple-profile .apl-cols { display: flex; gap: 18px; align-items: flex-start; }
+#myapple-profile .apl-col-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+#myapple-profile .apl-col-side { width: 360px; flex: none; display: flex; flex-direction: column; gap: 18px; }
+/* Cards */
+#myapple-profile .apl-card {
+  background: var(--apl-card);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: var(--apl-radius-l);
+  box-shadow: 0 4px 20px rgba(0,0,0,.05);
+  padding: 18px 20px;
+  margin: 0 !important;
+  min-width: 0;
+}
+#myapple-profile .apl-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+#myapple-profile .apl-card > header h2 { margin: 0 !important; font-size: 17px !important; letter-spacing: -0.01em !important; }
+#myapple-profile .apl-card > header a { font-size: 12px !important; font-weight: 700 !important; white-space: nowrap; }
+/* Lignes updates : cover + titre + date */
+#myapple-profile .statistics-updates {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+  padding: 8px 0 !important;
+  margin: 0 !important;
+  border-top: 1px solid rgba(0,0,0,.06) !important;
+  width: 100% !important;
+  float: none !important;
+}
+#myapple-profile .statistics-updates:first-of-type { border-top: 0 !important; }
+#myapple-profile .statistics-updates a.image { flex: none !important; float: none !important; margin: 0 !important; }
+#myapple-profile .statistics-updates img {
+  width: 48px !important; height: 68px !important;
+  object-fit: cover !important;
+  border-radius: 10px !important;
+  display: block !important;
+}
+#myapple-profile .statistics-updates .data { flex: 1 !important; min-width: 0 !important; float: none !important; }
+#myapple-profile .statistics-updates .data > a { font-size: 13.5px !important; font-weight: 700 !important; }
+#myapple-profile .statistics-updates .graph-content { display: flex !important; align-items: center !important; gap: 8px !important; padding-top: 6px !important; }
+#myapple-profile .statistics-updates .graph {
+  flex: 1 !important; height: 6px !important; float: none !important;
+  border-radius: 999px !important; overflow: hidden !important;
+  background: rgba(0,0,0,.08) !important;
+}
+html.mal-dark #myapple-profile .statistics-updates .graph { background: rgba(255,255,255,.12) !important; }
+#myapple-profile .statistics-updates .graph-inner { display: block !important; height: 100% !important; border-radius: 999px !important; }
+/* Stats déplacées : reset marges flottantes MAL (spécificité > règle section 4) */
+html.mal-custom:root body div#myanimelist #myapple-profile .stats.anime,
+html.mal-custom:root body div#myanimelist #myapple-profile .stats.manga { margin: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; padding: 0 !important; }
+@media (max-width: 980px) {
+  #myapple-profile .apl-hero, #myapple-profile .apl-cols { flex-direction: column; }
+  #myapple-profile .apl-hero-side, #myapple-profile .apl-col-side { width: 100%; }
+}
+
+/* ===== 5. Accessibilité : équivalent doux, jamais rien de brutal ===== */
 @media (prefers-reduced-motion: reduce) {
   #myapple-topbar, #myapple-panel, #myapple-scrim {
     animation: none !important; transition: opacity 200ms ease !important; transform: none !important;
