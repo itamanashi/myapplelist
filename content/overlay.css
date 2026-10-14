@@ -2511,3 +2511,516 @@ html.mal-dark #myapple-anime .apl-anime-char-thumb {
     justify-content: center;
   }
 }
+
+
+/* ===== 8. VUE ANIME/MANGA DETAIL (#myapple-anime) ===== */
+
+#myapple-anime {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Hero Section */
+#myapple-anime .apl-anime-hero {
+  position: relative;
+  background: var(--apl-card);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: var(--apl-radius-l);
+  overflow: hidden;
+  padding: 32px;
+  display: flex;
+  gap: 32px;
+}
+
+#myapple-anime .apl-anime-banner {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(40px) saturate(150%);
+  opacity: 0.3;
+  z-index: 0;
+}
+
+#myapple-anime .apl-anime-hero-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 32px;
+  flex: 1;
+  width: 100%;
+}
+
+#myapple-anime .apl-anime-poster {
+  flex: 0 0 auto;
+  width: 180px;
+}
+
+#myapple-anime .apl-anime-poster img {
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(0,0,0,.2);
+  object-fit: cover;
+  display: block;
+}
+
+html.mal-dark #myapple-anime .apl-anime-poster img {
+  box-shadow: 0 12px 36px rgba(0,0,0,.5);
+}
+
+#myapple-anime .apl-anime-info-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#myapple-anime .apl-anime-title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--apl-ink);
+  letter-spacing: -0.02em;
+}
+
+#myapple-anime .apl-anime-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#myapple-anime .apl-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  background: rgba(0,0,0,.08);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--apl-ink);
+  white-space: nowrap;
+}
+
+html.mal-dark #myapple-anime .apl-badge {
+  background: rgba(255,255,255,.12);
+}
+
+#myapple-anime .apl-badge-airing {
+  background: rgba(52, 199, 89, 0.15);
+  color: #34c759;
+}
+
+html.mal-dark #myapple-anime .apl-badge-airing {
+  background: rgba(52, 199, 89, 0.25);
+  color: #32d74b;
+}
+
+#myapple-anime .apl-badge-finished {
+  background: rgba(0, 113, 227, 0.15);
+  color: #0071e3;
+}
+
+html.mal-dark #myapple-anime .apl-badge-finished {
+  background: rgba(0, 113, 227, 0.25);
+  color: #0084ff;
+}
+
+#myapple-anime .apl-anime-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+#myapple-anime .apl-genre-tag {
+  padding: 4px 10px;
+  background: rgba(41, 151, 255, 0.1);
+  border-radius: 6px;
+  color: #2997ff;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 120ms ease;
+}
+
+#myapple-anime .apl-genre-tag:hover {
+  background: rgba(41, 151, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+html.mal-dark #myapple-anime .apl-genre-tag {
+  background: rgba(85, 174, 255, 0.15);
+  color: #55aeff;
+}
+
+#myapple-anime .apl-anime-studio-line {
+  font-size: 13px;
+  color: var(--apl-muted);
+  line-height: 1.5;
+}
+
+#myapple-anime .apl-label {
+  color: var(--apl-muted);
+}
+
+#myapple-anime .apl-anime-studio-line a {
+  color: var(--apl-ink);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 120ms ease;
+}
+
+#myapple-anime .apl-anime-studio-line a:hover {
+  color: var(--apl-accent);
+  text-decoration: underline;
+}
+
+#myapple-anime .apl-anime-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 16px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0,0,0,.06);
+}
+
+html.mal-dark #myapple-anime .apl-anime-stats {
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+#myapple-anime .apl-anime-stat {
+  text-align: center;
+  position: relative;
+}
+
+#myapple-anime .apl-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--apl-ink);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+#myapple-anime .apl-stat-label {
+  font-size: 11px;
+  color: var(--apl-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#myapple-anime .apl-stat-icon {
+  font-size: 20px;
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
+/* Main */
+#myapple-anime .apl-anime-main {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Cards */
+#myapple-anime .apl-anime-card {
+  background: var(--apl-card);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: var(--apl-radius-l);
+  padding: 24px;
+}
+
+#myapple-anime .apl-card-title {
+  margin: 0 0 18px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--apl-ink);
+  letter-spacing: -0.01em;
+}
+
+/* Synopsis */
+#myapple-anime .apl-anime-synopsis {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--apl-ink);
+}
+
+#myapple-anime .apl-read-more-btn {
+  margin-top: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--apl-accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+#myapple-anime .apl-read-more-btn:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* Info grid */
+#myapple-anime .apl-anime-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px 24px;
+}
+
+#myapple-anime .apl-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#myapple-anime .apl-info-label {
+  font-size: 11px;
+  color: var(--apl-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+#myapple-anime .apl-info-value {
+  font-size: 14px;
+  color: var(--apl-ink);
+  font-weight: 500;
+}
+
+/* Characters */
+#myapple-anime .apl-anime-char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 18px;
+}
+
+#myapple-anime .apl-char-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-decoration: none;
+  transition: transform 160ms var(--apl-spring);
+}
+
+#myapple-anime .apl-char-item:hover {
+  transform: translateY(-4px);
+}
+
+#myapple-anime .apl-char-img {
+  aspect-ratio: 2/3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0,0,0,.06);
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  flex: 1;
+}
+
+html.mal-dark #myapple-anime .apl-char-img {
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 4px 12px rgba(0,0,0,.3);
+}
+
+#myapple-anime .apl-char-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+#myapple-anime .apl-char-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+#myapple-anime .apl-char-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--apl-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#myapple-anime .apl-char-role {
+  font-size: 11px;
+  color: var(--apl-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Staff */
+#myapple-anime .apl-anime-staff-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#myapple-anime .apl-staff-item {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#myapple-anime .apl-staff-name {
+  font-weight: 600;
+  color: var(--apl-ink);
+  flex: 0 0 auto;
+  min-width: 140px;
+}
+
+#myapple-anime .apl-staff-role {
+  color: var(--apl-muted);
+  flex: 1;
+}
+
+/* Recommendations */
+#myapple-anime .apl-anime-rec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 16px;
+}
+
+#myapple-anime .apl-rec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-decoration: none;
+  transition: transform 160ms var(--apl-spring);
+}
+
+#myapple-anime .apl-rec-item:hover {
+  transform: translateY(-3px);
+}
+
+#myapple-anime .apl-rec-img {
+  aspect-ratio: 2/3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0,0,0,.06);
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+html.mal-dark #myapple-anime .apl-rec-img {
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+
+#myapple-anime .apl-rec-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#myapple-anime .apl-rec-title {
+  font-size: 11px;
+  color: var(--apl-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+/* Related */
+#myapple-anime .apl-anime-related-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+#myapple-anime .apl-anime-related-list li {
+  font-size: 14px;
+}
+
+#myapple-anime .apl-anime-related-list a {
+  color: var(--apl-accent);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 120ms ease;
+}
+
+#myapple-anime .apl-anime-related-list a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* Focus */
+#myapple-anime a:focus-visible,
+#myapple-anime button:focus-visible {
+  outline: 2px solid var(--apl-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #myapple-anime .apl-char-item,
+  #myapple-anime .apl-rec-item,
+  #myapple-anime .apl-genre-tag,
+  #myapple-anime .apl-read-more-btn {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* Mobile */
+@media (max-width: 800px) {
+  #myapple-anime {
+    padding: 16px;
+    gap: 20px;
+  }
+
+  #myapple-anime .apl-anime-hero {
+    padding: 20px;
+    gap: 20px;
+    flex-direction: column;
+  }
+
+  #myapple-anime .apl-anime-hero-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  #myapple-anime .apl-anime-poster {
+    width: 140px;
+  }
+
+  #myapple-anime .apl-anime-title {
+    font-size: 26px;
+  }
+
+  #myapple-anime .apl-anime-genres,
+  #myapple-anime .apl-anime-badges {
+    justify-content: center;
+  }
+
+  #myapple-anime .apl-anime-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  #myapple-anime .apl-anime-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 16px;
+  }
+
+  #myapple-anime .apl-anime-char-grid,
+  #myapple-anime .apl-anime-rec-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 12px;
+  }
+}

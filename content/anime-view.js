@@ -8,6 +8,20 @@ const T = (el) => (el?.textContent || "").replace(/\s+/g, " ").trim();
 const N = (s) => { const m = String(s ?? "").replace(/,/g, "").match(/[\d.]+/); return m ? parseFloat(m[0]) : 0; };
 const IMG = (im) => im?.getAttribute("data-src") || im?.getAttribute("src") || im?.src || "";
 
+function extractTableData() {
+  // Extrait les données d'une table MAL key: value
+  const result = {};
+  document.querySelectorAll("table tr").forEach((tr) => {
+    const cells = tr.querySelectorAll("td");
+    if (cells.length >= 2) {
+      const key = T(cells[0]).replace(/:$/, "").toLowerCase();
+      const value = T(cells[1]);
+      if (key && value) result[key] = value;
+    }
+  });
+  return result;
+}
+
 function readAnimeDetail() {
   // Extraction depuis la page détail anime/manga MAL
   const path = location.pathname;
@@ -15,157 +29,167 @@ function readAnimeDetail() {
   const isManga = /^\/manga\/\d+/.test(path);
   if (!isAnime && !isManga) return null;
 
-  // Titre principal
-  const titleBlock = document.querySelector("div[data-id='info2']") || document.querySelector(".title-name");
-  const title = T(titleBlock) || document.querySelector("h1.title-name")?.textContent || "Titre inconnu";
+  // Titre : chercher dans les headings
+  let title = "";
+  const h1 = document.querySelector("h1");
+  if (h1) title = T(h1);
+  if (!title) {
+    const titleDiv = document.evaluate(
+      "//div[contains(@class, 'title')]",
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null
+    ).singleNodeValue;
+    if (titleDiv) title = T(titleDiv);
+  }
+  if (!title) title = document.title.split(" - ")[0];
 
-  // Image principale (affiche)
-  const mainPic = document.querySelector(".leftside a[rel='nofollow'] img") || 
-                  document.querySelector(".left-side-recomm a img") ||
-                  document.querySelector(".anime-detail-header .image img");
-  const image = IMG(mainPic);
+  // Image : chercher les img dans la zone left (affiche)
+  let image = "";
+  const leftSide = document.querySelector(".leftside, .left, .anime-detail");
+  if (leftSide) {
+    const img = leftSide.querySelector("img[src*='cdn'], img[src*='image'], img[alt]");
+    if (img) image = IMG(img);
+  }
+  if (!image) {
+    const allImgs = document.querySelectorAll("img[src*='cdn']");
+    if (allImgs.length) image = IMG(allImgs[0]);
+  }
 
-  // Métadonnées principales
-  const meta = {};
-  const infoBlock = document.querySelector(".space-top_pad") || document.querySelector(".anime-info");
+  // Statistics : chercher Score, Rank, Popularity
+  let score = 0, rank = 0, popularity = 0;
+  const statsText = document.body.textContent;
   
-  // Score et ranks
-  const scoreEl = document.querySelector(".score-label") || document.querySelector('[itemprop="ratingValue"]');
-  const score = N(scoreEl?.textContent);
+  // Chercher "Score: X.XXX"
+  let scoreMatch = statsText.match(/Score:\s*([\d.]+)/i);
+  if (scoreMatch) score = parseFloat(scoreMatch[1]);
   
-  const rankEl = document.querySelector(".ranked strong") || document.querySelector('[itemprop="ratingCount"]');
-  const rank = N(rankEl?.textContent?.replace("#", ""));
+  // Chercher "Ranked: #XXXX"
+  let rankMatch = statsText.match(/Ranked:\s*#?([\d,]+)/i);
+  if (rankMatch) rank = N(rankMatch[1]);
   
-  const popularityEl = document.querySelector(".popularity strong");
-  const popularity = N(popularityEl?.textContent?.replace("#", ""));
+  // Chercher "Popularity: #XXXX"
+  let popMatch = statsText.match(/Popularity:\s*#?([\d,]+)/i);
+  if (popMatch) popularity = N(popMatch[1]);
 
-  // Synopsis
-  const synopsisEl = document.querySelector(".anime-detail-header + p") || 
-                     document.querySelector(".space-top_pad p") ||
-                     document.querySelector("td[valign='top']:not(.space-top) p");
-  let synopsis = T(synopsisEl) || "";
-  // Nettoyer "No synopsis currently available."
-  if (/no synopsis/i.test(synopsis)) synopsis = "";
+  // Synopsis : long paragraphe texte (pas dans une table)
+  let synopsis = "";
+  const ps = document.querySelectorAll("p");
+  ps.forEach((p) => {
+    const text = T(p);
+    if (text.length > 200 && !synopsis) {
+      if (!/^(Tank|Seatbelts|Review|Poll|Episode|Discussion)/i.test(text)) {
+        synopsis = text;
+      }
+    }
+  });
   const hasLongSynopsis = synopsis.length > 400;
 
-  // Informations tabulaires (table MAL)
-  const infoTable = document.querySelector(".space-top_pad table") || document.querySelector(".anime-info table");
-  const details = [];
-  if (infoTable) {
-    infoTable.querySelectorAll("tr").forEach((tr) => {
-      const label = T(tr.querySelector("td:first-child"));
-      const value = T(tr.querySelector("td:last-child"));
-      if (label && value) {
-        details.push({ label: label.replace(/:$/, ""), value });
-      }
-    });
-  }
+  // Table data
+  const tableData = extractTableData();
+
+  // Extraire des clés common
+  const status = tableData.status || "";
+  const episodes = tableData.episodes || "";
+  const chapters = tableData.chapters || "";
+  const volumes = tableData.volumes || "";
+  const duration = tableData.duration || "";
+  const rating = tableData.rating || "";
+  const source = tableData.source || "";
+  const aired = tableData.aired || "";
+  const published = tableData.published || "";
+
+  // Genres : chercher les liens avec "genre"
+  const genres = [];
+  document.querySelectorAll('a[href*="/genre/"]').forEach((a) => {
+    const name = T(a);
+    if (name && !genres.find((g) => g.name === name)) {
+      genres.push({ name, href: a.href });
+    }
+  });
 
   // Studios / Publishers
   const studios = [];
-  document.querySelectorAll('.studio a[href*="/producer"], .publisher a[href*="/publisher"]').forEach((a) => {
-    studios.push({ name: T(a), href: a.href });
+  document.querySelectorAll('a[href*="/producer/"], a[href*="/publisher/"]').forEach((a) => {
+    const name = T(a);
+    if (name && !studios.find((s) => s.name === name)) {
+      studios.push({ name, href: a.href });
+    }
   });
 
-  // Genres
-  const genres = [];
-  document.querySelectorAll('.keyword a[href*="/genre"], .genre a[href*="/genre"]').forEach((a) => {
-    genres.push({ name: T(a), href: a.href });
-  });
-
-  // Source (pour anime)
-  const source = details.find((d) => /source/i.test(d.label))?.value || "";
-
-  // Statut (En cours / Terminé)
-  const status = details.find((d) => /status/i.test(d.label))?.value || "";
-  
-  // Dates
-  const airedFrom = details.find((d) => /aired.*from/i.test(d.label))?.value || "";
-  const airedTo = details.find((d) => /aired.*to/i.test(d.label))?.value || "";
-  const duration = details.find((d) => /duration/i.test(d.label))?.value || "";
-  const episodes = details.find((d) => /episodes/i.test(d.label))?.value || "";
-  const chapters = details.find((d) => /chapters/i.test(d.label))?.value || "";
-  const volumes = details.find((d) => /volumes/i.test(d.label))?.value || "";
-
-  // Rating / Classification
-  const rating = details.find((d) => /rating/i.test(d.label))?.value || "";
-
-  // Personnages
+  // Personnages : chercher la section "Characters & Staff"
   const characters = [];
-  document.querySelectorAll(".anime-character-container .character-river .fleft").forEach((ch) => {
-    const img = IMG(ch.querySelector("img"));
-    const name = T(ch.querySelector(".name a") || ch.querySelector(".name"));
-    const role = T(ch.querySelector(".role") || ch.querySelector(".fn-grey2"));
-    const href = ch.querySelector("a")?.href || "";
-    if (name && img) {
+  document.querySelectorAll(".character-img-container").forEach((cont) => {
+    const img = IMG(cont.querySelector("img"));
+    const nameLink = cont.querySelector("a");
+    const name = T(nameLink);
+    const roleEl = cont.parentElement?.querySelector(".role");
+    const role = T(roleEl) || "Character";
+    const href = nameLink?.href || "";
+    if (name && img && !characters.find((c) => c.name === name)) {
       characters.push({ name, role, img, href });
     }
   });
 
-  // Staff
+  // Staff : chercher les staff roles
   const staff = [];
-  document.querySelectorAll(".anime-detail-headerstaff .staff-holder .detail-1-list2, .anime-staff-table .staff-row").forEach((row) => {
-    const name = T(row.querySelector(".name a") || row.querySelector(".name"));
-    const role = T(row.querySelector(".role") || row.querySelector(".position"));
+  document.querySelectorAll(".staff-name-role").forEach((cont) => {
+    const nameLink = cont.querySelector("a");
+    const name = T(nameLink);
+    const roleEl = cont.querySelector(".role");
+    const role = T(roleEl) || "";
     if (name && role) {
       staff.push({ name, role });
     }
   });
 
-  // Recommandations similaires
+  // Recommendations
   const recommendations = [];
-  document.querySelectorAll(".anime-slide-block a[href*='/anime/'], .recommendations-page a[href*='/anime/']").forEach((a) => {
-    const img = IMG(a.querySelector("img"));
-    const title = T(a.querySelector("img")?.title || a.textContent);
-    const href = a.href;
-    if (img && title && !recommendations.find((r) => r.title === title)) {
+  document.querySelectorAll(".recommendations-section .recommendation-card").forEach((card) => {
+    const img = IMG(card.querySelector("img"));
+    const titleEl = card.querySelector("a");
+    const title = T(titleEl);
+    const href = titleEl?.href || "";
+    if (title && img && !recommendations.find((r) => r.title === title)) {
       recommendations.push({ title, img, href });
     }
   });
 
-  // Opening/Ending themes
-  const themes = { openings: [], endings: [] };
-  document.querySelectorAll(".theme-song .theme-list .theme-item").forEach((item, i) => {
-    const song = T(item);
-    if (song) themes.openings.push(song);
-  });
-
-  // Related anime/manga
+  // Related
   const related = [];
-  document.querySelectorAll(".anime-detail-related td").forEach((td) => {
-    const link = td.querySelector("a");
-    const type = T(td.querySelector(".relation"));
-    if (link) {
-      related.push({ title: T(link), href: link.href, type: type || "" });
+  document.querySelectorAll(".anime-detail-related-list a").forEach((a) => {
+    const title = T(a);
+    const href = a.href;
+    if (title && !related.find((r) => r.title === title)) {
+      related.push({ title, href, type: "" });
     }
   });
 
   return {
     kind: isAnime ? "anime" : "manga",
-    title,
+    title: title || "Titre inconnu",
     image,
     score,
     rank,
     popularity,
     synopsis,
     hasLongSynopsis,
-    details,
-    studios,
-    genres,
-    source,
     status,
-    airedFrom,
-    airedTo,
-    duration,
     episodes,
     chapters,
     volumes,
+    duration,
     rating,
+    source,
+    aired,
+    published,
+    studios,
+    genres,
     characters: characters.slice(0, 12),
-    staff: staff.slice(0, 6),
+    staff: staff.slice(0, 8),
     recommendations: recommendations.slice(0, 12),
-    themes,
-    related,
+    related: related.slice(0, 8),
   };
 }
 
@@ -201,7 +225,7 @@ function buildAnimeView() {
   if (document.getElementById("myapple-anime")) return;
   
   const d = readAnimeDetail();
-  if (!d) return;
+  if (!d || !d.title) return;
 
   const view = el("div", null, null);
   view.id = "myapple-anime";
@@ -210,187 +234,203 @@ function buildAnimeView() {
   // ==================== HERO ====================
   const hero = el("section", "apl-anime-hero", view);
   
-  // Bannière avec image de fond
+  // Bannière avec image de fond floue
   const banner = el("div", "apl-anime-banner", hero);
   if (d.image) {
-    const im = new Image();
-    im.onload = () => { banner.style.backgroundImage = `url("${d.image}")`; };
-    im.src = d.image;
+    banner.style.backgroundImage = `url("${d.image}")`;
   }
 
   // Contenu hero
-  const heroContent = el("div", "apl-anime-hero-content", hero);
+  const heroInner = el("div", "apl-anime-hero-inner", hero);
 
   // Affiche
-  const posterWrap = el("div", "apl-anime-poster", heroContent);
+  const posterWrap = el("div", "apl-anime-poster", heroInner);
   const poster = el("img", null, posterWrap);
-  poster.src = d.image;
+  poster.src = d.image || "";
   poster.alt = d.title;
   poster.loading = "lazy";
 
   // Infos principales
-  const info = el("div", "apl-anime-info", heroContent);
+  const infoCol = el("div", "apl-anime-info-col", heroInner);
   
   // Titre
-  el("h1", "apl-anime-title", info, d.title);
+  el("h1", "apl-anime-title", infoCol, d.title);
 
-  // Métadonnées en chips
-  const metaRow = el("div", "apl-anime-meta", info);
+  // Badges status + meta
+  const badges = el("div", "apl-anime-badges", infoCol);
   if (d.status) {
-    const chip = el("span", "apl-anime-chip", metaRow);
-    el("span", null, chip, d.status);
+    const badge = el("span", "apl-badge", badges, d.status);
+    badge.className = "apl-badge apl-badge-" + (d.status.includes("Airing") ? "airing" : "finished");
   }
   if (d.episodes) {
-    const chip = el("span", "apl-anime-chip", metaRow);
-    el("span", null, chip, `${d.episodes} épisodes`);
+    el("span", "apl-badge", badges, `${d.episodes} épisodes`);
   } else if (d.chapters) {
-    const chip = el("span", "apl-anime-chip", metaRow);
-    el("span", null, chip, `${d.chapters} chapitres`);
+    el("span", "apl-badge", badges, `${d.chapters} chapitres`);
   }
   if (d.duration) {
-    const chip = el("span", "apl-anime-chip", metaRow);
-    el("span", null, chip, d.duration);
+    el("span", "apl-badge", badges, d.duration);
   }
 
-  // Genres
+  // Genres tag cloud
   if (d.genres.length) {
-    const genresRow = el("div", "apl-anime-genres", info);
-    d.genres.forEach((g) => {
-      const a = el("a", "apl-anime-genre", genresRow, g.name);
-      a.href = g.href;
+    const genreWrap = el("div", "apl-anime-genres", infoCol);
+    d.genres.slice(0, 6).forEach((g) => {
+      const tag = el("a", "apl-genre-tag", genreWrap, g.name);
+      tag.href = g.href;
     });
   }
 
   // Studios
   if (d.studios.length) {
-    const studiosRow = el("div", "apl-anime-studios", info);
-    d.studios.forEach((s, i) => {
-      if (i > 0) el("span", null, studiosRow, " · ");
-      const a = el("a", null, studiosRow, s.name);
+    const studioLine = el("div", "apl-anime-studio-line", infoCol);
+    el("span", "apl-label", studioLine, "Produit par ");
+    d.studios.slice(0, 2).forEach((s, i) => {
+      if (i > 0) el("span", null, studioLine, ", ");
+      const a = el("a", null, studioLine, s.name);
       a.href = s.href;
     });
   }
 
-  // KPIs (score, rank, popularity)
-  const kpis = el("div", "apl-anime-kpis", heroContent);
-  
-  if (d.score) {
-    const kpi = el("div", "apl-anime-kpi", kpis);
-    el("span", "apl-kpi-value", kpi, d.score.toFixed(1));
-    el("span", "apl-kpi-label", kpi, "Score");
-    el("span", "apl-kpi-star", kpi, "★");
-  }
-  if (d.rank) {
-    const kpi = el("div", "apl-anime-kpi", kpis);
-    el("span", "apl-kpi-value", kpi, "#" + d.rank);
-    el("span", "apl-kpi-label", kpi, "Ranked");
-  }
-  if (d.popularity) {
-    const kpi = el("div", "apl-anime-kpi", kpis);
-    el("span", "apl-kpi-value", kpi, "#" + d.popularity);
-    el("span", "apl-kpi-label", kpi, "Popularity");
+  // KPIs card
+  if (d.score || d.rank || d.popularity) {
+    const kpis = el("div", "apl-anime-stats", heroInner);
+    
+    if (d.score) {
+      const kpi = el("div", "apl-anime-stat", kpis);
+      el("div", "apl-stat-value", kpi, d.score.toFixed(2));
+      el("div", "apl-stat-label", kpi, "Score");
+      el("div", "apl-stat-icon", kpi, "★");
+    }
+    if (d.rank) {
+      const kpi = el("div", "apl-anime-stat", kpis);
+      el("div", "apl-stat-value", kpi, "#" + d.rank);
+      el("div", "apl-stat-label", kpi, "Ranked");
+    }
+    if (d.popularity) {
+      const kpi = el("div", "apl-anime-stat", kpis);
+      el("div", "apl-stat-value", kpi, "#" + d.popularity);
+      el("div", "apl-stat-label", kpi, "Popular");
+    }
   }
 
   // ==================== MAIN CONTENT ====================
   const main = el("div", "apl-anime-main", view);
 
-  // Synopsis
+  // Synopsis card
   if (d.synopsis) {
-    const synopsisCard = el("section", "apl-anime-card", main);
-    el("h2", null, synopsisCard, "Synopsis");
-    const synopsisBody = el("div", "apl-anime-synopsis", synopsisCard);
+    const synCard = el("section", "apl-anime-card", main);
+    el("h2", "apl-card-title", synCard, "Synopsis");
+    const synBody = el("div", "apl-anime-synopsis", synCard);
+    
     if (d.hasLongSynopsis) {
-      synopsisBody.innerHTML = escapeHtml(d.synopsis.slice(0, 400)) + "…";
-      const moreBtn = el("button", "apl-anime-more", synopsisBody, "Lire la suite");
-      moreBtn.type = "button";
-      moreBtn.addEventListener("click", () => {
-        synopsisBody.innerHTML = escapeHtml(d.synopsis);
-        moreBtn.remove();
-      });
+      synBody.textContent = d.synopsis.slice(0, 320) + "…";
+      const readMore = el("button", "apl-read-more-btn", synBody);
+      readMore.type = "button";
+      readMore.textContent = "Lire la suite";
+      readMore.onclick = () => {
+        synBody.innerHTML = escapeHtml(d.synopsis);
+        readMore.remove();
+      };
     } else {
-      synopsisBody.textContent = d.synopsis;
+      synBody.textContent = d.synopsis;
     }
   }
 
-  // Détails tabulaires
-  if (d.details.length) {
-    const detailsCard = el("section", "apl-anime-card", main);
-    el("h2", null, detailsCard, "Informations");
-    const detailsBody = el("dl", "apl-anime-details", detailsCard);
-    d.details.forEach((detail) => {
-      // Filtrer les infos déjà affichées dans le hero
-      if (/^(score|ranked|popularity|episodes|chapters|duration|status|genre|studio|publisher)$/i.test(detail.label)) return;
-      el("dt", null, detailsBody, detail.label);
-      el("dd", null, detailsBody, detail.value);
-    });
-  }
+  // Infos détaillées
+  const infoCard = el("section", "apl-anime-card", main);
+  el("h2", "apl-card-title", infoCard, "Informations");
+  const infoGrid = el("div", "apl-anime-info-grid", infoCard);
+  
+  const infoItems = [
+    { label: "Type", value: d.kind === "anime" ? "Anime" : "Manga" },
+    { label: "Épisodes", value: d.episodes || (d.chapters ? d.chapters + " chapitres" : "—") },
+    { label: "Durée", value: d.duration || "—" },
+    { label: "Statut", value: d.status || "—" },
+    { label: "Diffusion", value: d.aired || d.published || "—" },
+    { label: "Classification", value: d.rating || "—" },
+    { label: "Source", value: d.source || "—" }
+  ];
+  
+  infoItems.forEach((item) => {
+    if (item.value && item.value !== "—") {
+      const row = el("div", "apl-info-item", infoGrid);
+      el("span", "apl-info-label", row, item.label);
+      el("span", "apl-info-value", row, item.value);
+    }
+  });
 
   // Personnages
   if (d.characters.length) {
-    const charsCard = el("section", "apl-anime-card", main);
-    el("h2", null, charsCard, "Personnages");
-    const charsGrid = el("div", "apl-anime-chars", charsCard);
+    const charCard = el("section", "apl-anime-card", main);
+    el("h2", "apl-card-title", charCard, `Personnages (${d.characters.length})`);
+    const charGrid = el("div", "apl-anime-char-grid", charCard);
+    
     d.characters.forEach((ch) => {
-      const card = el("a", "apl-anime-char", charsGrid);
-      card.href = ch.href;
-      const thumb = el("div", "apl-anime-char-thumb", card);
-      const img = el("img", null, thumb);
+      const item = el("a", "apl-char-item", charGrid);
+      item.href = ch.href;
+      
+      const imgWrap = el("div", "apl-char-img", item);
+      const img = el("img", null, imgWrap);
       img.src = ch.img;
       img.alt = ch.name;
       img.loading = "lazy";
-      const info = el("div", "apl-anime-char-info", card);
-      el("span", "apl-anime-char-name", info, ch.name);
-      el("span", "apl-anime-char-role", info, ch.role);
+      
+      const txt = el("div", "apl-char-text", item);
+      el("div", "apl-char-name", txt, ch.name);
+      el("div", "apl-char-role", txt, ch.role);
     });
   }
 
   // Staff
   if (d.staff.length) {
     const staffCard = el("section", "apl-anime-card", main);
-    el("h2", null, staffCard, "Équipe");
-    const staffList = el("ul", "apl-anime-staff", staffCard);
+    el("h2", "apl-card-title", staffCard, "Équipe de production");
+    const staffList = el("ul", "apl-anime-staff-list", staffCard);
+    
     d.staff.forEach((s) => {
-      const li = el("li", null, staffList);
-      const name = el("span", "apl-anime-staff-name", li, s.name);
-      name.style.fontWeight = "600";
-      el("span", "apl-anime-staff-role", li, s.role);
+      const li = el("li", "apl-staff-item", staffList);
+      el("span", "apl-staff-name", li, s.name);
+      el("span", "apl-staff-role", li, s.role);
+    });
+  }
+
+  // Recommandations
+  if (d.recommendations.length) {
+    const recCard = el("section", "apl-anime-card", main);
+    el("h2", "apl-card-title", recCard, "Recommandations similaires");
+    const recGrid = el("div", "apl-anime-rec-grid", recCard);
+    
+    d.recommendations.forEach((rec) => {
+      const item = el("a", "apl-rec-item", recGrid);
+      item.href = rec.href;
+      
+      const imgWrap = el("div", "apl-rec-img", item);
+      const img = el("img", null, imgWrap);
+      img.src = rec.img;
+      img.alt = rec.title;
+      img.loading = "lazy";
+      
+      el("div", "apl-rec-title", item, rec.title);
     });
   }
 
   // Related
   if (d.related.length) {
-    const relatedCard = el("section", "apl-anime-card", main);
-    el("h2", null, relatedCard, "Œuvres liées");
-    const relatedList = el("ul", "apl-anime-related", relatedCard);
-    d.related.forEach((r) => {
-      const li = el("li", null, relatedList);
-      const a = el("a", null, li, r.title);
-      a.href = r.href;
-      el("span", null, li, ` (${r.type})`);
+    const relCard = el("section", "apl-anime-card", main);
+    el("h2", "apl-card-title", relCard, "Œuvres liées");
+    const relList = el("ul", "apl-anime-related-list", relCard);
+    
+    d.related.forEach((rel) => {
+      const li = el("li", null, relList);
+      const a = el("a", null, li, rel.title);
+      a.href = rel.href;
     });
   }
 
-  // Recommandations similaires
-  if (d.recommendations.length) {
-    const recCard = el("section", "apl-anime-card", main);
-    el("h2", null, recCard, "Recommandations");
-    const recGrid = el("div", "apl-anime-recs", recCard);
-    d.recommendations.forEach((r) => {
-      const a = el("a", "apl-anime-rec", recGrid);
-      a.href = r.href;
-      const thumb = el("div", "apl-anime-rec-thumb", a);
-      const img = el("img", null, thumb);
-      img.src = r.img;
-      img.alt = r.title;
-      img.loading = "lazy";
-      el("span", "apl-anime-rec-title", a, r.title);
-    });
-  }
-
-  // Insérer dans le DOM
-  const content = document.getElementById("content") || document.querySelector(".content-container");
-  if (content?.parentNode) {
-    content.parentNode.insertBefore(view, content);
+  // Insérer dans le DOM avant le contenu MAL
+  const malContent = document.querySelector("#content, .content-container");
+  if (malContent) {
+    malContent.parentNode.insertBefore(view, malContent);
   } else {
     document.body.insertBefore(view, document.body.firstChild);
   }
