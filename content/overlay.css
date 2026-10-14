@@ -1,0 +1,465 @@
+/* MyAppleList — Apple replacement, pas overlay. D'après Designing Fluid Interfaces + Typography + Materials. */
+:root {
+  font: 100%/1.5 system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif;
+  --apl-bg: #f5f5f7;
+  --apl-card: rgba(255,255,255,.72);
+  --apl-ink: #1d1d1f;
+  --apl-muted: #6e6e73;
+  --apl-accent: #0071e3;
+  --apl-radius-l: 20px;
+  --apl-radius-m: 14px;
+  --apl-shadow-big: 0 24px 60px rgba(0,0,0,.18);
+  --apl-shadow-small: 0 8px 24px rgba(0,0,0,.12);
+  --apl-spring: cubic-bezier(.32,.72,.35,1);
+  --apl-spring-bounce: cubic-bezier(.32,1.2,.35,1);
+}
+
+/* ===== 1. REMPLACER le chrome MAL — JAMAIS le conteneur racine ni le contenu ===== */
+/* On masque uniquement header/nav/footer/ads. #myanimelist, .wrapper, #contentWrapper, #content restent visibles. */
+html.mal-custom #headerSmall,
+html.mal-custom #menu,
+html.mal-custom #header-menu,
+html.mal-custom #footer,
+html.mal-custom #copyright,
+html.mal-custom footer,
+html.mal-custom .ad-sas,
+html.mal-custom .ad-skin-side-outer,
+html.mal-custom .ad-skin-side-bg,
+html.mal-custom .banner-header-anime-straming,
+html.mal-custom .text-ribbon,
+html.mal-custom .mini-banner {
+  display: none !important;
+}
+
+/* On FORCE l'affichage du contenu réel MAL */
+html.mal-custom #myanimelist,
+html.mal-custom .wrapper,
+html.mal-custom #contentWrapper,
+html.mal-custom article.widget-container,
+html.mal-custom .widget,
+html.mal-custom .widget-content {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Police Apple vraiment différente de Roboto MAL : SF système + graisses + features */
+html.mal-custom, html.mal-custom body,
+html.mal-custom div, html.mal-custom p, html.mal-custom a,
+html.mal-custom li, html.mal-custom td, html.mal-custom span {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Inter, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  text-rendering: optimizeLegibility !important;
+  font-feature-settings: "ss01", "cv11" !important;
+}
+html.mal-custom body { font-size: 14.5px !important; }
+
+/* Contenu recentré façon Apple, le contenu scrolle SOUS la toolbar */
+html.mal-custom #myanimelist .wrapper,
+html.mal-custom .wrapper,
+html.mal-custom #wrapper,
+html.mal-custom #contentWrapper,
+html.mal-custom #main-content,
+html.mal-custom #content {
+  width: 100% !important;
+  max-width: 1400px !important;
+  margin: 84px auto 60px auto !important;
+  padding: 0 22px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  /* On garde le 2-colonnes naturel MAL (floats), pas de grid forcée qui écrase */
+  display: block !important;
+  overflow: hidden !important;
+}
+html.mal-custom .left-column {
+  float: left !important;
+  width: calc(100% - 360px) !important;
+  max-width: none !important;
+  margin: 0 30px 0 0 !important;
+  min-width: 0 !important;
+}
+html.mal-custom .right-column {
+  float: right !important;
+  width: 330px !important;
+  margin: 0 !important;
+  position: sticky !important;
+  top: 84px !important;
+}
+/* MAL bloque la racine à 1060px (.page-common #myanimelist) : on la libère, sinon tout reste étroit */
+html.mal-custom body.page-common #myanimelist {
+  width: 100% !important;
+  max-width: 1400px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+@media (min-width: 1600px) {
+  html.mal-custom body.page-common #myanimelist { max-width: 1560px !important; }
+}
+@media (min-width: 2100px) {
+  html.mal-custom body.page-common #myanimelist { max-width: 1900px !important; }
+}
+/* MAL impose width:1060px fixe (likely !important) : on sur-spécifie pour passer en fluide */
+html.mal-custom body #myanimelist div.wrapper,
+html.mal-custom body #myanimelist div#contentWrapper,
+html.mal-custom body #myanimelist div#content {
+  width: 100% !important;
+}
+/* Écrans larges : le conteneur respire, la grille s'étoffe */
+@media (min-width: 1600px) {
+  html.mal-custom #myanimelist .wrapper,
+  html.mal-custom .wrapper,
+  html.mal-custom #contentWrapper,
+  html.mal-custom #content { max-width: 1560px !important; }
+  html.mal-custom ul.widget-slide,
+  html.mal-custom .widget-slide-block ul { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; }
+  html.mal-custom:root body div#myanimelist div#content #widget-seasonal-video ul.widget-slide { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; }
+  html.mal-custom:root body div#myanimelist div#content #widget-promotional-video ul.widget-slide { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important; }
+}
+@media (min-width: 2100px) {
+  html.mal-custom #myanimelist .wrapper,
+  html.mal-custom .wrapper,
+  html.mal-custom #contentWrapper,
+  html.mal-custom #content { max-width: 1900px !important; }
+  html.mal-custom .right-column { width: 360px !important; }
+  html.mal-custom .left-column { width: calc(100% - 390px) !important; }
+  html.mal-custom ul.widget-slide,
+  html.mal-custom .widget-slide-block ul { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important; }
+  html.mal-custom:root body div#myanimelist div#content #widget-seasonal-video ul.widget-slide { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important; }
+  html.mal-custom:root body div#myanimelist div#content #widget-promotional-video ul.widget-slide { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important; }
+}
+@media (max-width: 980px) {
+  html.mal-custom .left-column,
+  html.mal-custom .right-column { float: none !important; width: 100% !important; max-width: 100% !important; position: static !important; }
+}
+/* MALxJapan : supprimé, pas important */
+html.mal-custom article.widget-container:has(.widget.mxj),
+html.mal-custom .widget.mxj {
+  display: none !important;
+}
+
+/* Typo Apple : tracking spécifique à la taille, leading inverse */
+html.mal-custom h1, html.mal-custom h2 {
+  letter-spacing: -0.022em !important;
+  line-height: 1.08 !important;
+  font-weight: 700 !important;
+  font-optical-sizing: auto;
+}
+html.mal-custom h1 { font-size: clamp(2rem, 4.5vw, 3.2rem) !important; }
+html.mal-custom p, html.mal-custom li, html.mal-custom td {
+  line-height: 1.5 !important;
+  letter-spacing: 0 !important;
+}
+html.mal-custom small { letter-spacing: .01em !important; }
+
+/* Cards MAL → Apple cards : que transform + opacity, jamais de layout animé */
+html.mal-custom .widget {
+  background: var(--apl-card) !important;
+  border-radius: var(--apl-radius-l) !important;
+  border: 1px solid rgba(0,0,0,.06) !important;
+  padding: 18px !important;
+  margin-bottom: 18px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.05) !important;
+}
+html.mal-custom .widget-header {
+  font-size: 21px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.022em !important;
+  margin-bottom: 14px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+/* Grille saisonnière MAL → grille Apple, images toujours visibles */
+html.mal-custom .widget-slide-outer { overflow: visible !important; height: auto !important; }
+html.mal-custom body div#myanimelist div#content .widget-slide-outer {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+/* Le bloc slider MAL est en inline-block (di-ib) : il se rétracterait sur une colonne */
+html.mal-custom body div#myanimelist div#content .widget-slide-block {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+html.mal-custom ul.widget-slide,
+html.mal-custom .widget-slide-block ul {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+  gap: 14px !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-content: start !important;
+  transform: none !important;
+}
+/* Colonnes par widget : on remplit la largeur au lieu de rester à 4 fixes */
+html.mal-custom body div#myanimelist div#content #widget-seasonal-video ul.widget-slide {
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)) !important;
+  gap: 12px !important;
+}
+html.mal-custom body div#myanimelist div#content #widget-manga-store ul.widget-slide {
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
+  gap: 8px !important;
+}
+html.mal-custom body div#myanimelist div#content #widget-episode-video ul.widget-slide {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+  gap: 12px !important;
+}
+html.mal-custom body div#myanimelist div#content #widget-promotional-video ul.widget-slide {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important;
+  gap: 12px !important;
+}
+/* Épisodes : le lien est une div, miniature d'abord */
+html.mal-custom body div#myanimelist div#content #widget-episode-video li.btn-anime div.link.episode {
+  display: grid !important;
+  width: 100% !important;
+  height: auto !important;
+}
+html.mal-custom body div#myanimelist div#content #widget-episode-video li.btn-anime div.link.episode > img {
+  grid-row: 1 !important;
+}
+html.mal-custom body div#myanimelist div#content #widget-episode-video li.btn-anime div.link.episode > div.title {
+  grid-row: 2 !important;
+  padding: 8px 10px 10px !important;
+  font-size: 12.5px !important;
+}
+/* Trailers : le visuel est un background (data-bg), format 16/9 */
+html.mal-custom body div#myanimelist div#content #widget-promotional-video li.btn-anime a.link {
+  aspect-ratio: 16 / 9 !important;
+  background-size: cover !important;
+  background-position: center !important;
+  position: relative !important;
+  display: block !important;
+  min-height: 0 !important;
+}
+html.mal-custom body div#myanimelist div#content #widget-promotional-video li.btn-anime .external-link h3 {
+  font-size: 12.5px !important;
+  line-height: 1.35 !important;
+  padding: 8px 10px 10px !important;
+  margin: 0 !important;
+}
+html.mal-custom body div#myanimelist div#content li.btn-anime {
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: var(--apl-card) !important;
+  border-radius: var(--apl-radius-m) !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(0,0,0,.06) !important;
+  transition: transform 180ms var(--apl-spring);
+}
+html.mal-custom body div#myanimelist div#content li.btn-anime:hover { transform: translateY(-3px); }
+html.mal-custom body div#myanimelist div#content li.btn-anime a.link {
+  display: grid !important;
+  grid-template-rows: auto auto !important;
+  /* Annule le 220x160px fixe MAL (slider) : la carte s'ajuste au contenu */
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+html.mal-custom body div#myanimelist div#content li.btn-anime a.link > img {
+  grid-row: 1 !important;
+}
+html.mal-custom body div#myanimelist div#content li.btn-anime a.link > h3,
+html.mal-custom body div#myanimelist div#content li.btn-anime a.link > .title {
+  grid-row: 2 !important;
+}
+html.mal-custom body div#myanimelist div#content li.btn-anime img {
+  width: 100% !important;
+  max-width: 100% !important;
+  aspect-ratio: 8 / 11 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  object-fit: cover !important;
+  object-position: top center !important;
+  display: block !important;
+  opacity: 1 !important;
+  margin: 0 !important;
+}
+html.mal-custom .widget img {
+  display: block !important;
+  opacity: 1 !important;
+}
+/* Titre en légende sous l'image, plus en overlay qui coupe le visuel */
+html.mal-custom body div#myanimelist div#content li.btn-anime .title,
+html.mal-custom body div#myanimelist div#content li.btn-anime h3.h3_character_name {
+  position: static !important;
+  font-size: 12.5px !important;
+  line-height: 1.35 !important;
+  padding: 8px 10px 10px !important;
+  margin: 0 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  color: var(--apl-ink) !important;
+  text-shadow: none !important;
+}
+/* Manga Store : jackets resserrées */
+html.mal-custom .widget.store_popular_comics ul.widget-slide,
+html.mal-custom .widget.store_popular_comics .widget-slide-block ul {
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important;
+  gap: 8px !important;
+}
+/* (règle titre legacy supprimée — voir légende ci-dessus) */
+/* Flèches slider MAL inutiles en grille */
+html.mal-custom .btn-widget-slide-side { display: none !important; }
+
+/* ===== 2. TOOLBAR translucide Apple — contenu dessous, pas bande opaque ===== */
+#myapple-topbar {
+  position: fixed;
+  top: 10px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 999999;
+  width: auto !important;
+  max-width: calc(100% - 24px);
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px 5px 12px;
+  background: rgba(255,255,255,.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(255,255,255,.4);
+  border-left: 1px solid rgba(0,0,0,.06);
+  border-right: 1px solid rgba(0,0,0,.06);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  border-radius: 16px;
+  box-shadow: var(--apl-shadow-small);
+  /* Materialize, pas juste fade */
+  animation: apl-material-in 320ms var(--apl-spring) backwards;
+  transform-origin: top center;
+  /* Discrète : s'efface au scroll vers le bas, revient vers le haut */
+  transition: top 280ms var(--apl-spring);
+}
+#myapple-topbar.hidden { top: -70px; }
+@keyframes apl-material-in {
+  from { opacity: 0; transform: translateX(-50%) scale(.98); backdrop-filter: blur(0px); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+#myapple-topbar .logo {
+  font-weight: 700; font-size: 13px; letter-spacing: -0.02em; line-height: 1.1;
+  white-space: nowrap; opacity: .8;
+}
+#myapple-topbar .logo span { color: var(--apl-accent); }
+#myapple-topbar nav { display: flex; gap: 0; }
+#myapple-topbar nav a {
+  font-size: 12px; font-weight: 600; color: var(--apl-ink) !important;
+  text-decoration: none; padding: 6px 8px; border-radius: 8px;
+}
+/* Feedback sur pointer-down, pas au release */
+#myapple-topbar nav a:active, #myapple-topbar button:active, #myapple-fab:active {
+  transform: scale(.96);
+  transition: transform 100ms ease-out;
+}
+#myapple-topbar nav a:hover { background: rgba(0,0,0,.05); }
+#myapple-topbar input {
+  border: 0; outline: 0; padding: 6px 10px; border-radius: 9px;
+  background: rgba(0,0,0,.055); font-size: 12.5px; font-family: inherit;
+  width: 130px;
+}
+#myapple-topbar input:focus { width: 200px; }
+#myapple-topbar button {
+  border: 0; cursor: pointer; padding: 6px 9px; border-radius: 9px;
+  font-weight: 700; font-size: 12px; background: #1d1d1f; color: #fff;
+  will-change: transform; /* compositor only */
+}
+#myapple-topbar button.ghost {
+  background: rgba(0,0,0,.05); color: var(--apl-ink);
+}
+#myapple-account { display: flex; align-items: center; gap: 4px; margin-left: 0; }
+#myapple-account a {
+  font-size: 12px; font-weight: 700; text-decoration: none;
+  padding: 6px 9px; border-radius: 999px; white-space: nowrap;
+  background: rgba(0,0,0,.05); color: var(--apl-ink) !important;
+}
+#myapple-account a#myapple-signup { background: var(--apl-accent); color: #fff !important; }
+html.mal-dark #myapple-account a { background: rgba(255,255,255,.1); color: #fff !important; }
+
+/* ===== 3. SHEET notes : entre/sort par le même chemin, ancré à droite ===== */
+#myapple-scrim {
+  position: fixed; inset: 0; z-index: 999997;
+  background: rgba(0,0,0,.28);
+  opacity: 0; pointer-events: none;
+  transition: opacity 240ms ease;
+}
+#myapple-scrim.open { opacity: 1; pointer-events: auto; }
+
+#myapple-panel {
+  position: fixed; top: 76px; right: 12px;
+  width: min(360px, calc(100vw - 24px));
+  max-height: calc(100vh - 100px); overflow: auto;
+  z-index: 999998;
+  background: rgba(255,255,255,.78);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(0,0,0,.07);
+  border-top: 1px solid rgba(255,255,255,.5);
+  border-radius: var(--apl-radius-l);
+  box-shadow: var(--apl-shadow-big);
+  padding: 18px;
+  transform-origin: top right; /* ancré à la source */
+  /* État fermé : même trajectoire que l'ouverture */
+  transform: translateX(24px) scale(.98);
+  opacity: 0; pointer-events: none;
+  transition: transform 340ms var(--apl-spring), opacity 240ms ease;
+}
+#myapple-panel.open {
+  transform: none; opacity: 1; pointer-events: auto;
+}
+#myapple-panel h3 { margin: 0 0 4px 0; font-size: 17px; letter-spacing: -0.01em; }
+#myapple-panel .sub { font-size: 12.5px; color: var(--apl-muted); margin-bottom: 10px; }
+#myapple-panel textarea {
+  width: 100%; box-sizing: border-box; min-height: 110px;
+  border-radius: var(--apl-radius-m); padding: 12px;
+  border: 1px solid rgba(0,0,0,.1); font-family: inherit; font-size: 14px;
+  background: rgba(255,255,255,.9); resize: vertical;
+}
+#myapple-panel .row { display: flex; gap: 8px; margin-top: 12px; }
+
+#myapple-fab {
+  position: fixed; bottom: 18px; right: 18px; z-index: 999999;
+  width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer;
+  font-size: 18px; background: #1d1d1f; color: #fff;
+  box-shadow: var(--apl-shadow-big); will-change: transform;
+  opacity: .85;
+}
+
+/* Dark : matériau lourd, texte vibrancy (pas gris plat) */
+html.mal-dark, html.mal-dark body {
+  --apl-bg: #000;
+  --apl-card: rgba(28,28,30,.72);
+  --apl-ink: #f5f5f7;
+  background: #000 !important; color: #f5f5f7 !important;
+}
+html.mal-dark #myapple-topbar {
+  background: rgba(28,28,30,.62);
+  border-color: rgba(255,255,255,.1);
+}
+html.mal-dark #myapple-topbar nav a { color: #f5f5f7 !important; }
+html.mal-dark #myapple-topbar nav a:hover { background: rgba(255,255,255,.09); }
+html.mal-dark #myapple-topbar input { background: rgba(255,255,255,.1); color: #fff; }
+html.mal-dark #myapple-topbar button.ghost { background: rgba(255,255,255,.1); color: #fff; }
+html.mal-dark #myapple-panel {
+  background: rgba(28,28,30,.78); color: #fbfbfd;
+  border-color: rgba(255,255,255,.12);
+}
+html.mal-dark #myapple-panel .sub { color: rgba(235,235,245,.7); font-weight: 500; letter-spacing: .01em; }
+html.mal-dark #myapple-panel textarea { background: rgba(255,255,255,.08); color: #fff; border-color: rgba(255,255,255,.14); }
+html.mal-dark a { color: #2997ff !important; }
+
+/* ===== 4. Accessibilité : équivalent doux, jamais rien de brutal ===== */
+@media (prefers-reduced-motion: reduce) {
+  #myapple-topbar, #myapple-panel, #myapple-scrim {
+    animation: none !important; transition: opacity 200ms ease !important; transform: none !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  #myapple-topbar, #myapple-panel { background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  html.mal-dark #myapple-topbar, html.mal-dark #myapple-panel { background: #1c1c1e; }
+}
+@media (prefers-contrast: more) {
+  #myapple-topbar, #myapple-panel { border: 2px solid currentColor; }
+}

@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "MyAppleList — visuel custom par-dessus MAL",
+  "version": "0.1.0",
+  "description": "Pose notre propre visuel par-dessus MyAnimeList : topbar épurée, cards modernes, dark mode, notes perso.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://myanimelist.net/*"],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "MyAppleList",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://myanimelist.net/*"],
+      "js": ["content/content.js"],
+      "css": ["content/overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content/*"],
+      "matches": ["https://myanimelist.net/*"]
+    }
+  ]
+}
