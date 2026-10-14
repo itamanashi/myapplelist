@@ -326,6 +326,7 @@
     revealContent();
     window.__myappleProfile?.buildProfileView();
     window.__myappleListView?.buildListView();
+    window.__myappleAnime?.buildAnimeView();
     autoHideBar();
     new MutationObserver(revealContent).observe(document.documentElement, { childList: true, subtree: true });
     console.log("[myapplelist] Apple replacement actif");
