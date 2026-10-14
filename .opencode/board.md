@@ -42,6 +42,13 @@ Règles : 1 owner par carte, 1 writer par fichier, merge gate = `node --check` +
   jamais construite), fonds blancs en dark, h1 sous la pilule, nav mobile en vrac,
   stats collées. Captures : `%TEMP%/opencode/shots/`.
   Owner: opencode. Gate: `node --check` OK, captures relues OK.
+- [x] **qa-connected-20261015** — Session loggée `itaminashi`, vrais content.js+CSS :
+  trouvé et corrigé — texte MAL peint en clair illisible en mode jour (titres +
+  corps + liens `#abc4ed` fantômes → encre/accent AA), carte Navigation sortie
+  du hero (étirrement + vide), footer `.btn-settings` (fond bouton sombre).
+  Script rejouable : `tools/qa-final-logged.mjs`. Captures :
+  `%TEMP%/opencode/shots/final-logged-*.png` + `chip-settings.png`.
+  Owner: opencode. Gate: `node --check` OK, captures relues OK.
 - [ ] **touch-menus** — Dropdowns au tap (mobile) en plus du hover. Scope: `content/content.js` + CSS.
 - [ ] **jikan-panel** — Top airing via API Jikan dans le panneau. Scope: nouveau module, voir README.
 - [ ] **memory-review** — Relire/promouvoir les 4 mémoires `team` (statut `unreviewed`).
