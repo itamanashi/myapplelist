@@ -8,7 +8,9 @@ On pose **notre** visuel par-dessus `myanimelist.net` via content-script.
 - Ajoute un panneau latéral Notes perso stocké en `chrome.storage.local`, par URL
 - Bouton FAB  en bas à droite
 - Popup pour activer/couper, dark/light
-- `overlay.css` restyle en grille moderne façon Apple, sans toucher au HTML MAL d'origine
+- `overlay.css` restyle en grille moderne façon Apple (re-style du CSS MAL,
+  masquage du chrome header/footer/pubs, conteneurs racine jamais masqués).
+  La page profil réorganise les nœuds MAL existants par déplacement (pas de copie).
 
 ## Installer en dev
 1. `chrome://extensions` → Mode développeur ON
@@ -26,6 +28,8 @@ On pose **notre** visuel par-dessus `myanimelist.net` via content-script.
 Je ne scrape pas le CSS MAL pour le cloner. Je :
 1. `fetch` la structure (titres, listes, URLs) pour savoir quoi overlay
 2. J'injecte notre design system (tokens, blur, radius 18px, SF/Inter)
-3. Je laisse le DOM MAL intact dessous → pas de casse si MAL change, et pas de plagiat visuel.
+3. Je laisse le DOM MAL intact dessous : je re-stylise et je déplace des nœuds
+   existants (profil) sans les dupliquer. Les sélecteurs pointent des IDs/classes
+   MAL : si MAL renomme, la mise en page se dégrade gracieusement (page native intacte).
 
 Prochaine étape : brancher vraie data via Jikan API (https://api.jikan.moe/v4) dans le panneau pour afficher top airing sans scraper.

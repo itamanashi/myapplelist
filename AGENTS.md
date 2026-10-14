@@ -1,7 +1,10 @@
 # AGENTS.md — MyAppleList (extension Chrome MV3)
 
-Overlay visuel Apple par-dessus myanimelist.net. On ne touche JAMAIS au DOM MAL,
-on pose notre UI par-dessus (topbar, cards, panel Notes).
+Overlay visuel Apple par-dessus myanimelist.net. On ne touche JAMAIS aux
+conteneurs racine MAL (`#myanimelist`, `.wrapper`, `#contentWrapper`, `#content` :
+jamais masqués). En revanche on re-stylise le CSS MAL, on masque son chrome
+(header/nav/footer/pubs) et la vue profil DÉPLACE des nœuds MAL existants
+(avatar, statuts, stats, updates) dans notre mise en page — sans les dupliquer.
 
 ## Fichiers (un owner par fichier en parallèle)
 
@@ -20,6 +23,7 @@ on pose notre UI par-dessus (topbar, cards, panel Notes).
 - Contenu MAL : ne jamais masquer `#myanimelist`, `.wrapper`, `#contentWrapper`, `#content`.
 - Animations : que `transform` + `opacity` (compositor), `@media (prefers-reduced-motion: reduce)` obligatoire.
 - Spécificité CSS : préfixer par `html.mal-custom` (+ `body div#myanimelist` si MAL résiste).
+- Accessibilité : `:focus-visible` systématique, panneau `inert` + `Échap` + focus géré, topbar ré-affichée au focus.
 - Pas de `head`/`tail`/`sed` sous PowerShell Windows (utiliser `node -e`, `Select-Object`).
 - Avant chaque save mémoire : `ecc memory search` pour éviter les doublons.
 

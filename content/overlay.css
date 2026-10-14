@@ -42,34 +42,57 @@ html.mal-custom .widget-content {
   opacity: 1 !important;
 }
 
-/* Police Apple vraiment différente de Roboto MAL : SF système + graisses + features */
+/* Police Apple vraiment différente de Roboto MAL : SF système + graisses + features.
+   system-ui + Segoe UI : sans ça, Windows retombe sur Arial. */
 html.mal-custom, html.mal-custom body,
 html.mal-custom div, html.mal-custom p, html.mal-custom a,
-html.mal-custom li, html.mal-custom td, html.mal-custom span {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Inter, sans-serif !important;
+html.mal-custom li, html.mal-custom td, html.mal-custom span,
+html.mal-custom th, html.mal-custom h1, html.mal-custom h2,
+html.mal-custom h3, html.mal-custom h4, html.mal-custom h5,
+html.mal-custom h6, html.mal-custom label, html.mal-custom input,
+html.mal-custom button, html.mal-custom textarea {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, "Segoe UI", "Helvetica Neue", Inter, sans-serif !important;
   -webkit-font-smoothing: antialiased !important;
   text-rendering: optimizeLegibility !important;
   font-feature-settings: "ss01", "cv11" !important;
 }
-html.mal-custom body { font-size: 14.5px !important; }
+html.mal-custom body {
+  font-size: 14.5px !important;
+  /* Canevas Apple : sans ce fond, les cartes translucides n'ont rien à flouter */
+  background: var(--apl-bg) !important;
+}
 
-/* Contenu recentré façon Apple, le contenu scrolle SOUS la toolbar */
+/* Contenu recentré façon Apple, le contenu scrolle SOUS la toolbar.
+   Marge haute appliquée UNE fois (sur #content, l'élément le plus interne) :
+   ces wrappers sont imbriqués, marges cumulées = grand vide sinon.
+   display: flow-root (BFC sans overflow:hidden) : contient les floats
+   ET laisse position: sticky fonctionner sur .right-column. */
 html.mal-custom #myanimelist .wrapper,
 html.mal-custom .wrapper,
 html.mal-custom #wrapper,
 html.mal-custom #contentWrapper,
-html.mal-custom #main-content,
+html.mal-custom #main-content {
+  width: 100% !important;
+  max-width: 1400px !important;
+  margin: 0 auto !important;
+  padding: 0 22px !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  display: flow-root !important;
+}
 html.mal-custom #content {
   width: 100% !important;
   max-width: 1400px !important;
   margin: 62px auto 60px auto !important;
   padding: 0 22px !important;
+  box-sizing: border-box !important;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
   /* On garde le 2-colonnes naturel MAL (floats), pas de grid forcée qui écrase */
-  display: block !important;
-  overflow: hidden !important;
+  display: flow-root !important;
 }
 html.mal-custom .left-column {
   float: left !important;
@@ -316,6 +339,11 @@ html.mal-custom .widget img {
   display: block !important;
   opacity: 1 !important;
 }
+/* Vignettes d'épisodes en paysage : pas de 8/11 vertical qui les étire */
+html.mal-custom body div#myanimelist div#content #widget-episode-video li.btn-anime img {
+  aspect-ratio: 16 / 9 !important;
+  object-position: center !important;
+}
 /* Titre en légende sous l'image, plus en overlay qui coupe le visuel */
 html.mal-custom body div#myanimelist div#content li.btn-anime .title,
 html.mal-custom body div#myanimelist div#content li.btn-anime h3.h3_character_name {
@@ -364,12 +392,13 @@ html.mal-custom .btn-widget-slide-side { display: none !important; }
   /* Materialize, pas juste fade */
   animation: apl-material-in 320ms var(--apl-spring) backwards;
   transform-origin: top center;
-  /* Discrète : s'efface au scroll vers le bas, revient vers le haut */
-  transition: top 280ms var(--apl-spring);
+  /* Discrète : s'efface au scroll vers le bas, revient vers le haut.
+     transform (compositor), jamais top (layout). */
+  transition: transform 280ms var(--apl-spring);
 }
-#myapple-topbar.hidden { top: -70px; }
+#myapple-topbar.hidden { transform: translate(-50%, -80px); }
 @keyframes apl-material-in {
-  from { opacity: 0; transform: translateX(-50%) scale(.98); backdrop-filter: blur(0px); }
+  from { opacity: 0; transform: translateX(-50%) scale(.98); }
   to { opacity: 1; transform: translateX(-50%) scale(1); }
 }
 
@@ -380,8 +409,40 @@ html.mal-custom .btn-widget-slide-side { display: none !important; }
 #myapple-topbar .logo span { color: var(--apl-accent); }
 #myapple-topbar nav { display: flex; gap: 0; align-items: center; }
 #myapple-topbar nav a {
-  font-size: 12px; font-weight: 600; color: var(--apl-ink) !important;
-  text-decoration: none; padding: 6px 8px; border-radius: 8px; white-space: nowrap;
+  font-size: 12.5px; font-weight: 600; color: var(--apl-ink) !important;
+  text-decoration: none; padding: 7px 9px; border-radius: 8px; white-space: nowrap;
+}
+/* Burger : caché sur desktop, remplace les 7 menus sous 980px */
+#myapple-burger {
+  display: none;
+  border: 0; cursor: pointer; padding: 7px 10px; border-radius: 9px;
+  font-size: 14px; font-weight: 700; background: rgba(0,0,0,.05); color: var(--apl-ink);
+}
+@media (max-width: 980px) {
+  #myapple-topbar { flex-wrap: nowrap; }
+  #myapple-burger { display: block; }
+  #myapple-topbar nav {
+    display: none;
+    position: absolute; top: calc(100% + 8px); left: 0;
+    min-width: 220px; max-height: min(70vh, 420px); overflow-y: auto;
+    flex-direction: column; align-items: stretch; gap: 2px;
+    padding: 8px;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(0,0,0,.08); border-radius: 14px;
+    box-shadow: var(--apl-shadow-small);
+  }
+  html.mal-dark #myapple-topbar nav { background: rgba(28,28,30,.95); border-color: rgba(255,255,255,.12); }
+  #myapple-topbar.nav-open nav { display: flex; }
+  #myapple-topbar.nav-open nav .menu { width: 100%; }
+  #myapple-topbar.nav-open nav .menu > a { display: block; width: 100%; box-sizing: border-box; }
+  #myapple-topbar.nav-open nav .drop {
+    position: static; opacity: 1; visibility: visible; transform: none;
+    pointer-events: auto; box-shadow: none; max-height: none;
+    background: transparent; border: 0; padding: 0 0 4px 8px;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
 }
 /* Feedback sur pointer-down, pas au release */
 #myapple-topbar nav a:active, #myapple-topbar button:active, #myapple-fab:active {
@@ -422,11 +483,13 @@ html.mal-dark #myapple-topbar nav .drop { background: rgba(28,28,30,.92); border
   #myapple-topbar nav .drop { transition: opacity 120ms ease; transform: none; }
 }
 #myapple-topbar input {
-  border: 0; outline: 0; padding: 6px 10px; border-radius: 9px;
+  border: 0; outline: 0; padding: 7px 10px; border-radius: 9px;
   background: rgba(0,0,0,.055); font-size: 12.5px; font-family: inherit;
-  width: 130px;
+  /* Largeur FIXE : l'expansion au focus décalait toute la pilule sous le curseur */
+  width: 150px;
+  transition: background 160ms ease, box-shadow 160ms ease;
 }
-#myapple-topbar input:focus { width: 200px; }
+#myapple-topbar input:focus { width: 150px; background: rgba(0,0,0,.08); }
 #myapple-topbar button {
   border: 0; cursor: pointer; padding: 6px 9px; border-radius: 9px;
   font-weight: 700; font-size: 12px; background: #1d1d1f; color: #fff;
@@ -491,13 +554,17 @@ html.mal-dark #myapple-account a { background: rgba(255,255,255,.1); color: #fff
   box-shadow: var(--apl-shadow-big);
   padding: 18px;
   transform-origin: top right; /* ancré à la source */
-  /* État fermé : même trajectoire que l'ouverture */
+  /* État fermé : même trajectoire que l'ouverture, retiré du clavier
+     (visibility + inert côté JS, pas seulement opacity). */
   transform: translateX(24px) scale(.98);
-  opacity: 0; pointer-events: none;
-  transition: transform 340ms var(--apl-spring), opacity 240ms ease;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: transform 340ms var(--apl-spring), opacity 240ms ease,
+    visibility 0s linear 340ms;
 }
 #myapple-panel.open {
-  transform: none; opacity: 1; pointer-events: auto;
+  transform: none; opacity: 1; visibility: visible; pointer-events: auto;
+  transition: transform 340ms var(--apl-spring), opacity 240ms ease,
+    visibility 0s;
 }
 #myapple-panel h3 { margin: 0 0 4px 0; font-size: 17px; letter-spacing: -0.01em; }
 #myapple-panel .sub { font-size: 12.5px; color: var(--apl-muted); margin-bottom: 10px; }
@@ -508,6 +575,17 @@ html.mal-dark #myapple-account a { background: rgba(255,255,255,.1); color: #fff
   background: rgba(255,255,255,.9); resize: vertical;
 }
 #myapple-panel .row { display: flex; gap: 8px; margin-top: 12px; }
+#myapple-panel .apl-primary {
+  flex: 1; border: 0; padding: 11px; border-radius: 12px;
+  background: #0071e3; color: #fff; font-weight: 700; font-size: 13.5px;
+  cursor: pointer;
+}
+#myapple-panel .apl-secondary {
+  border: 0; padding: 11px 14px; border-radius: 12px;
+  background: rgba(0,0,0,.06); color: #1d1d1f; font-weight: 600; font-size: 13.5px;
+  cursor: pointer;
+}
+#myapple-status { font-size: 12px; margin-top: 8px; opacity: .65; min-height: 1em; }
 
 #myapple-fab {
   position: fixed; bottom: 18px; right: 18px; z-index: 999999;
@@ -518,11 +596,34 @@ html.mal-dark #myapple-account a { background: rgba(255,255,255,.1); color: #fff
 }
 
 /* Dark : matériau lourd, texte vibrancy (pas gris plat) */
+html.mal-dark { color-scheme: dark; }
 html.mal-dark, html.mal-dark body {
   --apl-bg: #000;
   --apl-card: rgba(28,28,30,.72);
   --apl-ink: #f5f5f7;
   background: #000 !important; color: #f5f5f7 !important;
+}
+/* MAL peint ses titres/paragraphes en sombre : on les remonte en clair */
+html.mal-dark h1, html.mal-dark h2, html.mal-dark h3,
+html.mal-dark h4, html.mal-dark h5, html.mal-dark h6,
+html.mal-dark p, html.mal-dark li, html.mal-dark td, html.mal-dark th {
+  color: #f5f5f7 !important;
+}
+/* Bordures/ombres noires invisibles sur fond noir → bordures claires */
+html.mal-dark .widget,
+html.mal-dark body div#myanimelist div#content li.btn-anime,
+html.mal-dark:root body div#myanimelist div#content .user-profile,
+html.mal-dark:root body div#myanimelist div#content .stats.anime,
+html.mal-dark:root body div#myanimelist div#content .stats.manga,
+html.mal-dark #myapple-profile .apl-card,
+html.mal-dark #myapple-profile .apl-hero {
+  border-color: rgba(255,255,255,.12) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.45) !important;
+}
+html.mal-dark body div#myanimelist div#contentWrapper > div:has(> h1.h1),
+html.mal-dark:root body div#myanimelist div#content ul.user-status,
+html.mal-dark #myapple-profile .statistics-updates {
+  border-color: rgba(255,255,255,.12) !important;
 }
 html.mal-dark #myapple-topbar {
   background: rgba(28,28,30,.62);
@@ -531,13 +632,17 @@ html.mal-dark #myapple-topbar {
 html.mal-dark #myapple-topbar nav a { color: #f5f5f7 !important; }
 html.mal-dark #myapple-topbar nav a:hover { background: rgba(255,255,255,.09); }
 html.mal-dark #myapple-topbar input { background: rgba(255,255,255,.1); color: #fff; }
+html.mal-dark #myapple-topbar input:focus { background: rgba(255,255,255,.14); }
 html.mal-dark #myapple-topbar button.ghost { background: rgba(255,255,255,.1); color: #fff; }
+html.mal-dark #myapple-burger { background: rgba(255,255,255,.1); color: #fff; }
 html.mal-dark #myapple-panel {
   background: rgba(28,28,30,.78); color: #fbfbfd;
   border-color: rgba(255,255,255,.12);
 }
 html.mal-dark #myapple-panel .sub { color: rgba(235,235,245,.7); font-weight: 500; letter-spacing: .01em; }
 html.mal-dark #myapple-panel textarea { background: rgba(255,255,255,.08); color: #fff; border-color: rgba(255,255,255,.14); }
+html.mal-dark #myapple-panel .apl-secondary { background: rgba(255,255,255,.14); color: #fff; }
+html.mal-dark #myapple-fab { background: #f5f5f7; color: #1d1d1f; }
 html.mal-dark a { color: #2997ff !important; }
 
 /* ===== 4. PROFIL : sidebar carte + stats en barres douces (DOM MAL intact) ===== */
@@ -685,7 +790,7 @@ html.mal-custom body div#myanimelist #myapple-profile .user-image img {
 }
 #myapple-profile .apl-online {
   font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
-  color: #1a7f37; background: rgba(46,160,67,.14);
+  color: #146c2e; background: rgba(46,160,67,.14);
   padding: 4px 10px; border-radius: 999px; white-space: nowrap;
 }
 html.mal-dark #myapple-profile .apl-online { color: #7ee787; background: rgba(126,231,135,.14); }
@@ -768,10 +873,34 @@ html.mal-custom:root body div#myanimelist #myapple-profile .stats.manga { margin
   #myapple-profile .apl-hero-side, #myapple-profile .apl-col-side { width: 100%; }
 }
 
-/* ===== 5. Accessibilité : équivalent doux, jamais rien de brutal ===== */
+/* ===== 6. Accessibilité : équivalent doux, jamais rien de brutal ===== */
+/* Focus clavier toujours visible (la topbar mettait outline: 0 sans remplacement) */
+#myapple-topbar a:focus-visible,
+#myapple-topbar button:focus-visible,
+#myapple-topbar input:focus-visible,
+#myapple-panel button:focus-visible,
+#myapple-panel textarea:focus-visible,
+#myapple-fab:focus-visible,
+#myapple-profile a.apl-btn:focus-visible {
+  outline: 2px solid var(--apl-accent) !important;
+  outline-offset: 2px;
+}
+html.mal-dark #myapple-topbar a:focus-visible,
+html.mal-dark #myapple-topbar button:focus-visible,
+html.mal-dark #myapple-topbar input:focus-visible,
+html.mal-dark #myapple-panel button:focus-visible,
+html.mal-dark #myapple-panel textarea:focus-visible,
+html.mal-dark #myapple-fab:focus-visible {
+  outline-color: #2997ff !important;
+}
 @media (prefers-reduced-motion: reduce) {
   #myapple-topbar, #myapple-panel, #myapple-scrim {
     animation: none !important; transition: opacity 200ms ease !important; transform: none !important;
+  }
+  html.mal-custom body div#myanimelist div#content li.btn-anime,
+  html.mal-custom body div#myanimelist div#content li.btn-anime:hover,
+  #myapple-profile a.apl-btn, #myapple-profile a.apl-btn:hover {
+    transition: none !important; transform: none !important;
   }
 }
 @media (prefers-reduced-transparency: reduce) {

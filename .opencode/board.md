@@ -18,7 +18,7 @@ Règles : 1 owner par carte, 1 writer par fichier, merge gate = `node --check` +
 - [ ] **panel-visual** — Vérifier sur `panel.php` connecté : pastille = vraie photo (pas logo),
   "My Panel" en bandeau large, "My Statistics" remonté (pas de trou).
   Merge gate: screenshot opérateur OK.
-- [ ] **profile-refonte** — Vérifier sur `/profile/itaminashi` : hero (avatar 132 + nom + pastille
+- [ ] **profile-refonte** — Vérifier sur `/profile/itaminashi` : hero (avatar 96 + nom + pastille
   En ligne + meta + pills), bio, stats, updates latérales FR, favoris, navigation.
   Ancien conteneur masqué, bandeau h1 masqué. Mémoires : `mem_20261014_7df6c2...`, `mem_20261014_15e1136...`.
   Merge gate: screenshot opérateur OK.
@@ -26,7 +26,15 @@ Règles : 1 owner par carte, 1 writer par fichier, merge gate = `node --check` +
 ## Backlog (prochaines cartes)
 
 - [ ] **notes-ux** — Panel Notes : retouche UX (état vide, autosave ?). Scope: `content/content.js` (panel), CSS panel.
-- [ ] **responsive-bar** — Topbar 7 menus sur petit écran (overflow horizontal propre). Scope: `content/overlay.css` nav.
+- [x] **responsive-bar** — Topbar repliée en burger ☰ sous 980px, menus en panneau
+  vertical, recherche à largeur fixe (plus de décalage au focus).
+  Owner: opencode. Gate: syntaxe OK, à valider visuellement.
+- [x] **audit-fixes-20261014** — Icônes 1×1 remplacées, dark `false` partout +
+  `onInstalled` non destructif, fond `--apl-bg`, pile police Windows
+  (system-ui/Segoe UI), dark complet (bordures/ombres/boutons/FAB), `:focus-visible`,
+  panneau `inert` + Échap + focus géré, topbar en `transform`, aspect 16/9 épisodes,
+  badge En ligne AA, popup suit le thème + switches iOS + apply immédiat.
+  Owner: opencode. Gate: `node --check` OK, à valider visuellement.
 - [ ] **touch-menus** — Dropdowns au tap (mobile) en plus du hover. Scope: `content/content.js` + CSS.
 - [ ] **jikan-panel** — Top airing via API Jikan dans le panneau. Scope: nouveau module, voir README.
 - [ ] **memory-review** — Relire/promouvoir les 4 mémoires `team` (statut `unreviewed`).

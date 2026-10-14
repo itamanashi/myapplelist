@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "MyAppleList — visuel custom par-dessus MAL",
+  "name": "MyAppleList — visuel custom (overlay)",
   "version": "0.1.0",
-  "description": "Pose notre propre visuel par-dessus MyAnimeList : topbar épurée, cards modernes, dark mode, notes perso.",
+  "description": "Pose notre propre visuel par-dessus les pages MyAnimeList : topbar épurée, cards modernes, dark mode, notes perso.",
   "permissions": ["storage"],
   "host_permissions": ["https://myanimelist.net/*"],
   "background": {

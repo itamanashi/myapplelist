@@ -21,20 +21,8 @@
     document.documentElement.classList.toggle("mal-dark", s.dark);
   }
 
-  // Spring JS interruptible : on repart toujours de la valeur live (presentation value),
-  // on ne lock jamais l'input pendant la transition.
-  function springTo(el, target, { bounce = 0, duration = 340 } = {}) {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      el.style.transform = `translateY(${target}px)`;
-      return;
-    }
-    const start = el.getBoundingClientRect().top + window.scrollY || 0;
-    void start;
-    el.animate(
-      [{ transform: getComputedStyle(el).transform }, { transform: `translateY(${target}px)` }],
-      { duration, easing: bounce > 0 ? "cubic-bezier(.32,1.15,.35,1)" : "cubic-bezier(.32,.72,.35,1)", fill: "none" }
-    );
-  }
+  // Animations : 100 % CSS (transform + opacity, compositor only).
+  // Pas de spring JS : il doublait la transition CSS et calculait une valeur morte.
 
   // Profil MAL : on ne cherche QUE dans le header (pas dans les news, sinon on attrape un auteur).
   // Connecté : le header n'a PAS de lien /profile/ direct — juste un toggle
@@ -118,9 +106,11 @@
     const bar = document.createElement("div");
     bar.id = "myapple-topbar";
     bar.setAttribute("role", "navigation");
+    bar.setAttribute("aria-label", "Navigation MyAppleList");
     bar.innerHTML = `
-      <div class="logo">myapple<span>list</span></div>
-      <nav>
+      <div class="logo" aria-hidden="true">myapple<span>list</span></div>
+      <button id="myapple-burger" aria-expanded="false" aria-controls="myapple-nav" aria-label="Menu">☰</button>
+      <nav id="myapple-nav" aria-label="Sections MyAnimeList">
         <div class="menu"><a href="https://myanimelist.net/anime.php">Anime</a><div class="drop">
           <a href="https://myanimelist.net/anime.php">Anime Search</a>
           <a href="https://myanimelist.net/topanime.php">Top Anime</a>
@@ -168,6 +158,12 @@
     `;
     document.body.appendChild(bar);
     enhanceAvatar(bar.querySelector("#myapple-avatar"), bar.querySelector(".avatar-fallback"), prof);
+    // Burger : replie les 7 menus en un panneau vertical sous 900px
+    const burger = bar.querySelector("#myapple-burger");
+    burger.addEventListener("click", () => {
+      const open = bar.classList.toggle("nav-open");
+      burger.setAttribute("aria-expanded", String(open));
+    });
     // Feedback instantané sur pointerdown, pas au click
     bar.addEventListener("pointerdown", (e) => {
       const b = e.target.closest("button, a");
@@ -192,23 +188,26 @@
     if (document.getElementById("myapple-panel")) return;
     const scrim = document.createElement("div");
     scrim.id = "myapple-scrim";
-    scrim.onclick = async () => { await setState({ panelOpen: false }); togglePanel(false); };
+    scrim.onclick = async () => { await setState({ panelOpen: false }); togglePanel(false, true); };
     const p = document.createElement("div");
     p.id = "myapple-panel";
     p.setAttribute("role", "dialog");
+    p.setAttribute("aria-modal", "true");
+    p.setAttribute("aria-label", "Notes personnelles");
+    p.setAttribute("aria-hidden", "true");
+    p.inert = true;
     p.innerHTML = `
       <h3>Notes</h3>
       <div class="sub">${location.pathname} · stocké en local</div>
-      <textarea id="myapple-note" placeholder="Où je me suis arrêté, mon avis…"></textarea>
+      <textarea id="myapple-note" placeholder="Où je me suis arrêté, mon avis…" aria-label="Note pour cette page"></textarea>
       <div class="row">
-        <button id="myapple-save" style="flex:1;border:0;padding:11px;border-radius:12px;background:#0071e3;color:#fff;font-weight:700;cursor:pointer">Sauver</button>
-        <button id="myapple-close" style="border:0;padding:11px;border-radius:12px;background:rgba(0,0,0,.06);cursor:pointer">Fermer</button>
+        <button id="myapple-save" class="apl-primary">Sauver</button>
+        <button id="myapple-close" class="apl-secondary">Fermer</button>
       </div>
-      <div id="myapple-status" style="font-size:12px;margin-top:8px;opacity:.65"></div>
+      <div id="myapple-status" role="status" aria-live="polite"></div>
     `;
-    document.body.append(scimFix(scrim), p);
-    function scimFix(el) { return el; }
-    p.querySelector("#myapple-close").onclick = async () => { await setState({ panelOpen: false }); togglePanel(false); };
+    document.body.append(scrim, p);
+    p.querySelector("#myapple-close").onclick = async () => { await setState({ panelOpen: false }); togglePanel(false, true); };
     p.querySelector("#myapple-save").onclick = async () => {
       const v = p.querySelector("#myapple-note").value;
       await chrome.storage.local.set({ [NOTE_KEY()]: { text: v, at: Date.now() } });
@@ -217,12 +216,31 @@
     chrome.storage.local.get(NOTE_KEY()).then((r) => {
       if (r[NOTE_KEY()]?.text) p.querySelector("#myapple-note").value = r[NOTE_KEY()].text;
     });
+    // Échap ferme le panneau et rend le focus au FAB
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && p.classList.contains("open")) {
+        setState({ panelOpen: false });
+        togglePanel(false, true);
+      }
+    });
   }
 
-  function togglePanel(open) {
-    document.getElementById("myapple-panel")?.classList.toggle("open", open);
-    document.getElementById("myapple-scrim")?.classList.toggle("open", open);
-    if (open) springTo(document.getElementById("myapple-panel"), 0, { duration: 340 });
+  let lastFabFocus = false;
+  function togglePanel(open, returnFocus = false) {
+    const p = document.getElementById("myapple-panel");
+    const scrim = document.getElementById("myapple-scrim");
+    p?.classList.toggle("open", open);
+    scrim?.classList.toggle("open", open);
+    if (!p) return;
+    p.setAttribute("aria-hidden", String(!open));
+    p.inert = !open;
+    if (open) {
+      lastFabFocus = document.activeElement?.id === "myapple-fab";
+      p.querySelector("#myapple-note")?.focus({ preventScroll: true });
+    } else if (returnFocus || lastFabFocus) {
+      document.getElementById("myapple-fab")?.focus({ preventScroll: true });
+      lastFabFocus = false;
+    }
   }
 
   function buildFab() {
@@ -400,6 +418,8 @@
   function autoHideBar() {
     const bar = document.getElementById("myapple-topbar");
     if (!bar || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Le clavier ne doit jamais perdre la topbar : le focus la ré-affiche.
+    bar.addEventListener("focusin", () => bar.classList.remove("hidden"));
     let last = window.scrollY, ticking = false;
     window.addEventListener("scroll", () => {
       if (ticking) return;
