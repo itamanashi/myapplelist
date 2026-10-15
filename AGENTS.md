@@ -43,6 +43,9 @@ jamais masqués). En revanche on re-stylise le CSS MAL, on masque son chrome
   Jamais de retry auto sur une écriture (un retry = un +1 en double). Contrat prouvé live
   2026-10-15 (200 `null` = OK, 400 `{errors}` = refus). Après succès : `dropCacheFor(kind, user)`
   puis update optimiste ciblé (`refreshItem` + `updateCountsUI`, jamais de full re-render).
+  Concurrence : les pages `load.json` qui arrivent APRÈS un +1 optimiste écrasent la
+  mutation locale (race prouvée live 2026-10-15) → `updateData` DOIT réappliquer les
+  entrées `dirty` et les oublier à convergence serveur.
 - Accessibilité : `:focus-visible` systématique, topbar ré-affichée au focus.
 - Pas de `head`/`tail`/`sed` sous PowerShell Windows (utiliser `node -e`, `Select-Object`).
 - Avant chaque save mémoire : `ecc memory search` pour éviter les doublons.

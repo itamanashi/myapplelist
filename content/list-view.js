@@ -56,6 +56,7 @@ class ListView {
     this.needsRefreshOnFocus = false;
     this.pending = new Set(); // ids en cours d'écriture (une écriture à la fois par entrée)
     this.toastTimer = null;
+    this.dirty = new Map(); // id -> {fait, note, statut} : mutations optimistic pas encore absorbées par le serveur
 
     // Détection de retour sur l'onglet après modification sur MAL
     root.addEventListener("focus", () => {
@@ -140,12 +141,31 @@ class ListView {
 
   updateData(items, isComplete) {
     this.items = items;
+    this.absorbDirty();
     this.computeStats();
     this.applyFilters();
     this.renderFull();
     if (!isComplete) {
       const badge = this.container.querySelector(".apl-loading-badge");
       if (badge) badge.style.display = "inline-flex";
+    }
+  }
+
+  // Les pages load.json qui arrivent APRÈS un +1/score optimiste contiennent encore
+  // les anciennes valeurs serveur : on réapplique les mutations locales par-dessus.
+  // Une entrée est oubliée dès que le serveur la reflète (convergence).
+  absorbDirty() {
+    if (!this.dirty.size) return;
+    for (const [id, p] of this.dirty) {
+      const it = this.items.find((x) => x.id === id);
+      if (!it) continue;
+      if (it.progression.fait === p.fait && it.note === p.note && it.statut === p.statut) {
+        this.dirty.delete(id);
+      } else {
+        it.progression.fait = p.fait;
+        it.note = p.note;
+        it.statut = p.statut;
+      }
     }
   }
 
@@ -884,6 +904,7 @@ class ListView {
     if (patch.fait != null) item.progression.fait = patch.fait;
     if (patch.note != null) item.note = patch.note;
     if (patch.statut != null) item.statut = patch.statut;
+    this.dirty.set(item.id, { fait: item.progression.fait, note: item.note, statut: item.statut });
     this.computeStats();
     this.updateCountsUI();
     // Changement de statut sous un filtre de statut actif (succès comme rollback) :
