@@ -1815,14 +1815,42 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   position: relative;
   width: 100%;
   aspect-ratio: 2 / 3;
-  background: var(--apl-surface);
+  background: var(--apl-surface-hover);
   overflow: hidden;
+  border-radius: 12px 12px 0 0;
 }
 .apl-poster-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 320ms var(--apl-spring), opacity 240ms ease;
+  opacity: 0;
+}
+.apl-poster-thumb img.loaded {
+  opacity: 1;
+}
+.apl-poster-card:hover .apl-poster-thumb img {
+  transform: scale(1.05);
+}
+/* Placeholder texturé pendant le chargement */
+.apl-poster-thumb::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(135deg, var(--apl-surface) 25%, transparent 25%),
+    linear-gradient(225deg, var(--apl-surface) 25%, transparent 25%),
+    linear-gradient(45deg, var(--apl-surface) 25%, transparent 25%),
+    linear-gradient(315deg, var(--apl-surface) 25%, var(--apl-surface-hover) 25%);
+  background-position: 0 0, 10px 0, 10px -10px, 0px 10px;
+  background-size: 20px 20px;
+  opacity: 0.3;
+  z-index: 0;
+}
+.apl-poster-thumb img {
+  position: relative;
+  z-index: 1;
 }
 
 /* Badge note : pastille sombre compacte, chiffres tabulaires */
@@ -1865,6 +1893,43 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   box-shadow: 0 0 0 2px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.5);
   z-index: 2;
 }
+
+/* Boutons d'action sur les cartes (edit + delete) */
+.apl-card-actions {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.apl-poster-card:hover .apl-card-actions,
+.apl-poster-card:focus-within .apl-card-actions {
+  opacity: 1;
+}
+.apl-card-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid rgba(0,0,0,.45);
+  background: rgba(0,0,0,.72);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 140ms, transform 160ms var(--apl-spring);
+}
+.apl-card-action-btn:hover {
+  background: rgba(0,0,0,.85);
+  transform: scale(1.08);
+}
+.apl-card-action-btn.edit-btn { border-color: var(--apl-accent); }
+.apl-card-action-btn.delete-btn { border-color: var(--apl-st-4); }
+.apl-card-action-btn.delete-btn:hover { background: var(--apl-st-4); }
 
 /* Progression : rail fin, remplissage à la couleur du statut (classe st-N portée par la carte) */
 .apl-card-progress {
@@ -1993,6 +2058,14 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   border-radius: 6px;
   display: block;
   border: 1px solid var(--apl-border);
+  transition: transform 320ms var(--apl-spring), opacity 240ms ease;
+  opacity: 0;
+}
+.apl-table td.td-img img.loaded {
+  opacity: 1;
+}
+.apl-table-row:hover .apl-table td.td-img img {
+  transform: scale(1.08);
 }
 .apl-title-text {
   font-weight: 650;
@@ -2031,6 +2104,43 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+/* Actions sur le tableau */
+.apl-table td.td-actions {
+  text-align: right;
+  white-space: nowrap;
+  width: 90px;
+}
+.apl-table-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+.apl-table-action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--apl-border);
+  background: var(--apl-surface);
+  color: var(--apl-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 140ms, color 140ms, border-color 140ms;
+}
+.apl-table-action-btn:hover {
+  background: var(--apl-surface-hover);
+  color: var(--apl-ink);
+  border-color: var(--apl-border-strong);
+}
+.apl-table-action-btn.edit-btn:hover {
+  border-color: var(--apl-accent);
+  color: var(--apl-accent);
+}
+.apl-table-action-btn.delete-btn:hover {
+  border-color: var(--apl-st-4);
+  color: var(--apl-st-4);
 }
 .apl-table-score {
   display: inline-flex;
@@ -2297,6 +2407,238 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   gap: 8px;
   margin-top: 20px;
   flex-wrap: wrap;
+}
+
+/* ===== Edit Modal / Drawer ===== */
+.apl-edit-modal-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 999998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.apl-edit-modal-scrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.apl-edit-drawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: min(480px, 90vw);
+  background: var(--apl-card);
+  border-left: 1px solid var(--apl-border-strong);
+  box-shadow: var(--apl-shadow-big);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  z-index: 999999;
+  transform: translateX(100%);
+  transition: transform 280ms var(--apl-spring);
+  display: flex;
+  flex-direction: column;
+}
+.apl-edit-drawer.open {
+  transform: translateX(0);
+}
+.apl-edit-header {
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--apl-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.apl-edit-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--apl-ink);
+  letter-spacing: -0.015em;
+}
+.apl-edit-close {
+  border: 1px solid var(--apl-border);
+  background: var(--apl-surface);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--apl-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 140ms, color 140ms;
+}
+.apl-edit-close:hover {
+  background: var(--apl-surface-hover);
+  color: var(--apl-ink);
+}
+.apl-edit-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 22px;
+}
+.apl-edit-section {
+  margin-bottom: 20px;
+}
+.apl-edit-section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-weight: 700;
+  color: var(--apl-muted);
+  margin-bottom: 10px;
+}
+.apl-edit-field {
+  margin-bottom: 14px;
+}
+.apl-edit-field label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--apl-ink);
+  margin-bottom: 5px;
+}
+.apl-edit-field input,
+.apl-edit-field select,
+.apl-edit-field textarea {
+  width: 100%;
+  border: 1px solid var(--apl-border);
+  background: var(--apl-surface);
+  border-radius: var(--apl-radius-s);
+  padding: 8px 11px;
+  font-size: 13px;
+  color: var(--apl-ink);
+  outline: 0;
+  transition: border-color 140ms, box-shadow 140ms;
+  font-family: inherit;
+}
+.apl-edit-field input:focus,
+.apl-edit-field select:focus,
+.apl-edit-field textarea:focus {
+  border-color: var(--apl-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--apl-accent) 22%, transparent);
+}
+.apl-edit-field textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+.apl-edit-row {
+  display: flex;
+  gap: 10px;
+}
+.apl-edit-row .apl-edit-field {
+  flex: 1;
+}
+.apl-edit-footer {
+  padding: 16px 22px;
+  border-top: 1px solid var(--apl-border);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.apl-edit-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--apl-border);
+  border-top-color: var(--apl-accent);
+  border-radius: 50%;
+  animation: apl-spin 600ms linear infinite;
+  margin-right: 8px;
+}
+
+/* ===== Delete Confirmation Modal ===== */
+.apl-confirm-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 999998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.apl-confirm-scrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.apl-confirm-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -46%) scale(.97);
+  z-index: 999999;
+  width: 92%;
+  max-width: 420px;
+  background: var(--apl-card);
+  border: 1px solid var(--apl-border-strong);
+  border-radius: var(--apl-radius-m);
+  box-shadow: var(--apl-shadow-big);
+  padding: 22px 24px;
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 220ms var(--apl-spring), opacity 200ms ease;
+}
+.apl-confirm-dialog.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+.apl-confirm-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--apl-ink);
+  letter-spacing: -0.015em;
+}
+.apl-confirm-message {
+  font-size: 13px;
+  color: var(--apl-muted);
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+.apl-confirm-item {
+  background: var(--apl-surface);
+  border: 1px solid var(--apl-border);
+  border-radius: var(--apl-radius-s);
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.apl-confirm-item img {
+  width: 38px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.apl-confirm-item-title {
+  font-weight: 650;
+  font-size: 13px;
+  color: var(--apl-ink);
+}
+.apl-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.apl-btn-danger {
+  background: var(--apl-st-4) !important;
+  color: #fff !important;
+  border-color: var(--apl-st-4) !important;
+}
+.apl-btn-danger:hover {
+  opacity: .9;
 }
 .apl-btn {
   display: inline-flex;

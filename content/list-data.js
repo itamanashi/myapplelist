@@ -117,10 +117,13 @@ function normalizeAnime(r) {
     saison: seasonOf(r.anime_season),
     genres: namedList(r.genres), demographics: namedList(r.demographics), studios: namedList(r.anime_studios),
     tags: tagList(r.tags), notes: str(r.notes) ?? "", priorite: str(r.priority_string),
+    prioriteNum: r.priority != null && r.priority !== "" ? num(r.priority, null) : null,
     debutVu: isoPartial(parseDMY(r.start_date_string)), finVu: isoPartial(parseDMY(r.finish_date_string)),
     majLe: toMs(r.updated_at) ?? toMs(r.created_at), majLeSource: "updated", createdAt: toMs(r.created_at),
     popularite: pos(r.anime_popularity), scoreMal: pos(r.anime_score_val), members: pos(r.anime_total_members),
     isRewatch: !!r.is_rewatching,
+    rewatches: num(r.num_times_rewatched, 0),
+    rewatchValue: num(r.rewatch_value, 0),
     airingOrPublishing: DIFFUSION.anime[r.anime_airing_status] ?? null,
   };
 }
@@ -141,10 +144,13 @@ function normalizeManga(r) {
     saison: null,
     genres: namedList(r.genres), demographics: namedList(r.demographics), studios: namedList(r.manga_magazines),
     tags: tagList(r.tags), notes: str(r.notes) ?? "", priorite: str(r.priority_string),
+    prioriteNum: r.priority != null && r.priority !== "" ? num(r.priority, null) : null,
     debutVu: isoPartial(parseDMY(r.start_date_string)), finVu: isoPartial(parseDMY(r.finish_date_string)),
     majLe: toMs(r.created_at), majLeSource: "created", createdAt: toMs(r.created_at),
     popularite: pos(r.manga_popularity), scoreMal: pos(r.manga_score_val), members: pos(r.manga_total_members),
     isRewatch: !!r.is_rereading,
+    rewatches: num(r.num_times_reread ?? r.num_times_rewatched, 0),
+    rewatchValue: num(r.reread_value ?? r.rewatch_value, 0),
     airingOrPublishing: DIFFUSION.manga[r.manga_publishing_status] ?? null,
   };
 }
@@ -357,24 +363,59 @@ function canQuickPlus(item) {
   return item.statut !== 2;
 }
 // N'envoie que les champs fournis (+ id et csrf) : on n'écrase jamais le reste.
+// Champs étendus (éditeur intégré) : dates ISO "YYYY-MM-DD" (ou partiels),
+// rewatch/reread, priorité 0-2, notes/tags. Les clés inconnues de MAL sont
+// simplement ignorées côté serveur : on envoie les variantes snake_case
+// reconnues par le bundle MAL (edit.json) et l'API v2 (comments/tags).
 function buildUpdatePayload(kind, id, f, csrf) {
   const int0 = (v) => Math.max(0, Math.trunc(v));
+  const dateStr = (v) => {
+    if (v == null || v === "") return null;
+    const s = String(v).trim();
+    return /^\d{4}(-\d{2}(-\d{2})?)?$/.test(s) ? s : null;
+  };
+  const tagsStr = (v) => Array.isArray(v) ? v.join(", ") : (v != null ? String(v) : null);
   if (kind === "manga") {
     const p = { manga_id: parseInt(id, 10), csrf_token: csrf };
     if (f.status != null) p.status = parseInt(f.status, 10);
     if (f.score != null) p.score = clampScore(f.score);
     if (f.chapters != null) p.num_read_chapters = int0(f.chapters);
     if (f.volumes != null) p.num_read_volumes = int0(f.volumes);
+    if (f.isRereading != null) { p.is_rereading = f.isRereading ? 1 : 0; }
+    else if (f.isRewatching != null) { p.is_rereading = f.isRewatching ? 1 : 0; }
+    if (f.rewatches != null) { p.num_times_reread = int0(f.rewatches); p.num_times_rewatched = int0(f.rewatches); }
+    if (f.rewatchValue != null) { p.reread_value = int0(f.rewatchValue); p.rewatch_value = int0(f.rewatchValue); }
+    const sd = dateStr(f.startDate); if (sd) p.start_date = sd;
+    const fd = dateStr(f.finishDate); if (fd) p.finish_date = fd;
+    if (f.priority != null && f.priority !== "") p.priority = Math.max(0, Math.min(2, parseInt(f.priority, 10) || 0));
+    const tg = tagsStr(f.tags); if (tg != null) p.tags = tg;
+    if (f.notes != null || f.comments != null) {
+      const c = f.notes ?? f.comments ?? "";
+      p.notes = String(c); p.comments = String(c);
+    }
     return p;
   }
   const p = { anime_id: parseInt(id, 10), csrf_token: csrf };
   if (f.status != null) p.status = parseInt(f.status, 10);
   if (f.score != null) p.score = clampScore(f.score);
   if (f.episodes != null) p.num_watched_episodes = int0(f.episodes);
+  if (f.isRewatching != null) { p.is_rewatching = f.isRewatching ? 1 : 0; }
+  else if (f.isRereading != null) { p.is_rewatching = f.isRereading ? 1 : 0; }
+  if (f.rewatches != null) p.num_times_rewatched = int0(f.rewatches);
+  if (f.rewatchValue != null) p.rewatch_value = int0(f.rewatchValue);
+  const sd = dateStr(f.startDate); if (sd) p.start_date = sd;
+  const fd = dateStr(f.finishDate); if (fd) p.finish_date = fd;
+  if (f.priority != null && f.priority !== "") p.priority = Math.max(0, Math.min(2, parseInt(f.priority, 10) || 0));
+  const tg = tagsStr(f.tags); if (tg != null) p.tags = tg;
+  if (f.notes != null || f.comments != null) {
+    const c = f.notes ?? f.comments ?? "";
+    p.notes = String(c); p.comments = String(c);
+  }
   return p;
 }
 
-// opts : { kind, id, fields:{status?,score?,episodes?,chapters?,volumes?},
+// opts : { kind, id, fields:{status?,score?,episodes?,chapters?,volumes?,startDate?,finishDate?,
+//          isRewatching?,isRereading?,rewatches?,rewatchValue?,priority?,notes?,comments?,tags?},
 //          doc?, fetch?, signal?, timeoutMs? }  (doc/fetch : tests)
 // Succès -> { ok:true, data }. Échec -> throw code "csrf"|"auth"|"mal"|"http"|"network"|"aborted".
 async function updateEntry({ kind, id, fields = {} }, opts = {}) {
@@ -412,6 +453,48 @@ async function updateEntry({ kind, id, fields = {} }, opts = {}) {
   }
 }
 
+// Suppression d'entrée (contrat web MAL : POST /ownlist/{kind}/{id}/delete,
+// utilisé par les userscripts de purge ; edit.json = écriture, delete = retrait).
+// Envoie le csrf_token en JSON (cohérent avec updateEntry) ; MAL l'ignore s'il
+// n'en a pas besoin. 200/204/302 = OK. 401/403 -> "auth". 404 -> "mal" (déjà absent).
+// Jamais de retry auto (comme les écritures). Aucun rendu ici.
+async function deleteEntry({ kind, id }, opts = {}) {
+  if (kind !== "anime" && kind !== "manga") throw err("context", "kind inconnu", true);
+  const doc = opts.doc !== undefined ? opts.doc : (typeof document !== "undefined" ? document : null);
+  const csrf = readCsrfToken(doc);
+  if (!csrf) throw err("csrf", "jeton CSRF introuvable (recharge la page)", true);
+  const fetchImpl = opts.fetch || ((...a) => root.fetch(...a));
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 15000);
+  const onAbort = () => ctrl.abort();
+  opts.signal?.addEventListener?.("abort", onAbort);
+  try {
+    const idKey = kind === "manga" ? "manga_id" : "anime_id";
+    const r = await fetchImpl(`https://myanimelist.net/ownlist/${kind}/${parseInt(id, 10)}/delete`, {
+      method: "POST",
+      credentials: "include",
+      signal: opts.signal ?? ctrl.signal,
+      headers: { "Content-Type": "application/json; charset=UTF-8", Accept: "application/json" },
+      body: JSON.stringify({ [idKey]: parseInt(id, 10), csrf_token: csrf }),
+    });
+    if (r.status === 401 || r.status === 403) throw err("auth", "session expirée, reconnecte-toi", true);
+    if (r.status === 404) throw err("mal", "entrée déjà absente de la liste", true);
+    let data = null;
+    try { data = await r.json(); } catch { data = null; }
+    if (!r.ok) {
+      const msg = data?.errors?.[0]?.message || `HTTP ${r.status}`;
+      throw err(r.status === 400 ? "mal" : "http", msg, true);
+    }
+    return { ok: true, data };
+  } catch (e) {
+    if (e?.name === "AbortError") throw err("aborted", "délai dépassé", true);
+    throw e?.code ? e : err("network", e?.message || "réseau", true);
+  } finally {
+    clearTimeout(timer);
+    opts.signal?.removeEventListener?.("abort", onAbort);
+  }
+}
+
 // Invalide le cache d'une liste après écriture (best-effort : le prochain load refetch).
 async function dropCacheFor(kind, user) {
   const s = store(); if (!s || !s.remove) return;
@@ -426,6 +509,6 @@ async function dropCacheFor(kind, user) {
 root.__myappleList = {
   SCHEMA_V, STATUT, statutLabel, loadList, readInitial, normalizeItem, normalizeAnime, normalizeManga,
   fixImg, parseDMY, isoPartial, toMs, formatProgression, progressPct, kindFromPath, clearCache,
-  readCsrfToken, clampScore, nextProgress, canQuickPlus, buildUpdatePayload, updateEntry, dropCacheFor,
+  readCsrfToken, clampScore, nextProgress, canQuickPlus, buildUpdatePayload, updateEntry, deleteEntry, dropCacheFor,
 };
 })();

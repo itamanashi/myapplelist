@@ -165,14 +165,58 @@ class ListView {
     for (const [id, p] of this.dirty) {
       const it = this.items.find((x) => x.id === id);
       if (!it) continue;
-      if (it.progression.fait === p.fait && it.note === p.note && it.statut === p.statut) {
+      const cur = this.dirtySnapshot(it);
+      if (this.sameSnapshot(cur, p)) {
         this.dirty.delete(id);
       } else {
-        it.progression.fait = p.fait;
-        it.note = p.note;
-        it.statut = p.statut;
+        this.applySnapshot(it, p);
       }
     }
+  }
+
+  // Photo complète des champs éditables (optimiste) pour convergence/rollback.
+  dirtySnapshot(it) {
+    return {
+      fait: it.progression.fait,
+      volumesFait: it.progression.volumesFait ?? null,
+      note: it.note,
+      statut: it.statut,
+      debutVu: it.debutVu ?? null,
+      finVu: it.finVu ?? null,
+      notes: it.notes ?? "",
+      prioriteNum: it.prioriteNum ?? null,
+      rewatches: it.rewatches ?? 0,
+      isRewatch: !!it.isRewatch,
+      tags: [...(it.tags || [])],
+    };
+  }
+
+  sameSnapshot(a, b) {
+    return a.fait === b.fait
+      && (a.volumesFait ?? null) === (b.volumesFait ?? null)
+      && a.note === b.note
+      && a.statut === b.statut
+      && (a.debutVu ?? null) === (b.debutVu ?? null)
+      && (a.finVu ?? null) === (b.finVu ?? null)
+      && (a.notes ?? "") === (b.notes ?? "")
+      && (a.prioriteNum ?? null) === (b.prioriteNum ?? null)
+      && (a.rewatches ?? 0) === (b.rewatches ?? 0)
+      && !!a.isRewatch === !!b.isRewatch
+      && (a.tags || []).join("\u0001") === (b.tags || []).join("\u0001");
+  }
+
+  applySnapshot(it, p) {
+    it.progression.fait = p.fait;
+    if (p.volumesFait !== undefined) it.progression.volumesFait = p.volumesFait;
+    it.note = p.note;
+    it.statut = p.statut;
+    if (p.debutVu !== undefined) it.debutVu = p.debutVu;
+    if (p.finVu !== undefined) it.finVu = p.finVu;
+    if (p.notes !== undefined) it.notes = p.notes;
+    if (p.prioriteNum !== undefined) it.prioriteNum = p.prioriteNum;
+    if (p.rewatches !== undefined) it.rewatches = p.rewatches;
+    if (p.isRewatch !== undefined) it.isRewatch = p.isRewatch;
+    if (p.tags !== undefined) it.tags = [...p.tags];
   }
 
   computeStats() {
@@ -591,6 +635,7 @@ class ListView {
               <th class="th-type">Format</th>
               <th class="th-status">Statut</th>
               <th class="th-mal">Score MAL</th>
+              ${this.canEdit() ? '<th class="th-actions">Actions</th>' : ''}
             </tr>
           </thead>
           <tbody></tbody>
@@ -643,6 +688,8 @@ class ListView {
     img.src = item.img || "https://cdn.myanimelist.net/images/qm_50.gif";
     img.alt = "";
     img.loading = "lazy";
+    img.onload = () => img.classList.add("loaded");
+    if (img.complete) img.classList.add("loaded");
 
     // Badge Note (bouton d'édition rapide sur sa propre liste, simple pastille sinon)
     poster.appendChild(this.scoreBadgeNode(item));
@@ -650,6 +697,28 @@ class ListView {
     // Pastille Statut
     const statusDot = el("span", `apl-status-dot st-${item.statut}`, poster);
     statusDot.title = statusText;
+
+    // Boutons d'action (edit + delete) - seulement sur sa propre liste
+    if (this.canEdit()) {
+      const actions = el("div", "apl-card-actions", poster);
+      const editBtn = el("button", "apl-card-action-btn edit-btn", actions, "✎");
+      editBtn.type = "button";
+      editBtn.title = "Modifier cette entrée";
+      editBtn.setAttribute("aria-label", `Modifier ${item.titre}`);
+      editBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.openEditModal(item);
+      });
+
+      const deleteBtn = el("button", "apl-card-action-btn delete-btn", actions, "🗑");
+      deleteBtn.type = "button";
+      deleteBtn.title = "Supprimer de la liste";
+      deleteBtn.setAttribute("aria-label", `Supprimer ${item.titre} de la liste`);
+      deleteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.openDeleteConfirm(item);
+      });
+    }
 
     // Barre de progression au bas de l'affiche
     if (progressPct > 0) {
@@ -714,6 +783,8 @@ class ListView {
     im.src = item.img || "https://cdn.myanimelist.net/images/qm_50.gif";
     im.alt = "";
     im.loading = "lazy";
+    im.onload = () => im.classList.add("loaded");
+    if (im.complete) im.classList.add("loaded");
 
     // 2. Titre & Genres
     const tdTitle = el("td", "td-title", tr);
@@ -772,6 +843,29 @@ class ListView {
     // 7. MAL Score
     const tdMal = el("td", "td-mal", tr);
     tdMal.textContent = item.scoreMal ? item.scoreMal.toFixed(2) : "—";
+
+    // 8. Actions (edit + delete) - seulement sur sa propre liste
+    if (this.canEdit()) {
+      const tdActions = el("td", "td-actions", tr);
+      const actions = el("div", "apl-table-actions", tdActions);
+      const editBtn = el("button", "apl-table-action-btn edit-btn", actions, "✎");
+      editBtn.type = "button";
+      editBtn.title = "Modifier cette entrée";
+      editBtn.setAttribute("aria-label", `Modifier ${item.titre}`);
+      editBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.openEditModal(item);
+      });
+
+      const deleteBtn = el("button", "apl-table-action-btn delete-btn", actions, "🗑");
+      deleteBtn.type = "button";
+      deleteBtn.title = "Supprimer de la liste";
+      deleteBtn.setAttribute("aria-label", `Supprimer ${item.titre} de la liste`);
+      deleteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.openDeleteConfirm(item);
+      });
+    }
 
     const open = () => this.openModal(item);
     tr.addEventListener("click", (e) => {
@@ -1098,6 +1192,323 @@ class ListView {
     this.modalScrim.classList.remove("open");
     this.modalDialog.classList.remove("open");
     this.modalDialog.setAttribute("aria-hidden", "true");
+  }
+
+  // --- Edit Modal / Drawer ---
+  initEditModal() {
+    let scrim = document.getElementById("myapple-edit-scrim");
+    if (!scrim) {
+      scrim = el("div", null, document.body);
+      scrim.id = "myapple-edit-scrim";
+      scrim.className = "apl-edit-modal-scrim";
+    }
+
+    let drawer = document.getElementById("myapple-edit-drawer");
+    if (!drawer) {
+      drawer = el("div", null, document.body);
+      drawer.id = "myapple-edit-drawer";
+      drawer.className = "apl-edit-drawer";
+      drawer.setAttribute("role", "dialog");
+      drawer.setAttribute("aria-modal", "true");
+      drawer.setAttribute("aria-hidden", "true");
+    }
+
+    this.editScrim = scrim;
+    this.editDrawer = drawer;
+
+    const close = () => this.closeEditModal();
+    scrim.onclick = close;
+
+    root.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && drawer.classList.contains("open")) {
+        close();
+      }
+    });
+  }
+
+  openEditModal(item) {
+    if (!this.editDrawer) this.initEditModal();
+
+    const isAnime = this.ctx.kind === "anime";
+    const statusOptions = isAnime
+      ? [
+          { id: 1, label: "En cours" },
+          { id: 2, label: "Terminé" },
+          { id: 3, label: "En pause" },
+          { id: 4, label: "Abandonné" },
+          { id: 6, label: "À voir" },
+        ]
+      : [
+          { id: 1, label: "En cours" },
+          { id: 2, label: "Terminé" },
+          { id: 3, label: "En pause" },
+          { id: 4, label: "Abandonné" },
+          { id: 6, label: "À lire" },
+        ];
+
+    const scoreOptions = Array.from({ length: 11 }, (_, i) => ({ value: i, label: i === 0 ? "— Non noté" : String(i) }));
+    const priorityOptions = [
+      { value: 0, label: "Basse" },
+      { value: 1, label: "Normale" },
+      { value: 2, label: "Haute" },
+    ];
+
+    this.editDrawer.innerHTML = `
+      <div class="apl-edit-header">
+        <h2 class="apl-edit-title">Modifier mon entrée</h2>
+        <button type="button" class="apl-edit-close" aria-label="Fermer">✕</button>
+      </div>
+      <div class="apl-edit-body">
+        <div class="apl-edit-section">
+          <div class="apl-edit-section-title">Statut & Note</div>
+          <div class="apl-edit-row">
+            <div class="apl-edit-field">
+              <label for="edit-status">Statut</label>
+              <select id="edit-status">
+                ${statusOptions.map((s) => `<option value="${s.id}" ${item.statut === s.id ? "selected" : ""}>${s.label}</option>`).join("")}
+              </select>
+            </div>
+            <div class="apl-edit-field">
+              <label for="edit-score">Note (0-10)</label>
+              <select id="edit-score">
+                ${scoreOptions.map((s) => `<option value="${s.value}" ${item.note === s.value ? "selected" : ""}>${s.label}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="apl-edit-section">
+          <div class="apl-edit-section-title">Progression</div>
+          <div class="apl-edit-row">
+            <div class="apl-edit-field">
+              <label for="edit-progress">${isAnime ? "Épisodes vus" : "Chapitres lus"}</label>
+              <input type="number" id="edit-progress" min="0" value="${item.progression?.fait || 0}" />
+            </div>
+            ${!isAnime ? `
+            <div class="apl-edit-field">
+              <label for="edit-volumes">Volumes lus</label>
+              <input type="number" id="edit-volumes" min="0" value="${item.progression?.volumesFait || 0}" />
+            </div>
+            ` : ""}
+          </div>
+          <div class="apl-edit-field">
+            <label for="edit-rewatch">Re-visions / Re-lectures</label>
+            <input type="number" id="edit-rewatch" min="0" value="${item.rewatches || 0}" />
+          </div>
+        </div>
+
+        <div class="apl-edit-section">
+          <div class="apl-edit-section-title">Dates</div>
+          <div class="apl-edit-row">
+            <div class="apl-edit-field">
+              <label for="edit-start">Date de début</label>
+              <input type="date" id="edit-start" value="${item.debutVu || ""}" />
+            </div>
+            <div class="apl-edit-field">
+              <label for="edit-finish">Date de fin</label>
+              <input type="date" id="edit-finish" value="${item.finVu || ""}" />
+            </div>
+          </div>
+        </div>
+
+        <div class="apl-edit-section">
+          <div class="apl-edit-section-title">Priorité</div>
+          <div class="apl-edit-field">
+            <label for="edit-priority">Priorité</label>
+            <select id="edit-priority">
+              ${priorityOptions.map((p) => `<option value="${p.value}" ${(item.prioriteNum ?? 1) === p.value ? "selected" : ""}>${p.label}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+
+        <div class="apl-edit-section">
+          <div class="apl-edit-section-title">Notes personnelles</div>
+          <div class="apl-edit-field">
+            <label for="edit-notes">Commentaire</label>
+            <textarea id="edit-notes" placeholder="Vos notes personnelles...">${item.notes || ""}</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="apl-edit-footer">
+        <button type="button" class="apl-btn apl-btn-secondary" id="edit-cancel">Annuler</button>
+        <button type="button" class="apl-btn apl-btn-primary" id="edit-save">
+          <span class="apl-edit-btn-text">Enregistrer</span>
+        </button>
+      </div>
+    `;
+
+    const closeBtn = this.editDrawer.querySelector(".apl-edit-close");
+    const cancelBtn = this.editDrawer.querySelector("#edit-cancel");
+    const saveBtn = this.editDrawer.querySelector("#edit-save");
+
+    closeBtn.onclick = () => this.closeEditModal();
+    cancelBtn.onclick = () => this.closeEditModal();
+
+    saveBtn.onclick = () => this.saveEdit(item);
+
+    this.editScrim.classList.add("open");
+    this.editDrawer.classList.add("open");
+    this.editDrawer.setAttribute("aria-hidden", "false");
+    closeBtn.focus();
+  }
+
+  closeEditModal() {
+    if (!this.editDrawer) return;
+    this.editScrim.classList.remove("open");
+    this.editDrawer.classList.remove("open");
+    this.editDrawer.setAttribute("aria-hidden", "true");
+  }
+
+  async saveEdit(item) {
+    const L = root.__myappleList;
+    if (!L || this.pending.has(item.id)) return;
+
+    const status = parseInt(this.editDrawer.querySelector("#edit-status").value, 10);
+    const score = parseInt(this.editDrawer.querySelector("#edit-score").value, 10);
+    const progress = parseInt(this.editDrawer.querySelector("#edit-progress").value, 10) || 0;
+    const volumes = this.ctx.kind === "manga" ? (parseInt(this.editDrawer.querySelector("#edit-volumes").value, 10) || 0) : 0;
+    const rewatch = parseInt(this.editDrawer.querySelector("#edit-rewatch").value, 10) || 0;
+    const start = this.editDrawer.querySelector("#edit-start").value || null;
+    const finish = this.editDrawer.querySelector("#edit-finish").value || null;
+    const priority = parseInt(this.editDrawer.querySelector("#edit-priority").value, 10);
+    const notes = this.editDrawer.querySelector("#edit-notes").value || "";
+
+    const snap = this.dirtySnapshot(item);
+    this.pending.add(item.id);
+
+    const saveBtn = this.editDrawer.querySelector("#edit-save");
+    const originalText = saveBtn.querySelector(".apl-edit-btn-text").textContent;
+    saveBtn.querySelector(".apl-edit-btn-text").textContent = "Enregistrement...";
+    saveBtn.disabled = true;
+
+    this.applyLocal(item, {
+      fait: progress,
+      volumesFait: this.ctx.kind === "manga" ? volumes : undefined,
+      note: score,
+      statut: status,
+      debutVu: start,
+      finVu: finish,
+      rewatches: rewatch,
+      prioriteNum: priority,
+      notes,
+    });
+
+    try {
+      const fields = this.ctx.kind === "manga"
+        ? { status, score, chapters: progress, volumes, rewatch: rewatch > 0 ? rewatch : undefined, start_date: start, finish_date: finish, priority, comments: notes }
+        : { status, score, episodes: progress, rewatch: rewatch > 0 ? rewatch : undefined, start_date: start, finish_date: finish, priority, comments: notes };
+
+      await L.updateEntry({ kind: item.kind, id: item.id, fields });
+      await L.dropCacheFor(item.kind, this.ctx.user);
+      this.showToast("Entrée mise à jour", "info");
+      this.closeEditModal();
+    } catch (e) {
+      this.applyLocal(item, snap);
+      this.showToast(`Erreur de mise à jour (${this.shortErr(e)})`, "error");
+    } finally {
+      this.pending.delete(item.id);
+      this.refreshItem(item);
+      saveBtn.querySelector(".apl-edit-btn-text").textContent = originalText;
+      saveBtn.disabled = false;
+    }
+  }
+
+  // --- Delete Confirmation Modal ---
+  initDeleteModal() {
+    let scrim = document.getElementById("myapple-confirm-scrim");
+    if (!scrim) {
+      scrim = el("div", null, document.body);
+      scrim.id = "myapple-confirm-scrim";
+      scrim.className = "apl-confirm-scrim";
+    }
+
+    let dialog = document.getElementById("myapple-confirm-dialog");
+    if (!dialog) {
+      dialog = el("div", null, document.body);
+      dialog.id = "myapple-confirm-dialog";
+      dialog.className = "apl-confirm-dialog";
+      dialog.setAttribute("role", "alertdialog");
+      dialog.setAttribute("aria-modal", "true");
+      dialog.setAttribute("aria-hidden", "true");
+    }
+
+    this.deleteScrim = scrim;
+    this.deleteDialog = dialog;
+
+    scrim.onclick = () => this.closeDeleteModal();
+
+    root.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && dialog.classList.contains("open")) {
+        this.closeDeleteModal();
+      }
+    });
+  }
+
+  openDeleteConfirm(item) {
+    if (!this.deleteDialog) this.initDeleteModal();
+
+    this.deleteDialog.innerHTML = `
+      <h3 class="apl-confirm-title">Supprimer de votre liste ?</h3>
+      <p class="apl-confirm-message">Cette action est irréversible. Voulez-vous vraiment supprimer cette entrée de votre liste ?</p>
+      <div class="apl-confirm-item">
+        <img src="${escapeHtml(item.img)}" alt="" />
+        <span class="apl-confirm-item-title">${escapeHtml(item.titre)}</span>
+      </div>
+      <div class="apl-confirm-actions">
+        <button type="button" class="apl-btn apl-btn-secondary" id="delete-cancel">Annuler</button>
+        <button type="button" class="apl-btn apl-btn-danger" id="delete-confirm">Supprimer</button>
+      </div>
+    `;
+
+    const cancelBtn = this.deleteDialog.querySelector("#delete-cancel");
+    const confirmBtn = this.deleteDialog.querySelector("#delete-confirm");
+
+    cancelBtn.onclick = () => this.closeDeleteModal();
+    confirmBtn.onclick = () => this.deleteEntry(item);
+
+    this.deleteScrim.classList.add("open");
+    this.deleteDialog.classList.add("open");
+    this.deleteDialog.setAttribute("aria-hidden", "false");
+    cancelBtn.focus();
+  }
+
+  closeDeleteModal() {
+    if (!this.deleteDialog) return;
+    this.deleteScrim.classList.remove("open");
+    this.deleteDialog.classList.remove("open");
+    this.deleteDialog.setAttribute("aria-hidden", "true");
+  }
+
+  async deleteEntry(item) {
+    const L = root.__myappleList;
+    if (!L || this.pending.has(item.id)) return;
+
+    this.pending.add(item.id);
+
+    const confirmBtn = this.deleteDialog.querySelector("#delete-confirm");
+    const originalText = confirmBtn.textContent;
+    confirmBtn.textContent = "Suppression...";
+    confirmBtn.disabled = true;
+
+    try {
+      await L.deleteEntry({ kind: item.kind, id: item.id });
+      await L.dropCacheFor(item.kind, this.ctx.user);
+
+      this.items = this.items.filter((it) => it.id !== item.id);
+      this.computeStats();
+      this.applyFilters();
+      this.renderItemsBatch(true);
+      this.updateCountsUI();
+
+      this.showToast(`« ${item.titre} » supprimé de votre liste`, "info");
+      this.closeDeleteModal();
+    } catch (e) {
+      this.showToast(`Erreur de suppression (${this.shortErr(e)})`, "error");
+    } finally {
+      this.pending.delete(item.id);
+      confirmBtn.textContent = originalText;
+      confirmBtn.disabled = false;
+    }
   }
 
   // --- États particuliers (Squelette & Vide) ---
