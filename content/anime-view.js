@@ -169,11 +169,20 @@ function topTables(list) {
   });
 }
 
-// Extrait {img, name, href, sub} (+ va:{...} éventuel) d'un tableau MAL personnages/staff
+// Extrait {img, name, href, sub} (+ va:{...} éventuel) d'un tableau MAL personnages/staff.
+// Sans lien texte : personne identifiable uniquement via l'alt de l'image
+// (carte texte simple, href vide) — jamais de nom inventé depuis une cellule
+// (un rôle n'est pas un nom). Ligne réellement invalide (aucun nom) : null.
 function parsePerson(table) {
+  if (!table || typeof table.querySelectorAll !== "function") return null;
   const imgs = [...table.querySelectorAll("img")];
   const links = [...table.querySelectorAll("a[href]")].filter((a) => T(a));
-  if (!links.length) return null;
+  if (!links.length) {
+    const altName = (imgs[0]?.getAttribute("alt") || "").replace(/\s+/g, " ").trim();
+    if (!altName) return null;
+    const smalls = [...table.querySelectorAll("small")].map(T).filter(Boolean);
+    return { img: IMG(imgs[0]), name: altName, href: "", sub: smalls[0] || "" };
+  }
   const nameLink = links.find((a) => !a.querySelector("img")) || links[0];
   const pic = imgs[0] ? IMG(imgs[0]) : "";
   const smalls = [...table.querySelectorAll("small")].map(T).filter(Boolean);
@@ -303,14 +312,16 @@ function kpi(parent, value, label, sub) {
 
 function personCard(parent, p, showVa) {
   const c = el("div", "apl-person", parent);
-  const a = el("a", null, c);
-  a.href = p.href || "#";
+  // Sans href (personne identifiable mais sans lien MAL) : carte texte simple,
+  // jamais de lien factice vers "#" (saut de page) ni de faux href.
+  const a = p.href ? el("a", null, c) : el("span", "apl-static", c);
+  if (p.href) a.href = p.href;
   if (p.img) { const im = el("img", null, a); im.src = p.img; im.alt = p.name; im.loading = "lazy"; }
   el("b", null, a, p.name);
   if (p.sub) el("span", "apl-muted", a, p.sub);
   if (showVa && p.va) {
-    const v = el("a", "apl-va", c);
-    v.href = p.va.href || "#";
+    const v = p.va.href ? el("a", "apl-va", c) : el("span", "apl-va apl-static", c);
+    if (p.va.href) v.href = p.va.href;
     if (p.va.img) { const im = el("img", null, v); im.src = p.va.img; im.alt = p.va.name; im.loading = "lazy"; }
     const tx = el("span", null, v);
     if (p.va.lang) el("i", "apl-muted", tx, p.va.lang);
@@ -532,5 +543,7 @@ function destroyAnimeView() {
   document.body.classList.remove("myapple-anime");
 }
 
-window.__myappleAnime = { readAnime, buildAnimeView, destroyAnimeView };
+window.__myappleAnime = { readAnime, buildAnimeView, destroyAnimeView,
+  // Crochets de test (lecture seule du parseur, aucun effet sur la vue).
+  _parsePerson: parsePerson, _personCard: personCard };
 })();
