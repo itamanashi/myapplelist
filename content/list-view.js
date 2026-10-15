@@ -54,6 +54,8 @@ class ListView {
     this.stats = { total: 0, meanScore: 0, scoredCount: 0, totalWatched: 0, completedPct: 0 };
     this.observer = null;
     this.needsRefreshOnFocus = false;
+    this.pending = new Set(); // ids en cours d'écriture (une écriture à la fois par entrée)
+    this.toastTimer = null;
 
     // Détection de retour sur l'onglet après modification sur MAL
     root.addEventListener("focus", () => {
@@ -91,6 +93,7 @@ class ListView {
 
     // Modal de détail (monté une seule fois dans le body)
     this.initModal();
+    this.ensureToast();
 
     // 1. Rendu squelette initial immédiat
     this.renderSkeleton();
@@ -596,9 +599,11 @@ class ListView {
   buildPosterCard(item) {
     // st-N porté par la carte : la barre de progression prend la couleur du statut en CSS pur.
     const card = el("article", `apl-card apl-poster-card st-${item.statut}`, null);
+    card.dataset.entryId = String(item.id);
     card.setAttribute("tabindex", "0");
     card.setAttribute("role", "button");
     card.setAttribute("aria-label", `${item.titre}, note ${item.note || "non noté"}`);
+    if (this.pending.has(item.id)) card.classList.add("apl-pending");
 
     const progressPct = root.__myappleList?.progressPct(item.progression) ?? 0;
     const progressText = root.__myappleList?.formatProgression(item.progression) ?? "";
@@ -613,10 +618,8 @@ class ListView {
     img.alt = "";
     img.loading = "lazy";
 
-    // Badge Note
-    const scoreVal = item.note > 0 ? item.note : "—";
-    const scoreBadge = el("span", `apl-badge-score ${item.note >= 8 ? "high" : ""}`, poster);
-    scoreBadge.innerHTML = `<span class="star">★</span> ${scoreVal}`;
+    // Badge Note (bouton d'édition rapide sur sa propre liste, simple pastille sinon)
+    poster.appendChild(this.scoreBadgeNode(item));
 
     // Pastille Statut
     const statusDot = el("span", `apl-status-dot st-${item.statut}`, poster);
@@ -638,16 +641,25 @@ class ListView {
     if (typeYear) el("span", "apl-card-sub", meta, typeYear);
 
     const progRow = el("div", "apl-card-prog-row", info);
-    el("span", "apl-card-prog", progRow, progressText);
+    const progLeft = el("span", "apl-prog-left", progRow);
+    el("span", "apl-card-prog", progLeft, progressText);
+    if (this.canEdit() && root.__myappleList?.canQuickPlus(item)) {
+      progLeft.appendChild(this.plusButton(item));
+    }
 
     if (item.scoreMal) {
       el("span", "apl-card-mal", progRow, `MAL ${item.scoreMal.toFixed(1)}`);
     }
 
-    // Clic / Entrée : ouvre la modal de détail
+    // Clic / Entrée : ouvre la modal de détail. Les contrôles inline (+1, note)
+    // gèrent leurs propres événements : la carte les ignore.
     const open = () => this.openModal(item);
-    card.addEventListener("click", open);
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("button, select, input, a")) return;
+      open();
+    });
     card.addEventListener("keydown", (e) => {
+      if (e.target !== card) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         open();
@@ -661,8 +673,10 @@ class ListView {
   buildTableRow(item) {
     // st-N porté par la ligne : barre de progression + pastille colorées en CSS pur.
     const tr = el("tr", `apl-table-row st-${item.statut}`, null);
+    tr.dataset.entryId = String(item.id);
     tr.setAttribute("tabindex", "0");
     tr.setAttribute("role", "button");
+    if (this.pending.has(item.id)) tr.classList.add("apl-pending");
 
     const progressPct = root.__myappleList?.progressPct(item.progression) ?? 0;
     const progressText = root.__myappleList?.formatProgression(item.progression) ?? "";
@@ -688,15 +702,34 @@ class ListView {
       });
     }
 
-    // 3. Note
+    // 3. Note (micro-stepper −/+ sur sa propre liste, pastille seule sinon)
     const tdScore = el("td", "td-score", tr);
-    const scoreVal = item.note > 0 ? item.note : "—";
-    const sc = el("span", `apl-table-score ${item.note >= 8 ? "high" : ""}`, tdScore);
-    sc.innerHTML = `<span class="star">★</span> ${scoreVal}`;
+    if (this.canEdit()) {
+      const stepper = el("span", "apl-score-stepper", tdScore);
+      const minus = el("button", "apl-step-btn", stepper, "−");
+      minus.type = "button";
+      minus.setAttribute("aria-label", `Baisser ma note pour ${item.titre}`);
+      const sc = el("span", `apl-table-score ${item.note >= 8 ? "high" : ""}`, stepper);
+      sc.innerHTML = `<span class="star">★</span> ${item.note > 0 ? item.note : "—"}`;
+      const plus = el("button", "apl-step-btn", stepper, "+");
+      plus.type = "button";
+      plus.setAttribute("aria-label", `Augmenter ma note pour ${item.titre}`);
+      if (this.pending.has(item.id)) { minus.disabled = true; plus.disabled = true; }
+      minus.addEventListener("click", (e) => { e.stopPropagation(); this.applyScore(item, item.note - 1); });
+      plus.addEventListener("click", (e) => { e.stopPropagation(); this.applyScore(item, (item.note || 0) + 1); });
+    } else {
+      const scoreVal = item.note > 0 ? item.note : "—";
+      const sc = el("span", `apl-table-score ${item.note >= 8 ? "high" : ""}`, tdScore);
+      sc.innerHTML = `<span class="star">★</span> ${scoreVal}`;
+    }
 
-    // 4. Progression
+    // 4. Progression (+1 inline sur sa propre liste quand il reste à voir/lire)
     const tdProg = el("td", "td-progress", tr);
-    el("div", "apl-prog-label", tdProg, progressText);
+    const progWrap = el("div", "apl-prog-wrap", tdProg);
+    el("div", "apl-prog-label", progWrap, progressText);
+    if (this.canEdit() && root.__myappleList?.canQuickPlus(item)) {
+      progWrap.appendChild(this.plusButton(item));
+    }
     if (progressPct > 0) {
       const b = el("div", "apl-bar apl-table-bar", tdProg);
       el("i", null, b).style.width = `${progressPct}%`;
@@ -715,8 +748,12 @@ class ListView {
     tdMal.textContent = item.scoreMal ? item.scoreMal.toFixed(2) : "—";
 
     const open = () => this.openModal(item);
-    tr.addEventListener("click", open);
+    tr.addEventListener("click", (e) => {
+      if (e.target.closest("button, select, input, a")) return;
+      open();
+    });
     tr.addEventListener("keydown", (e) => {
+      if (e.target !== tr) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         open();
@@ -724,6 +761,196 @@ class ListView {
     });
 
     return tr;
+  }
+
+  // --- Actions rapides inline (+1 / note) : optimistic update + rollback ---
+  // Écriture réservée à sa propre liste (et à la présence de la couche updateEntry).
+  canEdit() {
+    return this.isOwnList && !!root.__myappleList?.updateEntry;
+  }
+
+  plusButton(item) {
+    const b = el("button", "apl-plus-btn", null);
+    b.type = "button";
+    const unit = item.kind === "manga" ? "chapitre" : "épisode";
+    b.setAttribute("aria-label", `${unit} suivant pour ${item.titre} (actuellement ${item.progression.fait})`);
+    b.textContent = "+1";
+    if (this.pending.has(item.id)) b.disabled = true;
+    b.addEventListener("click", (e) => { e.stopPropagation(); this.quickPlus(item); });
+    return b;
+  }
+
+  // Badge note de la carte : bouton d'édition sur sa liste, pastille seule sinon.
+  scoreBadgeNode(item) {
+    const scoreVal = item.note > 0 ? item.note : "—";
+    const b = el(this.canEdit() ? "button" : "span", `apl-badge-score ${item.note >= 8 ? "high" : ""}`, null);
+    if (this.canEdit()) {
+      b.type = "button";
+      b.setAttribute("aria-label", `Ma note : ${item.note > 0 ? `${item.note} sur 10` : "non notée"}. Activer pour modifier.`);
+      b.addEventListener("click", (e) => { e.stopPropagation(); this.openScoreEditor(b, item); });
+    }
+    b.innerHTML = `<span class="star">★</span> ${scoreVal}`;
+    return b;
+  }
+
+  // Drop-down compact 0–10 posé sur l'affiche (Échap ou sortie sans choix = annulation).
+  openScoreEditor(anchor, item) {
+    const thumb = anchor.parentElement;
+    if (!thumb || thumb.querySelector(".apl-score-select")) return;
+    const sel = document.createElement("select");
+    sel.className = "apl-score-select";
+    sel.setAttribute("aria-label", `Note pour ${item.titre} (0 = non noté)`);
+    const opt0 = document.createElement("option");
+    opt0.value = "0";
+    opt0.textContent = "— Non noté";
+    sel.appendChild(opt0);
+    for (let n = 1; n <= 10; n++) {
+      const o = document.createElement("option");
+      o.value = String(n);
+      o.textContent = String(n);
+      if (item.note === n) o.selected = true;
+      sel.appendChild(o);
+    }
+    if (item.note === 0) opt0.selected = true;
+    let saved = false;
+    sel.addEventListener("click", (e) => e.stopPropagation());
+    sel.addEventListener("change", () => {
+      saved = true;
+      this.applyScore(item, parseInt(sel.value, 10));
+    });
+    sel.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Escape") {
+        this.refreshItem(item);
+        this.focusBadge(item);
+      }
+    });
+    sel.addEventListener("blur", () => { if (!saved) this.refreshItem(item); });
+    anchor.replaceWith(sel);
+    sel.focus({ preventScroll: true });
+  }
+
+  focusBadge(item) {
+    const node = this.viewContent?.querySelector(`[data-entry-id="${item.id}"] .apl-badge-score`);
+    node?.focus?.({ preventScroll: true });
+  }
+
+  // +1 optimiste : UI d'abord, réseau ensuite, rollback + toast en cas d'échec.
+  async quickPlus(item) {
+    const L = root.__myappleList;
+    if (!L || this.pending.has(item.id)) return;
+    const target = L.nextProgress(item);
+    const snap = { fait: item.progression.fait, statut: item.statut };
+    this.pending.add(item.id);
+    this.applyLocal(item, { fait: target.fait, statut: target.statut });
+    try {
+      const fields = item.kind === "manga"
+        ? { status: target.statut, chapters: target.fait, volumes: item.progression.volumesFait ?? 0 }
+        : { status: target.statut, episodes: target.fait };
+      await L.updateEntry({ kind: item.kind, id: item.id, fields });
+      await L.dropCacheFor(item.kind, this.ctx.user);
+      if (target.completed) this.showToast(`« ${item.titre} » terminé — statut mis à jour`, "info");
+    } catch (e) {
+      this.applyLocal(item, snap);
+      this.showToast(`Mise à jour refusée (${this.shortErr(e)})`, "error");
+    } finally {
+      this.pending.delete(item.id);
+      this.refreshItem(item);
+    }
+  }
+
+  // Note optimiste (0 = non noté, clamp 0–10 côté données).
+  async applyScore(item, score) {
+    const L = root.__myappleList;
+    const next = Math.max(0, Math.min(10, Math.trunc(score)));
+    if (!L || next === item.note || this.pending.has(item.id)) return;
+    const snap = { note: item.note };
+    this.pending.add(item.id);
+    this.applyLocal(item, { note: next });
+    try {
+      await L.updateEntry({ kind: item.kind, id: item.id, fields: { status: item.statut, score: next } });
+      await L.dropCacheFor(item.kind, this.ctx.user);
+    } catch (e) {
+      this.applyLocal(item, snap);
+      this.showToast(`Note non enregistrée (${this.shortErr(e)})`, "error");
+    } finally {
+      this.pending.delete(item.id);
+      this.refreshItem(item);
+    }
+  }
+
+  // Mutation locale + rafraîchit ciblé (jamais de full re-render : recherche, focus et scroll intacts).
+  applyLocal(item, patch) {
+    if (patch.fait != null) item.progression.fait = patch.fait;
+    if (patch.note != null) item.note = patch.note;
+    if (patch.statut != null) item.statut = patch.statut;
+    this.computeStats();
+    this.updateCountsUI();
+    // Changement de statut sous un filtre de statut actif (succès comme rollback) :
+    // l'entrée peut quitter ou rejoindre sa catégorie -> re-synchronise la liste.
+    if (patch.statut != null && this.activeStatus !== 7) {
+      this.applyFilters();
+      this.renderItemsBatch(true);
+      return;
+    }
+    this.refreshItem(item);
+  }
+
+  // Reconstruit la carte / ligne d'une entrée via ses builders (pastille, barre, compteurs).
+  refreshItem(item) {
+    if (!this.viewContent) return;
+    this.viewContent.querySelectorAll(`[data-entry-id="${item.id}"]`).forEach((old) => {
+      const hadFocus = old.contains(document.activeElement);
+      const fresh = old.tagName === "TR" ? this.buildTableRow(item) : this.buildPosterCard(item);
+      old.replaceWith(fresh);
+      if (hadFocus) {
+        fresh.querySelector(".apl-plus-btn, .apl-step-btn, .apl-badge-score")?.focus({ preventScroll: true });
+      }
+    });
+  }
+
+  // Compteurs d'onglets + KPIs du hero, sans toucher aux contrôles.
+  updateCountsUI() {
+    // Ordre renderHero : total, en cours, terminés, note moy., complétion.
+    const counts = this.container.querySelectorAll(".apl-tab-btn .tab-count");
+    STATUS_KEYS.forEach((s, i) => { if (counts[i]) counts[i].textContent = String(this.counts[s.id] ?? 0); });
+    const kpis = this.container.querySelectorAll(".apl-list-kpi > b");
+    if (kpis.length >= 5) {
+      kpis[0].textContent = this.stats.total.toLocaleString("fr-FR");
+      kpis[1].textContent = (this.counts[1] || 0).toLocaleString("fr-FR");
+      kpis[2].textContent = (this.counts[2] || 0).toLocaleString("fr-FR");
+      kpis[3].textContent = String(this.stats.meanScore).replace(".", ",");
+      kpis[4].textContent = `${this.stats.completedPct} %`;
+    }
+    const bar = this.container.querySelector(".apl-list-kpi-bar .apl-bar > i");
+    if (bar) bar.style.width = `${Math.min(100, this.stats.completedPct)}%`;
+  }
+
+  shortErr(e) {
+    if (!e) return "erreur réseau";
+    if (e.code === "auth") return "session expirée, reconnecte-toi";
+    if (e.code === "csrf") return "recharge la page et réessaie";
+    if (e.code === "aborted") return "délai dépassé";
+    return e.code === "mal" && e.message ? e.message : "erreur réseau";
+  }
+
+  ensureToast() {
+    if (document.getElementById("myapple-toast")) return;
+    const t = el("div", "apl-toast", document.body);
+    t.id = "myapple-toast";
+    t.setAttribute("role", "status");
+    t.setAttribute("aria-live", "polite");
+  }
+
+  showToast(msg, kind = "info") {
+    this.ensureToast();
+    const t = document.getElementById("myapple-toast");
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.toggle("error", kind === "error");
+    t.classList.add("show");
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => t.classList.remove("show"), kind === "error" ? 5000 : 3500);
   }
 
   // --- Modal de Détail Apple ---

@@ -108,4 +108,53 @@ assert.equal(r.empty, true);
 for (let i = 0; i < 8; i++) await L.loadList({ kind: "manga", user: `lru${i}`, doc: mkDoc([manga(i)]), fetch: async () => ({ ok: true, status: 200, json: async () => [] }), ...fast });
 assert.ok(mem["myapple_list_index_v1"].length <= 6);
 
+// --- actions rapides : logique pure (+1 / score / CSRF / payload)
+const encours = L.normalizeItem(anime(3), "anime");
+encours.statut = 1;
+encours.progression = { fait: 5, total: 12, unite: "ep", volumesFait: null, volumesTotal: null };
+assert.deepEqual(L.nextProgress(encours), { fait: 6, statut: 1, completed: false });
+encours.progression.fait = 11;
+assert.deepEqual(L.nextProgress(encours), { fait: 12, statut: 2, completed: true });
+encours.statut = 6; encours.progression.fait = 0;
+assert.deepEqual(L.nextProgress(encours), { fait: 1, statut: 1, completed: false });
+const incManga = L.normalizeItem(manga(2), "manga"); // 345 / ? ch, statut 1
+assert.deepEqual(L.nextProgress(incManga), { fait: 346, statut: 1, completed: false });
+assert.equal(L.canQuickPlus({ statut: 2, progression: { fait: 12, total: 12 } }), false);
+assert.equal(L.canQuickPlus({ statut: 1, progression: { fait: 5, total: 12 } }), true);
+assert.equal(L.canQuickPlus({ statut: 2, progression: { fait: 10, total: 12 } }), true);
+assert.equal(L.canQuickPlus({ statut: 2, progression: { fait: 3, total: 0 } }), false);
+assert.equal(L.canQuickPlus({ statut: 1, progression: { fait: 345, total: 0 } }), true);
+assert.equal(L.clampScore(-2), 0); assert.equal(L.clampScore(11), 10); assert.equal(L.clampScore(7.9), 7);
+assert.equal(L.readCsrfToken({ querySelector: (s) => (s.includes("csrf") ? { content: "ABC" } : null) }), "ABC");
+assert.equal(L.readCsrfToken(null), null);
+assert.deepEqual(L.buildUpdatePayload("anime", 71, { status: 1, score: 12, episodes: 3 }, "TOK"),
+  { anime_id: 71, csrf_token: "TOK", status: 1, score: 10, num_watched_episodes: 3 });
+assert.deepEqual(L.buildUpdatePayload("manga", 5, { chapters: 4 }, "TOK"),
+  { manga_id: 5, csrf_token: "TOK", num_read_chapters: 4 });
+
+// --- updateEntry : contrat edit.json (réseau mocké, jamais de retry)
+const csrfDoc = { querySelector: () => ({ content: "TOK123" }) };
+let sent = null;
+const fetchEditOk = async (url, o) => {
+  sent = { url, method: o.method, ctype: o.headers["Content-Type"], body: JSON.parse(o.body), creds: o.credentials };
+  return { ok: true, status: 200, json: async () => null };
+};
+const okRes = await L.updateEntry({ kind: "anime", id: 71, fields: { status: 1, episodes: 6 } }, { doc: csrfDoc, fetch: fetchEditOk });
+assert.equal(okRes.ok, true);
+assert.equal(sent.url, "https://myanimelist.net/ownlist/anime/edit.json");
+assert.equal(sent.method, "POST"); assert.equal(sent.creds, "include");
+assert.deepEqual(sent.body, { anime_id: 71, csrf_token: "TOK123", status: 1, num_watched_episodes: 6 });
+const fetchEditErr = async () => ({ ok: false, status: 400, json: async () => ({ errors: [{ message: "mauvais total" }] }) });
+await assert.rejects(L.updateEntry({ kind: "anime", id: 71, fields: { episodes: 1 } }, { doc: csrfDoc, fetch: fetchEditErr }), { code: "mal" });
+await assert.rejects(L.updateEntry({ kind: "manga", id: 5, fields: { chapters: 1 } }, { doc: { querySelector: () => null }, fetch: fetchEditOk }), { code: "csrf" });
+const fetch401 = async () => ({ ok: false, status: 401, json: async () => ({}) });
+await assert.rejects(L.updateEntry({ kind: "anime", id: 71, fields: { episodes: 1 } }, { doc: csrfDoc, fetch: fetch401 }), { code: "auth" });
+
+// --- dropCacheFor : le cache de la liste est invalidé après écriture
+const fetchEmpty = async () => ({ ok: true, status: 200, json: async () => [] });
+await L.loadList({ kind: "anime", user: "cachetest", doc: mkDoc(all.slice(0, 10)), fetch: fetchEmpty, ...fast });
+assert.ok(mem["myapple_list_v1:anime:cachetest"]);
+await L.dropCacheFor("anime", "cachetest");
+assert.equal(mem["myapple_list_v1:anime:cachetest"], undefined);
+
 console.log("OK — tous les tests passent");

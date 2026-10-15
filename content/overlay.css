@@ -2389,11 +2389,144 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   .apl-modal-dialog,
   .apl-modal-dialog.open,
   .apl-modal-scrim,
+  .apl-plus-btn,
+  .apl-step-btn,
+  #myapple-toast,
   .apl-refresh-btn .apl-refresh-icon {
     transition: none !important;
     transform: none !important;
     animation: none !important;
   }
+}
+
+/* ===== 7.11 Actions rapides inline (+1, note) + toast ===== */
+.apl-prog-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.apl-prog-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.apl-plus-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--apl-border);
+  background: var(--apl-surface);
+  color: var(--apl-muted);
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 7px;
+  line-height: 1.6;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 140ms, color 140ms, border-color 140ms, opacity 160ms;
+}
+.apl-plus-btn:hover {
+  background: var(--apl-surface-hover);
+  color: var(--apl-ink);
+  border-color: var(--apl-border-strong);
+}
+.apl-plus-btn:disabled {
+  opacity: .45;
+  cursor: wait;
+}
+/* Grille : discret jusqu'au survol/focus (opacity seule, jamais de saut de layout) */
+#myapple-list .apl-poster-card .apl-plus-btn { opacity: 0; }
+#myapple-list .apl-poster-card:hover .apl-plus-btn,
+#myapple-list .apl-poster-card:focus-within .apl-plus-btn,
+#myapple-list .apl-poster-card.apl-pending .apl-plus-btn { opacity: 1; }
+/* Tableau data-dense : toujours visible */
+.apl-table .apl-plus-btn { opacity: 1; }
+button.apl-badge-score {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.apl-score-select {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 3;
+  border: 1px solid var(--apl-border-strong);
+  background: var(--apl-card);
+  color: var(--apl-ink);
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 4px;
+  outline: 0;
+  max-width: 122px;
+}
+.apl-score-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.apl-step-btn {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--apl-border);
+  background: var(--apl-surface);
+  color: var(--apl-muted);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  transition: background 140ms, color 140ms;
+}
+.apl-step-btn:hover {
+  background: var(--apl-surface-hover);
+  color: var(--apl-ink);
+}
+.apl-step-btn:disabled {
+  opacity: .45;
+  cursor: wait;
+}
+.apl-poster-card.apl-pending .apl-poster-thumb img,
+.apl-table-row.apl-pending td {
+  opacity: .6;
+}
+#myapple-toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translate(-50%, 8px);
+  z-index: 1000001;
+  background: var(--apl-card);
+  border: 1px solid var(--apl-border-strong);
+  color: var(--apl-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 15px;
+  border-radius: 10px;
+  box-shadow: var(--apl-shadow-small);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 220ms var(--apl-spring);
+  max-width: min(480px, 90vw);
+  text-align: center;
+}
+#myapple-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+#myapple-toast.error {
+  border-color: color-mix(in srgb, var(--apl-st-4) 55%, transparent);
 }
 
 /* MyAppleList — §9 vue detail anime/manga reconstruite (#myapple-anime). Module 70-anime-detail.css (ordre : tools/build-css.mjs). */

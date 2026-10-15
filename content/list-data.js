@@ -327,8 +327,105 @@ async function run({ kind, user }, key, opts) {
   return { kind, user, items, total: items.length, fromCache: false, fetchedAt, partial, ...(error ? { error } : {}), skipped, empty: !items.length };
 }
 
+// ---------- écriture : actions rapides (contrat vérifié live 2026-10-15) ----------
+// Mécanisme repris du bundle MAL lui-même (updateAnimeEntry/updateMangaEntry) :
+//   POST /ownlist/anime/edit.json  JSON {anime_id, status, score, num_watched_episodes, csrf_token}
+//   POST /ownlist/manga/edit.json  JSON {manga_id, status, score, num_read_volumes, num_read_chapters, csrf_token}
+// 200 (body `null`) = OK ; 400 = {errors:[{message}]} ; sans csrf_token = page 400.
+// Le token se lit FRAIS dans <meta name="csrf_token"> à chaque écriture (jamais en cache).
+// Jamais de retry auto sur écriture (un retry = un +1 en double). Aucun rendu ici.
+function readCsrfToken(doc) {
+  try {
+    return doc?.querySelector?.('meta[name="csrf_token"]')?.content || null;
+  } catch { return null; }
+}
+const clampScore = (v) => { const n = Math.trunc(num(v, 0)); return n < 0 ? 0 : n > 10 ? 10 : n; };
+
+// Cible d'un +1 : { fait, statut, completed }. 6 (prévu) -> 1 (en cours) ;
+// total atteint -> 2 (terminé). Total inconnu : compteur seul (6 -> 1 conservé).
+function nextProgress(item) {
+  const total = item.progression.total > 0 ? item.progression.total : null;
+  const fait = total ? Math.min(item.progression.fait + 1, total) : item.progression.fait + 1;
+  let statut = item.statut === 6 ? 1 : item.statut;
+  if (total && fait >= total) statut = 2;
+  return { fait, statut, completed: statut === 2 && item.statut !== 2 };
+}
+// +1 affichable ? Seulement s'il reste quelque chose à incrémenter.
+function canQuickPlus(item) {
+  const { fait, total } = item.progression;
+  if (total > 0) return fait < total;
+  return item.statut !== 2;
+}
+// N'envoie que les champs fournis (+ id et csrf) : on n'écrase jamais le reste.
+function buildUpdatePayload(kind, id, f, csrf) {
+  const int0 = (v) => Math.max(0, Math.trunc(v));
+  if (kind === "manga") {
+    const p = { manga_id: parseInt(id, 10), csrf_token: csrf };
+    if (f.status != null) p.status = parseInt(f.status, 10);
+    if (f.score != null) p.score = clampScore(f.score);
+    if (f.chapters != null) p.num_read_chapters = int0(f.chapters);
+    if (f.volumes != null) p.num_read_volumes = int0(f.volumes);
+    return p;
+  }
+  const p = { anime_id: parseInt(id, 10), csrf_token: csrf };
+  if (f.status != null) p.status = parseInt(f.status, 10);
+  if (f.score != null) p.score = clampScore(f.score);
+  if (f.episodes != null) p.num_watched_episodes = int0(f.episodes);
+  return p;
+}
+
+// opts : { kind, id, fields:{status?,score?,episodes?,chapters?,volumes?},
+//          doc?, fetch?, signal?, timeoutMs? }  (doc/fetch : tests)
+// Succès -> { ok:true, data }. Échec -> throw code "csrf"|"auth"|"mal"|"http"|"network"|"aborted".
+async function updateEntry({ kind, id, fields = {} }, opts = {}) {
+  if (kind !== "anime" && kind !== "manga") throw err("context", "kind inconnu", true);
+  const doc = opts.doc !== undefined ? opts.doc : (typeof document !== "undefined" ? document : null);
+  const csrf = readCsrfToken(doc);
+  if (!csrf) throw err("csrf", "jeton CSRF introuvable (recharge la page)", true);
+  const fetchImpl = opts.fetch || ((...a) => root.fetch(...a));
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 15000);
+  const onAbort = () => ctrl.abort();
+  opts.signal?.addEventListener?.("abort", onAbort);
+  try {
+    const r = await fetchImpl(`https://myanimelist.net/ownlist/${kind}/edit.json`, {
+      method: "POST",
+      credentials: "include",
+      signal: opts.signal ?? ctrl.signal,
+      headers: { "Content-Type": "application/json; charset=UTF-8", Accept: "application/json" },
+      body: JSON.stringify(buildUpdatePayload(kind, id, fields, csrf)),
+    });
+    if (r.status === 401 || r.status === 403) throw err("auth", "session expirée, reconnecte-toi", true);
+    let data = null;
+    try { data = await r.json(); } catch { data = null; }
+    if (!r.ok) {
+      const msg = data?.errors?.[0]?.message || `HTTP ${r.status}`;
+      throw err(r.status === 400 ? "mal" : "http", msg, true);
+    }
+    return { ok: true, data };
+  } catch (e) {
+    if (e?.name === "AbortError") throw err("aborted", "délai dépassé", true);
+    throw e?.code ? e : err("network", e?.message || "réseau", true);
+  } finally {
+    clearTimeout(timer);
+    opts.signal?.removeEventListener?.("abort", onAbort);
+  }
+}
+
+// Invalide le cache d'une liste après écriture (best-effort : le prochain load refetch).
+async function dropCacheFor(kind, user) {
+  const s = store(); if (!s || !s.remove) return;
+  const key = `${kind}:${String(user).toLowerCase()}`;
+  try {
+    await s.remove(CACHE_PREFIX + key);
+    const idx = ((await s.get(INDEX_KEY))[INDEX_KEY] || []).filter((e) => e.key !== key);
+    await s.set({ [INDEX_KEY]: idx });
+  } catch { /* cache best-effort */ }
+}
+
 root.__myappleList = {
   SCHEMA_V, STATUT, statutLabel, loadList, readInitial, normalizeItem, normalizeAnime, normalizeManga,
   fixImg, parseDMY, isoPartial, toMs, formatProgression, progressPct, kindFromPath, clearCache,
+  readCsrfToken, clampScore, nextProgress, canQuickPlus, buildUpdatePayload, updateEntry, dropCacheFor,
 };
 })();

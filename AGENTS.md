@@ -38,6 +38,11 @@ jamais masqués). En revanche on re-stylise le CSS MAL, on masque son chrome
 - DOM dynamique MAL (listes en AJAX, lazyload) : tout `MutationObserver` DOIT être
   debouncé (rAF ou 150 ms) et ciblé (`childList` + `subtree` sur le conteneur le plus petit
   possible, jamais de travail layout-forçant dans le callback). Déconnecter quand la vue est détruite.
+- Écritures MAL (actions rapides) : `POST /ownlist/{anime|manga}/edit.json` en JSON
+  (+ `csrf_token` lu FRAIS depuis `meta[name="csrf_token"]`, jamais mis en cache).
+  Jamais de retry auto sur une écriture (un retry = un +1 en double). Contrat prouvé live
+  2026-10-15 (200 `null` = OK, 400 `{errors}` = refus). Après succès : `dropCacheFor(kind, user)`
+  puis update optimiste ciblé (`refreshItem` + `updateCountsUI`, jamais de full re-render).
 - Accessibilité : `:focus-visible` systématique, topbar ré-affichée au focus.
 - Pas de `head`/`tail`/`sed` sous PowerShell Windows (utiliser `node -e`, `Select-Object`).
 - Avant chaque save mémoire : `ecc memory search` pour éviter les doublons.
