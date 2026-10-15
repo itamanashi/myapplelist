@@ -331,7 +331,15 @@
     window.__myappleListView?.buildListView();
     window.__myappleAnime?.buildAnimeView();
     autoHideBar();
-    new MutationObserver(revealContent).observe(document.documentElement, { childList: true, subtree: true });
+    // DOM MAL dynamique (lazyload, AJAX) : observer debouncé via rAF, jamais de
+    // layout-forçant dans le callback (cf. AGENTS.md). revealContent est idempotent.
+    let revealQueued = false;
+    const revealScheduled = () => {
+      if (revealQueued) return;
+      revealQueued = true;
+      requestAnimationFrame(() => { revealQueued = false; revealContent(); });
+    };
+    new MutationObserver(revealScheduled).observe(document.documentElement, { childList: true, subtree: true });
     console.log("[myapplelist] Apple replacement actif");
   })();
 })();

@@ -428,11 +428,22 @@ html.mal-custom body.myapple-list footer {
   box-shadow: 0 0 4px rgba(0,0,0,.45);
   z-index: 2;
 }
-.st-1 { background: #34c759 !important; }
-.st-2 { background: #0071e3 !important; }
-.st-3 { background: #ff9500 !important; }
-.st-4 { background: #ff3b30 !important; }
-.st-6 { background: #af52de !important; }
+/* Statuts : qualifiés + scopés (jamais de `.st-N` nu — cf. AGENTS.md). */
+html.mal-custom .apl-status-dot.st-1,
+html.mal-custom .apl-status-pill.st-1,
+html.mal-custom .apl-modal-status-badge.st-1 { background: var(--apl-st-1) !important; }
+html.mal-custom .apl-status-dot.st-2,
+html.mal-custom .apl-status-pill.st-2,
+html.mal-custom .apl-modal-status-badge.st-2 { background: var(--apl-st-2) !important; }
+html.mal-custom .apl-status-dot.st-3,
+html.mal-custom .apl-status-pill.st-3,
+html.mal-custom .apl-modal-status-badge.st-3 { background: var(--apl-st-3) !important; }
+html.mal-custom .apl-status-dot.st-4,
+html.mal-custom .apl-status-pill.st-4,
+html.mal-custom .apl-modal-status-badge.st-4 { background: var(--apl-st-4) !important; }
+html.mal-custom .apl-status-dot.st-6,
+html.mal-custom .apl-status-pill.st-6,
+html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !important; }
 
 .apl-card-progress {
   position: absolute;

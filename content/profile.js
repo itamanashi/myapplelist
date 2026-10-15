@@ -23,12 +23,13 @@ const SFR = {
 };
 
 const STATUS_COLORS = {
-  "En cours": "#34c759",
-  "Terminés": "#0071e3",
-  "En pause": "#ff9500",
-  "Abandonnés": "#ff3b30",
-  "À voir": "#af52de",
-  "À lire": "#af52de",
+  // Synchro avec --apl-st-* (content/css/00-tokens.css, palette audit 2026-10-15).
+  "En cours": "#10b981",
+  "Terminés": "#3b82f6",
+  "En pause": "#f59e0b",
+  "Abandonnés": "#f43f5e",
+  "À voir": "#64748b",
+  "À lire": "#64748b",
 };
 
 const TFR = {

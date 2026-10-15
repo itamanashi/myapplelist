@@ -28,6 +28,16 @@ jamais masqués). En revanche on re-stylise le CSS MAL, on masque son chrome
 - Contenu MAL : ne jamais masquer `#myanimelist`, `.wrapper`, `#contentWrapper`, `#content`.
 - Animations : que `transform` + `opacity` (compositor), `@media (prefers-reduced-motion: reduce)` obligatoire.
 - Spécificité CSS : préfixer par `html.mal-custom` (+ `body div#myanimelist` si MAL résiste).
+  Interdit : sélecteurs globaux non préfixés (`body`, `.table`, `.st-1` nu, `div`, `img`).
+  Seules exceptions : classes `apl-*` / `#myapple-*` créées par l'extension (jamais présentes dans le DOM MAL),
+  et `:root` pour les `--apl-*`. Tout `.st-N` doit être employé qualifié
+  (ex. `.apl-status-dot.st-1`), jamais nu.
+- Tokens : `content/css/00-tokens.css` est le seul endroit où créer `--apl-*`
+  (couleurs, statuts `--apl-st-*`, rayons, ombres, ressorts). Les vues consomment les tokens,
+  jamais de valeur hex en dur pour un statut.
+- DOM dynamique MAL (listes en AJAX, lazyload) : tout `MutationObserver` DOIT être
+  debouncé (rAF ou 150 ms) et ciblé (`childList` + `subtree` sur le conteneur le plus petit
+  possible, jamais de travail layout-forçant dans le callback). Déconnecter quand la vue est détruite.
 - Accessibilité : `:focus-visible` systématique, topbar ré-affichée au focus.
 - Pas de `head`/`tail`/`sed` sous PowerShell Windows (utiliser `node -e`, `Select-Object`).
 - Avant chaque save mémoire : `ecc memory search` pour éviter les doublons.

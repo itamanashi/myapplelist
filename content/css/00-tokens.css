@@ -13,5 +13,19 @@
   --apl-shadow-small: 0 8px 24px rgba(0,0,0,.12);
   --apl-spring: cubic-bezier(.32,.72,.35,1);
   --apl-spring-bounce: cubic-bezier(.32,1.2,.35,1);
+  /* Statuts sémantiques MAL (1=en cours, 2=terminé, 3=pause, 4=abandonné, 6=prévu).
+     Palette audit 2026-10-15 (AniList-inspired, anti violet générique). */
+  --apl-st-1: #10b981;
+  --apl-st-2: #3b82f6;
+  --apl-st-3: #f59e0b;
+  --apl-st-4: #f43f5e;
+  --apl-st-6: #64748b;
+}
+html.mal-dark {
+  --apl-bg: #0b0e14;
+  --apl-card: rgba(18,24,33,.78);
+  --apl-ink: #f5f5f7;
+  --apl-muted: #9aa0aa;
+  --apl-accent: #2997ff;
 }
 
