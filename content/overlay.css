@@ -3261,6 +3261,102 @@ html.mal-dark #myapple-anime .apl-person .apl-va { border-color: rgba(255,255,25
   #myapple-anime .apl-card-body { padding: 10px 16px 16px 16px !important; }
   #myapple-anime .apl-card > header { padding: 14px 16px 0 16px !important; }
 }
+/* ---- Widget de gestion de liste ---- */
+#myapple-anime .apl-list-widget-row {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin-bottom: 14px !important;
+}
+#myapple-anime .apl-list-widget-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .07em !important;
+  color: var(--apl-muted) !important;
+}
+#myapple-anime .apl-list-widget-select {
+  width: 100% !important;
+  border: 1px solid var(--apl-border) !important;
+  background: var(--apl-surface) !important;
+  border-radius: var(--apl-radius-s) !important;
+  padding: 8px 11px !important;
+  font-size: 13px !important;
+  color: var(--apl-ink) !important;
+  outline: 0 !important;
+  transition: border-color 140ms, box-shadow 140ms !important;
+  font-family: inherit !important;
+}
+#myapple-anime .apl-list-widget-select:focus {
+  border-color: var(--apl-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--apl-accent) 22%, transparent) !important;
+}
+#myapple-anime .apl-list-widget-prog {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+#myapple-anime .apl-list-widget-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: var(--apl-radius-s) !important;
+  border: 1px solid var(--apl-border) !important;
+  background: var(--apl-surface) !important;
+  color: var(--apl-muted) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: background 140ms, color 140ms, border-color 140ms !important;
+}
+#myapple-anime .apl-list-widget-btn:hover {
+  background: var(--apl-surface-hover) !important;
+  color: var(--apl-ink) !important;
+  border-color: var(--apl-border-strong) !important;
+}
+#myapple-anime .apl-list-widget-input {
+  flex: 1 !important;
+  border: 1px solid var(--apl-border) !important;
+  background: var(--apl-surface) !important;
+  border-radius: var(--apl-radius-s) !important;
+  padding: 6px 10px !important;
+  font-size: 13px !important;
+  color: var(--apl-ink) !important;
+  outline: 0 !important;
+  text-align: center !important;
+  font-variant-numeric: tabular-nums !important;
+  transition: border-color 140ms, box-shadow 140ms !important;
+  font-family: inherit !important;
+}
+#myapple-anime .apl-list-widget-input:focus {
+  border-color: var(--apl-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--apl-accent) 22%, transparent) !important;
+}
+#myapple-anime .apl-list-widget-save {
+  width: 100% !important;
+  padding: 10px 16px !important;
+  border-radius: var(--apl-radius-s) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  border: 1px solid var(--apl-accent) !important;
+  background: var(--apl-accent) !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  transition: transform 180ms var(--apl-spring), background 140ms, box-shadow 140ms !important;
+}
+#myapple-anime .apl-list-widget-save:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(0,113,227,.35) !important;
+}
+#myapple-anime .apl-list-widget-save:disabled {
+  opacity: .5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   #myapple-anime .apl-chip, #myapple-anime a.apl-pill-btn, #myapple-anime .apl-person {
     transition: none !important;

@@ -26,6 +26,39 @@ const KEY_FR = {
   Themes: "Thèmes", Theme: "Thèmes", Demographic: "Public", Demographics: "Public"
 };
 
+// Extraction de l'ID anime/manga depuis l'URL
+function extractId(path) {
+  const m = path.match(/^\/(anime|manga)\/(\d+)/);
+  return m ? { kind: m[1], id: parseInt(m[2], 10) } : null;
+}
+
+// Lecture de l'état actuel de la liste depuis le DOM MAL
+function readListStatus(content) {
+  const statusBlock = content.querySelector("ul.user-status");
+  if (!statusBlock) return null;
+
+  const statusId = (() => {
+    const active = statusBlock.querySelector("li.selected");
+    if (!active) return null;
+    const link = active.querySelector("a");
+    if (!link) return null;
+    const href = link.getAttribute("href") || "";
+    const m = href.match(/status=(\d+)/);
+    return m ? parseInt(m[1], 10) : null;
+  })();
+
+  const scoreEl = content.querySelector("span#scoretext");
+  const score = scoreEl ? parseFloat(scoreEl.textContent) || 0 : 0;
+
+  const episodesEl = content.querySelector("span#curEps, span#cur_chaps");
+  const episodes = episodesEl ? parseInt(episodesEl.textContent, 10) || 0 : 0;
+
+  const volumesEl = content.querySelector("span#cur_vols");
+  const volumes = volumesEl ? parseInt(volumesEl.textContent, 10) || 0 : 0;
+
+  return { statusId, score, episodes, volumes };
+}
+
 const STATUS_FR = {
   "Finished Airing": "Terminé", "Currently Airing": "En cours", "Not yet aired": "Annoncé",
   Finished: "Terminée", Publishing: "En cours", "On Hiatus": "En pause", Discontinued: "Interrompue"
@@ -235,6 +268,12 @@ function readAnime(content) {
   const favRaw = content.querySelector("#profileRows a");
   const favText = (favRaw?.getAttribute("href") || "") + "|" + T(favRaw);
   const favNode = (favRaw && favRaw !== addRaw && /favor/i.test(favText)) ? favRaw : null;
+
+  // Bloc de gestion de liste existant (déjà dans la liste)
+  // MAL affiche ul.user-status avec des boutons de statut et un sélecteur de score
+  const listStatusBlock = content.querySelector("ul.user-status");
+  const listStatusEdit = content.querySelector(".user-status-edit-block");
+  const isInList = !!(listStatusBlock || listStatusEdit);
   const d = {
     isManga,
     title: T(titleEl),
@@ -253,6 +292,9 @@ function readAnime(content) {
     themesNode: content.querySelector(".theme-songs"),
     addListNode,
     favNode,
+    isInList,
+    listStatusBlock,
+    listStatusEdit,
     nav: [...content.querySelectorAll("#horiznav_nav a[href]")].map((a) => ({ label: T(a), href: a.getAttribute("href") || "" })).filter((l) => l.label),
     chars: [], charsMore: "", staff: [], staffMore: "", related: []
   };
@@ -330,6 +372,147 @@ function personCard(parent, p, showVa) {
   return c;
 }
 
+// Widget de gestion de liste interactif
+function buildListWidget(parent, idInfo, listStatus, isManga, username) {
+  const STATUS_OPTIONS = isManga
+    ? [
+        { id: 1, label: "En cours" },
+        { id: 2, label: "Terminé" },
+        { id: 3, label: "En pause" },
+        { id: 4, label: "Abandonné" },
+        { id: 6, label: "À lire" },
+      ]
+    : [
+        { id: 1, label: "En cours" },
+        { id: 2, label: "Terminé" },
+        { id: 3, label: "En pause" },
+        { id: 4, label: "Abandonné" },
+        { id: 6, label: "À voir" },
+      ];
+
+  const scoreOptions = Array.from({ length: 11 }, (_, i) => ({ value: i, label: i === 0 ? "—" : String(i) }));
+
+  // Statut
+  const statusRow = el("div", "apl-list-widget-row", parent);
+  el("label", "apl-list-widget-label", statusRow, "Statut");
+  const statusSelect = el("select", "apl-list-widget-select", statusRow);
+  STATUS_OPTIONS.forEach((s) => {
+    const opt = el("option", null, statusSelect, s.label);
+    opt.value = String(s.id);
+    if (listStatus.statusId === s.id) opt.selected = true;
+  });
+
+  // Score
+  const scoreRow = el("div", "apl-list-widget-row", parent);
+  el("label", "apl-list-widget-label", scoreRow, "Note");
+  const scoreSelect = el("select", "apl-list-widget-select", scoreRow);
+  scoreOptions.forEach((s) => {
+    const opt = el("option", null, scoreSelect, s.label);
+    opt.value = String(s.value);
+    if (listStatus.score === s.value) opt.selected = true;
+  });
+
+  // Progression
+  const progRow = el("div", "apl-list-widget-row", parent);
+  el("label", "apl-list-widget-label", progRow, isManga ? "Chapitres" : "Épisodes");
+  const progWrap = el("div", "apl-list-widget-prog", progRow);
+  const minusBtn = el("button", "apl-list-widget-btn", progWrap, "−");
+  minusBtn.type = "button";
+  minusBtn.setAttribute("aria-label", "Diminuer");
+  const progInput = el("input", "apl-list-widget-input", progWrap);
+  progInput.type = "number";
+  progInput.min = "0";
+  progInput.value = String(listStatus.episodes);
+  const plusBtn = el("button", "apl-list-widget-btn", progWrap, "+");
+  plusBtn.type = "button";
+  plusBtn.setAttribute("aria-label", "Augmenter");
+
+  // Volumes (manga uniquement)
+  if (isManga) {
+    const volRow = el("div", "apl-list-widget-row", parent);
+    el("label", "apl-list-widget-label", volRow, "Tomes");
+    const volWrap = el("div", "apl-list-widget-prog", volRow);
+    const volMinus = el("button", "apl-list-widget-btn", volWrap, "−");
+    volMinus.type = "button";
+    const volInput = el("input", "apl-list-widget-input", volWrap);
+    volInput.type = "number";
+    volInput.min = "0";
+    volInput.value = String(listStatus.volumes);
+    const volPlus = el("button", "apl-list-widget-btn", volWrap, "+");
+    volPlus.type = "button";
+  }
+
+  // Bouton Enregistrer
+  const saveRow = el("div", "apl-list-widget-row", parent);
+  const saveBtn = el("button", "apl-list-widget-save", saveRow, "Enregistrer");
+  saveBtn.type = "button";
+
+  // Événements
+  let pending = false;
+
+  saveBtn.addEventListener("click", async () => {
+    if (pending) return;
+    pending = true;
+    saveBtn.textContent = "Enregistrement...";
+    saveBtn.disabled = true;
+
+    const status = parseInt(statusSelect.value, 10);
+    const score = parseInt(scoreSelect.value, 10);
+    const episodes = parseInt(progInput.value, 10) || 0;
+    const volumes = isManga ? (parseInt(volInput?.value, 10) || 0) : 0;
+
+    try {
+      const L = root.__myappleList;
+      if (!L) throw new Error("Couche données indisponible");
+
+      const fields = isManga
+        ? { status, score, chapters: episodes, volumes }
+        : { status, score, episodes };
+
+      await L.updateEntry({ kind: idInfo.kind, id: idInfo.id, fields });
+      // Invalider le cache de la liste utilisateur après modification
+      if (username) await L.dropCacheFor(idInfo.kind, username);
+
+      saveBtn.textContent = "Enregistré ✓";
+      setTimeout(() => {
+        saveBtn.textContent = "Enregistrer";
+        saveBtn.disabled = false;
+        pending = false;
+      }, 2000);
+    } catch (e) {
+      saveBtn.textContent = "Erreur";
+      setTimeout(() => {
+        saveBtn.textContent = "Enregistrer";
+        saveBtn.disabled = false;
+        pending = false;
+      }, 2000);
+    }
+  });
+
+  // Boutons +/-
+  minusBtn.addEventListener("click", () => {
+    const cur = parseInt(progInput.value, 10) || 0;
+    progInput.value = String(Math.max(0, cur - 1));
+  });
+
+  plusBtn.addEventListener("click", () => {
+    const cur = parseInt(progInput.value, 10) || 0;
+    progInput.value = String(cur + 1);
+  });
+
+  if (isManga && volMinus && volPlus) {
+    volMinus.addEventListener("click", () => {
+      const cur = parseInt(volInput.value, 10) || 0;
+      volInput.value = String(Math.max(0, cur - 1));
+    });
+
+    volPlus.addEventListener("click", () => {
+      const cur = parseInt(volInput.value, 10) || 0;
+      volInput.value = String(cur + 1);
+    });
+  }
+}
+
 function buildAnimeView() {
   if (document.getElementById("myapple-anime")) return;
   const path = location.pathname;
@@ -342,6 +525,14 @@ function buildAnimeView() {
   try { d = readAnime(content); } catch { return; }
   // Données minimales : titre + affiche + synopsis, sinon on laisse le MAL natif
   if (!d || !d.title || !d.poster || !d.synopsisNode) return;
+
+  // Extraction ID et état liste si déjà dans la liste
+  const idInfo = extractId(path);
+  const listStatus = d.isInList ? readListStatus(content) : null;
+
+  // Extraction username pour le cache (profil dans header)
+  const userEl = document.querySelector("#headerSmall .profile-link, #header-menu .profile-link");
+  const username = userEl ? userEl.textContent.trim() : null;
 
   try {
     const view = el("div", null, null);
@@ -468,6 +659,12 @@ function buildAnimeView() {
     }
 
     // ---- Latéral ----
+    // Widget de gestion de liste (si connecté et dans la liste)
+    if (d.isInList && idInfo && listStatus && username) {
+      const listWidget = card(side, "Ma liste");
+      buildListWidget(listWidget, idInfo, listStatus, d.isManga, username);
+    }
+
     if (d.trailerNode) {
       const body = card(side, "Vidéo");
       moveInto(d.trailerNode, body);
