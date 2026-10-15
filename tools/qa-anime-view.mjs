@@ -58,6 +58,10 @@ const report = () => page.evaluate(() => {
   actions: [...document.querySelectorAll('#myapple-anime .apl-actions a')].map((a) => a.textContent.trim()),
   oldHidden: (() => { const t = document.querySelector('#content > table'); return t ? getComputedStyle(t).display : 'ABSENT'; })(),
   overflow: document.documentElement.scrollWidth - window.innerWidth,
+  h2Border: cs('#myapple-anime .apl-card h2', 'borderBottomWidth'),
+  synLh: (() => { const p = document.querySelector('#apl-sec-synopsis p'); return p ? getComputedStyle(p).lineHeight : 'ABSENT'; })(),
+  tocLabels: [...document.querySelectorAll('#myapple-anime .apl-toc a')].map((a) => a.textContent.trim()),
+  softNav: !!document.querySelector('#myapple-anime .apl-card-soft ul.apl-navlist'),
   };
 });
 
@@ -79,6 +83,10 @@ for (const c of CASES) {
   ok(r.parasites === 0, c.tag + ' : aucun élément parasite dans la fiche');
   ok(r.ficheW >= 1150 && r.ficheW <= 1250, c.tag + ' : largeur fiche ' + r.ficheW + 'px (cible 1160-1240)');
   ok(parseFloat(r.h1Size) >= 40 && parseFloat(r.h1Size) <= 48, c.tag + ' : titre ' + r.h1Size);
+  ok(r.h2Border === '0px', c.tag + ' : titres sans filet MAL (' + r.h2Border + ')');
+  if (r.synLh !== 'ABSENT') ok(parseFloat(r.synLh) >= 23 && parseFloat(r.synLh) <= 25, c.tag + ' : synopsis lh 1.7 (' + r.synLh + ')');
+  ok(r.tocLabels.includes('Synopsis') && r.tocLabels.includes('Infos'), c.tag + ' : sommaire Synopsis+Infos (' + r.tocLabels.join('/') + ')');
+  ok(r.softNav, c.tag + ' : nav secondaire en retrait');
   await page.evaluate(() => window.__setMyApple({ dark: false }));
   await sleep(400);
   const light = await page.evaluate(() => {
@@ -136,6 +144,70 @@ ok(merrs.length === 0, 'mobile : aucune erreur JS (' + merrs.length + ')');
 await mp.evaluate(() => window.scrollTo(0, 0));
 await mp.screenshot({ path: path.join(shots, 'bebop-mobile.png') });
 await mctx.close();
+
+// Formats intermédiaires P3 (passe polish) : 1024x768 (petit desktop) et 768x1024 (tablette portrait).
+// Mêmes injections que mobile, un contexte à la fois (verrou profil).
+for (const vp of [{ w: 1024, h: 768 }, { w: 768, h: 1024 }]) {
+  console.log('== mid-' + vp.w + 'x' + vp.h + ' ==');
+  const cctx = await chromium.launchPersistentContext(profile, {
+    channel: 'chrome', headless: true, viewport: { width: vp.w, height: vp.h },
+  });
+  await cctx.addInitScript({ content: STUB });
+  const cp = await cctx.newPage();
+  const cerrs = [];
+  cp.on('pageerror', (e) => cerrs.push(String(e).slice(0, 160)));
+  await cp.goto(CASES[0].url, { waitUntil: 'domcontentloaded' });
+  await cp.addStyleTag({ path: path.join(root, 'content', 'overlay.css') });
+  await cp.addScriptTag({ path: path.join(root, 'content', 'anime-view.js') });
+  await cp.addScriptTag({ path: path.join(root, 'content', 'content.js') });
+  await sleep(2500);
+  const mid = await cp.evaluate(() => {
+    const personsGrid = document.querySelector('#myapple-anime .apl-persons')
+      ? getComputedStyle(document.querySelector('#myapple-anime .apl-persons')).gridTemplateColumns.split(' ').length : 0;
+    return {
+      vue: !!document.querySelector('#myapple-anime'),
+      ficheW: Math.round(document.querySelector('#myapple-anime')?.getBoundingClientRect().width ?? 0),
+      cols: document.querySelector('#myapple-anime .apl-cols')
+        ? getComputedStyle(document.querySelector('#myapple-anime .apl-cols')).gridTemplateColumns : 'ABSENT',
+      personsCols: personsGrid,
+      h2Border: document.querySelector('#myapple-anime .apl-card h2')
+        ? getComputedStyle(document.querySelector('#myapple-anime .apl-card h2')).borderBottomWidth : 'ABSENT',
+      synLh: document.querySelector('#apl-sec-synopsis p')
+        ? getComputedStyle(document.querySelector('#apl-sec-synopsis p')).lineHeight : 'ABSENT',
+      toc: [...document.querySelectorAll('#myapple-anime .apl-toc a')].map((a) => a.textContent.trim()),
+      softNav: !!document.querySelector('#myapple-anime .apl-card-soft ul.apl-navlist'),
+      overflow: document.documentElement.scrollWidth - window.innerWidth,
+    };
+  });
+  console.log(JSON.stringify(mid));
+  const tag = vp.w + 'x' + vp.h;
+  ok(mid.vue, tag + ' : vue construite');
+  ok(mid.overflow <= 1, tag + ' : pas de débordement (+' + mid.overflow + 'px)');
+  ok(mid.ficheW >= vp.w - 140 && mid.ficheW <= vp.w, tag + ' : fiche pleine largeur (' + mid.ficheW + 'px)');
+  ok(mid.personsCols >= 2, tag + ' : grille personnages lisible (' + mid.personsCols + ' col)');
+  ok(mid.h2Border === '0px', tag + ' : titres sans filet MAL (' + mid.h2Border + ')');
+  ok(parseFloat(mid.synLh) >= 23 && parseFloat(mid.synLh) <= 25, tag + ' : synopsis lh 1.7 (' + mid.synLh + ')');
+  ok(mid.toc.includes('Synopsis') && mid.toc.includes('Infos'), tag + ' : sommaire Synopsis+Infos (' + mid.toc.join('/') + ')');
+  ok(mid.softNav, tag + ' : nav secondaire en retrait');
+  if (vp.w === 1024) ok(!/1fr\)?$/.test(mid.cols) || mid.cols.includes('280px') || mid.cols.split(' ').length === 2, tag + ' : 2 colonnes (' + mid.cols + ')');
+  if (vp.w === 768) ok(mid.cols.split(' ').length === 1, tag + ' : 1 colonne (' + mid.cols + ')');
+  await cp.evaluate(() => window.__setMyApple({ dark: false }));
+  await sleep(400);
+  await cp.evaluate(() => window.scrollTo(0, 0));
+  await cp.screenshot({ path: path.join(shots, 'bebop-' + tag + '-light.png') });
+  await cp.evaluate(() => window.__setMyApple({ dark: true }));
+  await sleep(600);
+  await cp.evaluate(() => window.scrollTo(0, 0));
+  await cp.screenshot({ path: path.join(shots, 'bebop-' + tag + '-dark.png') });
+  const darkMid = await cp.evaluate(() => ({
+    h2c: getComputedStyle(document.querySelector('#myapple-anime .apl-card h2')).color,
+    softc: getComputedStyle(document.querySelector('#myapple-anime .apl-card-soft h2')).color,
+  }));
+  ok(darkMid.h2c !== darkMid.softc, tag + ' : nav secondaire atténuée en sombre');
+  ok(cerrs.length === 0, tag + ' : aucune erreur JS (' + cerrs.length + ')');
+  await cp.evaluate(() => window.__setMyApple({ dark: false }));
+  await cctx.close();
+}
 
 // Désactivation : retour propre à la page native (vue retirée, nœuds restaurés).
 // Nouveau contexte (le précédent est fermé pour le test mobile).

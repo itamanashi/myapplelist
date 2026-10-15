@@ -423,7 +423,7 @@ function buildAnimeView() {
     moveInto(d.synopsisNode, syn);
 
     if (d.info.length) {
-      const body = card(main, "Informations");
+      const body = card(main, "Informations", undefined, "apl-sec-infos");
       const grid = el("dl", "apl-infos", body);
       d.info.filter((r) => r.key !== "Type" && r.key !== "Status").forEach((r) => {
         el("dt", null, grid, KEY_FR[r.key] || r.key);
@@ -479,6 +479,7 @@ function buildAnimeView() {
 
     if (d.nav.length > 1) {
       const body = card(side, "Explorer sur MAL");
+      body.parentElement.classList.add("apl-card-soft");
       const ul = el("ul", "apl-navlist", body);
       d.nav.forEach((l) => {
         const li = el("li", null, ul);
@@ -490,7 +491,8 @@ function buildAnimeView() {
     const toc = el("nav", "apl-toc", null);
     toc.setAttribute("aria-label", "Sections de la fiche");
     const tocLink = (href, label) => { const a = el("a", null, toc, label); a.href = href; };
-    tocLink("#apl-sec-synopsis", "Aperçu");
+    tocLink("#apl-sec-synopsis", "Synopsis");
+    if (d.info.length) tocLink("#apl-sec-infos", "Infos");
     if (d.chars.length) tocLink("#apl-sec-chars", "Personnages");
     if (d.staff.length) tocLink("#apl-sec-staff", "Staff");
     if (d.related.length) tocLink("#apl-sec-related", "Œuvres liées");
