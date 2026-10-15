@@ -1,5 +1,5 @@
 const STATE_KEY = "myapple_state_v1";
-const DEFAULTS = { enabled: true, dark: false, panelOpen: false };
+const DEFAULTS = { enabled: true, dark: false, panelOpen: false, listView: "grid", density: "normal" };
 
 chrome.runtime.onInstalled.addListener(async () => {
   // N'écrase jamais les réglages existants (install comme update).

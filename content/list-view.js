@@ -73,10 +73,16 @@ class ListView {
     return [1, 2, 3, 4, 6, 7].includes(s) ? s : 7;
   }
 
-  init() {
+  async init() {
     if (document.getElementById("myapple-list")) return;
     this.isOwnList = document.body.classList.contains("ownlist") ||
       !!document.querySelector(".list-menu-float a.profile[href*='/" + encodeURIComponent(this.ctx.user) + "']");
+
+    // Préférences popup (mode de vue par défaut). Défaut grille si illisible.
+    try {
+      const s = (await chrome?.storage?.local?.get("myapple_state_v1"))?.["myapple_state_v1"];
+      if (s?.listView === "table") this.viewMode = "table";
+    } catch { /* stockage indisponible : grille */ }
 
     // Marqueur global pour le CSS (masque le vieux chrome MAL)
     document.body.classList.add("myapple-list");
@@ -502,7 +508,7 @@ class ListView {
       this.renderItemsBatch(true);
     });
 
-    // Bascule Vue Grille / Tableau
+    // Bascule Vue Grille / Tableau (boutons mémorisés pour la bascule live depuis le popup)
     const viewGroup = el("div", "apl-btn-group", bar);
     const gridBtn = el("button", `apl-icon-btn ${this.viewMode === "grid" ? "active" : ""}`, viewGroup);
     gridBtn.type = "button";
@@ -515,26 +521,26 @@ class ListView {
     tableBtn.title = "Vue Tableau compact";
     tableBtn.setAttribute("aria-label", "Vue Tableau");
     tableBtn.textContent = "☰";
+    this.gridBtn = gridBtn;
+    this.tableBtn = tableBtn;
 
-    gridBtn.addEventListener("click", () => {
-      if (this.viewMode === "grid") return;
-      this.viewMode = "grid";
-      gridBtn.classList.add("active");
-      tableBtn.classList.remove("active");
-      this.renderItemsBatch(true);
-    });
-
-    tableBtn.addEventListener("click", () => {
-      if (this.viewMode === "table") return;
-      this.viewMode = "table";
-      tableBtn.classList.add("active");
-      gridBtn.classList.remove("active");
-      this.renderItemsBatch(true);
-    });
+    gridBtn.addEventListener("click", () => this.setViewMode("grid"));
+    tableBtn.addEventListener("click", () => this.setViewMode("table"));
 
     // Compteur de résultats
     this.countIndicator = el("div", "apl-filter-count", bar);
     this.updateCountIndicator();
+  }
+
+  // Bascule grille/tableau sans rechargement (clic local ou popup via content.js).
+  // Conserve filtres, recherche et scroll ; seul le conteneur d'items est reconstruit.
+  setViewMode(mode) {
+    const next = mode === "table" ? "table" : "grid";
+    if (this.viewMode === next || !this.viewContent) return;
+    this.viewMode = next;
+    this.gridBtn?.classList.toggle("active", next === "grid");
+    this.tableBtn?.classList.toggle("active", next === "table");
+    this.renderItemsBatch(true);
   }
 
   updateCountIndicator() {

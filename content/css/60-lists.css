@@ -982,7 +982,23 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   border: 1px solid var(--apl-border) !important;
 }
 
-/* ===== 7.9 Focus clavier dans le scope listes ===== */
+/* ===== 7.12 Densité compacte (html.apl-compact, posée par les préférences) ===== */
+/* Même information, pas de saut de layout : resserre gouttières et rythme vertical. */
+html.apl-compact #myapple-list { gap: 10px !important; }
+html.apl-compact .apl-list-hero { padding: 14px 16px 12px 16px; gap: 10px; }
+html.apl-compact .apl-list-kpis { gap: 6px 20px; padding-top: 10px; }
+html.apl-compact .apl-list-kpi > b { font-size: 20px; }
+html.apl-compact .apl-list-controls { padding: 8px 12px; gap: 7px; }
+html.apl-compact .apl-poster-grid { grid-template-columns: repeat(auto-fill, minmax(134px, 1fr)); gap: 10px; }
+html.apl-compact .apl-card-info { padding: 7px 9px 9px 9px; gap: 2px; }
+html.apl-compact .apl-card-title { font-size: 12px !important; }
+html.apl-compact .apl-card-meta { font-size: 10.5px; }
+html.apl-compact .apl-table td { padding: 5px 10px; }
+html.apl-compact .apl-table td.td-img img { width: 32px; height: 46px; }
+html.apl-compact .apl-title-text { font-size: 12px; }
+html.apl-compact .apl-modal-dialog { padding: 18px; }
+
+/* ===== 7.13 Focus clavier dans le scope listes ===== */
 #myapple-list a:focus-visible,
 #myapple-list button:focus-visible,
 #myapple-list input:focus-visible,

@@ -2,7 +2,9 @@
 (() => {
   const STATE_KEY = "myapple_state_v1";
   const NOTE_KEY = () => `myapple_note_${location.pathname}`;
-  const defaults = { enabled: true, dark: false, panelOpen: false };
+  const defaults = { enabled: true, dark: false, panelOpen: false, listView: "grid", density: "normal" };
+  const cleanView = (v) => (v === "table" ? "table" : "grid");
+  const cleanDensity = (d) => (d === "compact" ? "compact" : "normal");
 
   const getState = async () => {
     try {
@@ -16,9 +18,12 @@
     return s;
   };
 
-  function applyTheme(s) {
+  // Préférences -> classes racine (thème, densité). La vue liste suit via setViewMode.
+  function applyPrefs(s) {
     document.documentElement.classList.toggle("mal-custom", s.enabled);
     document.documentElement.classList.toggle("mal-dark", s.dark);
+    document.documentElement.classList.toggle("apl-compact", cleanDensity(s.density) === "compact");
+    window.__myappleListView?.currentView?.setViewMode?.(cleanView(s.listView));
   }
 
   // Animations : 100 % CSS (transform + opacity, compositor only).
@@ -293,7 +298,7 @@
   chrome.storage.onChanged.addListener((ch) => {
     if (ch[STATE_KEY]) {
       const s = { ...defaults, ...ch[STATE_KEY].newValue };
-      applyTheme(s); togglePanel(s.panelOpen);
+      applyPrefs(s); togglePanel(s.panelOpen);
       // Désactivation : retirer la vue reconstruite et RESTAURER les nœuds MAL
       // déplacés (sinon la fiche reste custom avec du contenu natif incomplet).
       if (!s.enabled) window.__myappleAnime?.destroyAnimeView?.();
@@ -323,7 +328,7 @@
 
   (async () => {
     const s = await getState();
-    applyTheme(s);
+    applyPrefs(s);
     if (!s.enabled) return;
     buildTopbar(); buildPanel(); buildFab(); togglePanel(s.panelOpen);
     revealContent();

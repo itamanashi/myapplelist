@@ -17,7 +17,7 @@ jamais masqués). En revanche on re-stylise le CSS MAL, on masque son chrome
 | `content/anime-view.js` | Vue detail : readAnime() + hero/KPIs/infos/personnages/staff/liés (anime & manga) |
 | `content/css/*.css` | Source de vérité du style (8 modules 00→70). JAMAIS d'édition directe de `overlay.css` |
 | `content/overlay.css` | Bundle GÉNÉRÉ via `node tools/build-css.mjs` (manifest + scripts QA pointent ici) |
-| `popup/*` | Popup extension (toggle actif/dark) |
+| `popup/*` | Popup extension (état instantané, segments vue/densité, toggles) |
 | `background/service-worker.js` | Init state |
 | `tools/` | Outillage dev/QA (profils Chrome persistants) |
 
@@ -46,6 +46,9 @@ jamais masqués). En revanche on re-stylise le CSS MAL, on masque son chrome
   Concurrence : les pages `load.json` qui arrivent APRÈS un +1 optimiste écrasent la
   mutation locale (race prouvée live 2026-10-15) → `updateData` DOIT réappliquer les
   entrées `dirty` et les oublier à convergence serveur.
+- Préférences (`myapple_state_v1`) : `enabled, dark, panelOpen, listView(grid|table),`
+  `density(normal|compact)`. Migration par fusion avec les défauts, jamais d'écrasement.
+  Le popup écrit, `content.js` applique en live (`apl-compact` + `setViewMode`, sans refresh).
 - Accessibilité : `:focus-visible` systématique, topbar ré-affichée au focus.
 - Pas de `head`/`tail`/`sed` sous PowerShell Windows (utiliser `node -e`, `Select-Object`).
 - Avant chaque save mémoire : `ecc memory search` pour éviter les doublons.

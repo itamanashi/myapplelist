@@ -3,49 +3,168 @@
 <head>
 <meta charset="utf-8" />
 <style>
-  :root { color-scheme: light dark; }
-  body { width: 280px; font-family: -apple-system, system-ui, "Segoe UI", Inter, sans-serif; margin: 0; padding: 14px; background: #f5f5f7; color: #1d1d1f; }
-  html[data-theme="dark"] body, html[data-theme="dark"] { background: #111114; color: #f5f5f7; }
-  @media (prefers-color-scheme: dark) {
-    html:not([data-theme="light"]) body { background: #111114; color: #f5f5f7; }
+  /* Popup MyAppleList — même langage que l'overlay (tokens --apl-*). */
+  :root {
+    --apl-bg: #f5f5f7;
+    --apl-card: #ffffff;
+    --apl-ink: #1d1d1f;
+    --apl-muted: #6e6e73;
+    --apl-accent: #0071e3;
+    --apl-surface: rgba(0,0,0,.045);
+    --apl-surface-hover: rgba(0,0,0,.075);
+    --apl-border: rgba(0,0,0,.08);
+    --apl-border-strong: rgba(0,0,0,.15);
+    color-scheme: light dark;
   }
-  h2 { margin: 0 0 4px 0; font-size: 17px; letter-spacing: -.02em; }
-  h2 span { color: #0071e3; }
-  p { font-size: 12px; opacity: .7; margin: 0 0 12px 0; }
-  .row { display: flex; gap: 8px; margin-top: 12px; }
-  button { flex: 1; border: 0; border-radius: 10px; padding: 10px; font-weight: 700; cursor: pointer; font-size: 13px; }
-  button:focus-visible { outline: 2px solid #0071e3; outline-offset: 2px; }
-  .primary { background: #0071e3; color: white; }
-  .ghost { background: rgba(120,120,128,.18); color: inherit; }
-  label.switch-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 10px 0; border-bottom: 1px solid rgba(120,120,128,.3); cursor: pointer; }
-  /* Switch façon iOS */
+  html[data-theme="dark"] {
+    --apl-bg: #0b0e14;
+    --apl-card: #121821;
+    --apl-ink: #e8edf3;
+    --apl-muted: #8b94a3;
+    --apl-accent: #2997ff;
+    --apl-surface: rgba(255,255,255,.055);
+    --apl-surface-hover: rgba(255,255,255,.10);
+    --apl-border: rgba(255,255,255,.09);
+    --apl-border-strong: rgba(255,255,255,.17);
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) {
+      --apl-bg: #0b0e14;
+      --apl-card: #121821;
+      --apl-ink: #e8edf3;
+      --apl-muted: #8b94a3;
+      --apl-accent: #2997ff;
+      --apl-surface: rgba(255,255,255,.055);
+      --apl-surface-hover: rgba(255,255,255,.10);
+      --apl-border: rgba(255,255,255,.09);
+      --apl-border-strong: rgba(255,255,255,.17);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    width: 300px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Inter, sans-serif;
+    margin: 0;
+    padding: 16px 14px 14px 14px;
+    background: var(--apl-bg);
+    color: var(--apl-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  .brand { margin: 0 0 2px 0; font-size: 18px; font-weight: 750; letter-spacing: -.02em; }
+  .brand span { color: var(--apl-accent); }
+  .tagline { font-size: 12px; color: var(--apl-muted); margin: 0 0 14px 0; line-height: 1.45; }
+  .section-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--apl-muted);
+    margin: 14px 2px 6px 2px;
+  }
+  .section-label:first-of-type { margin-top: 0; }
+  .card {
+    background: var(--apl-card);
+    border: 1px solid var(--apl-border);
+    border-radius: 12px;
+    padding: 6px;
+  }
+  /* Contrôle segmenté (vue, densité) */
+  .segmented { display: flex; gap: 4px; }
+  .segmented button {
+    flex: 1;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--apl-muted);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 650;
+    padding: 8px 4px;
+    cursor: pointer;
+    transition: background 140ms, color 140ms;
+  }
+  .segmented button:hover { background: var(--apl-surface); color: var(--apl-ink); }
+  .segmented button[aria-pressed="true"] { background: var(--apl-surface-hover); color: var(--apl-ink); font-weight: 750; box-shadow: inset 0 0 0 1px var(--apl-border-strong); }
+  .segmented button:focus-visible { outline: 2px solid var(--apl-accent); outline-offset: 1px; }
+  /* Lignes switch façon iOS */
+  label.switch-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 550;
+    padding: 9px 8px;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  label.switch-row + label.switch-row { border-top: 1px solid var(--apl-border); border-radius: 0; }
+  label.switch-row small { display: block; font-weight: 400; font-size: 11.5px; color: var(--apl-muted); }
   .switch { position: relative; width: 44px; height: 26px; flex: none; }
   .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-  .switch .track { position: absolute; inset: 0; border-radius: 999px; background: rgba(120,120,128,.35); transition: background 180ms ease; pointer-events: none; }
-  .switch .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); transition: transform 180ms cubic-bezier(.32,.72,.35,1); }
-  .switch input:checked + .track { background: #0071e3; }
+  .switch .track { position: absolute; inset: 0; border-radius: 999px; background: var(--apl-surface-hover); border: 1px solid var(--apl-border); transition: background 180ms ease; pointer-events: none; }
+  .switch .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); transition: transform 180ms cubic-bezier(.32,.72,.35,1); }
+  .switch input:checked + .track { background: var(--apl-accent); border-color: var(--apl-accent); }
   .switch input:checked + .track::after { transform: translateX(18px); }
-  .switch input:focus-visible + .track { outline: 2px solid #0071e3; outline-offset: 2px; }
+  .switch input:focus-visible + .track { outline: 2px solid var(--apl-accent); outline-offset: 2px; }
+  .row { display: flex; gap: 8px; margin-top: 14px; }
+  button.ghost {
+    flex: 1;
+    border: 1px solid var(--apl-border);
+    border-radius: 10px;
+    padding: 9px;
+    font: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    background: var(--apl-card);
+    color: var(--apl-ink);
+  }
+  button.ghost:hover { background: var(--apl-surface); }
+  button.ghost:focus-visible { outline: 2px solid var(--apl-accent); outline-offset: 2px; }
+  .sync-note { font-size: 11px; color: var(--apl-muted); text-align: center; margin: 10px 0 0 0; font-variant-numeric: tabular-nums; }
   @media (prefers-reduced-motion: reduce) {
-    .switch .track, .switch .track::after { transition: none; }
+    .switch .track, .switch .track::after, .segmented button { transition: none; }
   }
 </style>
 </head>
 <body>
-  <h2>myapple<span>list</span></h2>
-  <p>Le style Apple par-dessus vos pages MyAnimeList. Vos réglages s'appliquent aussitôt.</p>
-  <label class="switch-row">Visuel Apple
-    <span class="switch"><input type="checkbox" id="enabled" checked /><span class="track" aria-hidden="true"></span></span>
-  </label>
-  <label class="switch-row">Mode sombre
-    <span class="switch"><input type="checkbox" id="dark" /><span class="track" aria-hidden="true"></span></span>
-  </label>
-  <label class="switch-row">Panneau notes
-    <span class="switch"><input type="checkbox" id="panelOpen" /><span class="track" aria-hidden="true"></span></span>
-  </label>
-  <div class="row">
-    <button class="ghost" id="open-mal">Ouvrir MAL</button>
+  <h2 class="brand">myapple<span>list</span></h2>
+  <p class="tagline">Le style Apple par-dessus vos pages MyAnimeList. Réglages appliqués aussitôt.</p>
+
+  <div class="section-label" id="lbl-view">Listes — affichage</div>
+  <div class="card"><div class="segmented" role="group" aria-labelledby="lbl-view">
+    <button type="button" id="view-grid" aria-pressed="true">⊞ Grille</button>
+    <button type="button" id="view-table" aria-pressed="false">☰ Tableau</button>
+  </div></div>
+
+  <div class="section-label" id="lbl-density">Listes — densité</div>
+  <div class="card"><div class="segmented" role="group" aria-labelledby="lbl-density">
+    <button type="button" id="density-normal" aria-pressed="true">Normale</button>
+    <button type="button" id="density-compact" aria-pressed="false">Compacte</button>
+  </div></div>
+
+  <div class="section-label">Apparence</div>
+  <div class="card">
+    <label class="switch-row"><span>Mode sombre<small>Fonds profonds #0b0e14</small></span>
+      <span class="switch"><input type="checkbox" id="dark" /><span class="track" aria-hidden="true"></span></span>
+    </label>
   </div>
+
+  <div class="section-label">Extension</div>
+  <div class="card">
+    <label class="switch-row"><span>Visuel Apple<small>Topbar, cartes, dark MAL</small></span>
+      <span class="switch"><input type="checkbox" id="enabled" checked /><span class="track" aria-hidden="true"></span></span>
+    </label>
+    <label class="switch-row"><span>Panneau notes<small>Vos notes par page</small></span>
+      <span class="switch"><input type="checkbox" id="panelOpen" /><span class="track" aria-hidden="true"></span></span>
+    </label>
+  </div>
+
+  <div class="row">
+    <button type="button" class="ghost" id="open-mal">Ouvrir MAL</button>
+  </div>
+  <p class="sync-note" id="sync-note" role="status" aria-live="polite"></p>
 <script src="popup.js"></script>
 </body>
 </html>
