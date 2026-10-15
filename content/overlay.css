@@ -28,6 +28,8 @@
   --apl-st-3: #f59e0b;
   --apl-st-4: #f43f5e;
   --apl-st-6: #64748b;
+  /* Actions destructives : rouge/rose pour boutons de suppression */
+  --apl-danger: #ef4444;
 }
 html.mal-dark {
   --apl-bg: #0b0e14;
@@ -40,6 +42,7 @@ html.mal-dark {
   --apl-border: rgba(255,255,255,.09);
   --apl-border-strong: rgba(255,255,255,.17);
   --apl-track: rgba(255,255,255,.13);
+  --apl-danger: #f87171;
 }
 
 /* MyAppleList — §1 chrome MAL, typo Apple, layout 1400px. Module 10-base.css (ordre : tools/build-css.mjs). */
@@ -1894,13 +1897,11 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   z-index: 2;
 }
 
-/* Boutons d'action sur les cartes (edit + delete) */
+/* Bouton d'action sur les cartes (edit uniquement) */
 .apl-card-actions {
   position: absolute;
   top: 7px;
   right: 7px;
-  display: flex;
-  gap: 6px;
   z-index: 3;
   opacity: 0;
   transition: opacity 180ms ease;
@@ -1928,8 +1929,6 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   transform: scale(1.08);
 }
 .apl-card-action-btn.edit-btn { border-color: var(--apl-accent); }
-.apl-card-action-btn.delete-btn { border-color: var(--apl-st-4); }
-.apl-card-action-btn.delete-btn:hover { background: var(--apl-st-4); }
 
 /* Progression : rail fin, remplissage à la couleur du statut (classe st-N portée par la carte) */
 .apl-card-progress {
@@ -2104,43 +2103,6 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-/* Actions sur le tableau */
-.apl-table td.td-actions {
-  text-align: right;
-  white-space: nowrap;
-  width: 90px;
-}
-.apl-table-actions {
-  display: inline-flex;
-  gap: 4px;
-}
-.apl-table-action-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: 1px solid var(--apl-border);
-  background: var(--apl-surface);
-  color: var(--apl-muted);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background 140ms, color 140ms, border-color 140ms;
-}
-.apl-table-action-btn:hover {
-  background: var(--apl-surface-hover);
-  color: var(--apl-ink);
-  border-color: var(--apl-border-strong);
-}
-.apl-table-action-btn.edit-btn:hover {
-  border-color: var(--apl-accent);
-  color: var(--apl-accent);
-}
-.apl-table-action-btn.delete-btn:hover {
-  border-color: var(--apl-st-4);
-  color: var(--apl-st-4);
 }
 .apl-table-score {
   display: inline-flex;
@@ -2633,12 +2595,12 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   justify-content: flex-end;
 }
 .apl-btn-danger {
-  background: var(--apl-st-4) !important;
-  color: #fff !important;
-  border-color: var(--apl-st-4) !important;
+  background: transparent !important;
+  color: var(--apl-danger) !important;
+  border-color: var(--apl-danger) !important;
 }
 .apl-btn-danger:hover {
-  opacity: .9;
+  background: color-mix(in srgb, var(--apl-danger) 8%, transparent) !important;
 }
 .apl-btn {
   display: inline-flex;

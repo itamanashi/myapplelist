@@ -635,7 +635,6 @@ class ListView {
               <th class="th-type">Format</th>
               <th class="th-status">Statut</th>
               <th class="th-mal">Score MAL</th>
-              ${this.canEdit() ? '<th class="th-actions">Actions</th>' : ''}
             </tr>
           </thead>
           <tbody></tbody>
@@ -698,7 +697,7 @@ class ListView {
     const statusDot = el("span", `apl-status-dot st-${item.statut}`, poster);
     statusDot.title = statusText;
 
-    // Boutons d'action (edit + delete) - seulement sur sa propre liste
+    // Bouton d'édition rapide (seulement sur sa propre liste)
     if (this.canEdit()) {
       const actions = el("div", "apl-card-actions", poster);
       const editBtn = el("button", "apl-card-action-btn edit-btn", actions, "✎");
@@ -708,15 +707,6 @@ class ListView {
       editBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         this.openEditModal(item);
-      });
-
-      const deleteBtn = el("button", "apl-card-action-btn delete-btn", actions, "🗑");
-      deleteBtn.type = "button";
-      deleteBtn.title = "Supprimer de la liste";
-      deleteBtn.setAttribute("aria-label", `Supprimer ${item.titre} de la liste`);
-      deleteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.openDeleteConfirm(item);
       });
     }
 
@@ -843,29 +833,6 @@ class ListView {
     // 7. MAL Score
     const tdMal = el("td", "td-mal", tr);
     tdMal.textContent = item.scoreMal ? item.scoreMal.toFixed(2) : "—";
-
-    // 8. Actions (edit + delete) - seulement sur sa propre liste
-    if (this.canEdit()) {
-      const tdActions = el("td", "td-actions", tr);
-      const actions = el("div", "apl-table-actions", tdActions);
-      const editBtn = el("button", "apl-table-action-btn edit-btn", actions, "✎");
-      editBtn.type = "button";
-      editBtn.title = "Modifier cette entrée";
-      editBtn.setAttribute("aria-label", `Modifier ${item.titre}`);
-      editBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.openEditModal(item);
-      });
-
-      const deleteBtn = el("button", "apl-table-action-btn delete-btn", actions, "🗑");
-      deleteBtn.type = "button";
-      deleteBtn.title = "Supprimer de la liste";
-      deleteBtn.setAttribute("aria-label", `Supprimer ${item.titre} de la liste`);
-      deleteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.openDeleteConfirm(item);
-      });
-    }
 
     const open = () => this.openModal(item);
     tr.addEventListener("click", (e) => {
@@ -1167,15 +1134,27 @@ class ListView {
         </div>` : ""}
         <div class="apl-modal-actions">
           ${malUrl ? `<a href="${escapeHtml(malUrl)}" target="_blank" rel="noopener" class="apl-btn apl-btn-primary">Fiche MyAnimeList ↗</a>` : ""}
-          ${editUrl ? `<a href="${escapeHtml(editUrl)}" target="_blank" rel="noopener" class="apl-btn apl-btn-secondary apl-modal-edit-btn">Modifier mon entrée ✎</a>` : ""}
+          ${this.isOwnList ? `<button type="button" class="apl-btn apl-btn-secondary apl-modal-edit-btn">Modifier mon entrée ✎</button>` : ""}
+          ${this.isOwnList ? `<button type="button" class="apl-btn apl-btn-danger apl-modal-delete-btn">🗑 Supprimer l'entrée</button>` : ""}
         </div>
       </div>
     `;
 
     const editBtn = this.modalDialog.querySelector(".apl-modal-edit-btn");
     if (editBtn) {
-      editBtn.addEventListener("click", () => {
-        this.needsRefreshOnFocus = true;
+      editBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.closeModal();
+        this.openEditModal(item);
+      });
+    }
+
+    const deleteBtn = this.modalDialog.querySelector(".apl-modal-delete-btn");
+    if (deleteBtn) {
+      deleteBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.closeModal();
+        this.openDeleteConfirm(item);
       });
     }
 

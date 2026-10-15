@@ -27,6 +27,8 @@
   --apl-st-3: #f59e0b;
   --apl-st-4: #f43f5e;
   --apl-st-6: #64748b;
+  /* Actions destructives : rouge/rose pour boutons de suppression */
+  --apl-danger: #ef4444;
 }
 html.mal-dark {
   --apl-bg: #0b0e14;
@@ -39,5 +41,6 @@ html.mal-dark {
   --apl-border: rgba(255,255,255,.09);
   --apl-border-strong: rgba(255,255,255,.17);
   --apl-track: rgba(255,255,255,.13);
+  --apl-danger: #f87171;
 }
 
