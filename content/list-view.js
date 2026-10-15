@@ -594,7 +594,8 @@ class ListView {
 
   // --- Carte Affiche (Grid Card) ---
   buildPosterCard(item) {
-    const card = el("article", "apl-card apl-poster-card", null);
+    // st-N porté par la carte : la barre de progression prend la couleur du statut en CSS pur.
+    const card = el("article", `apl-card apl-poster-card st-${item.statut}`, null);
     card.setAttribute("tabindex", "0");
     card.setAttribute("role", "button");
     card.setAttribute("aria-label", `${item.titre}, note ${item.note || "non noté"}`);
@@ -658,7 +659,8 @@ class ListView {
 
   // --- Ligne Tableau (Table Row) ---
   buildTableRow(item) {
-    const tr = el("tr", "apl-table-row", null);
+    // st-N porté par la ligne : barre de progression + pastille colorées en CSS pur.
+    const tr = el("tr", `apl-table-row st-${item.statut}`, null);
     tr.setAttribute("tabindex", "0");
     tr.setAttribute("role", "button");
 

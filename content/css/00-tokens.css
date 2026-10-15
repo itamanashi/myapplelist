@@ -9,6 +9,13 @@
   --apl-accent: #0071e3;
   --apl-radius-l: 20px;
   --apl-radius-m: 14px;
+  --apl-radius-s: 8px;
+  --apl-surface: rgba(0,0,0,.045);
+  --apl-surface-hover: rgba(0,0,0,.075);
+  --apl-border: rgba(0,0,0,.08);
+  --apl-border-strong: rgba(0,0,0,.15);
+  --apl-track: rgba(0,0,0,.12);
+  --apl-star: #f5a524;
   --apl-shadow-big: 0 24px 60px rgba(0,0,0,.18);
   --apl-shadow-small: 0 8px 24px rgba(0,0,0,.12);
   --apl-spring: cubic-bezier(.32,.72,.35,1);
@@ -23,9 +30,14 @@
 }
 html.mal-dark {
   --apl-bg: #0b0e14;
-  --apl-card: rgba(18,24,33,.78);
-  --apl-ink: #f5f5f7;
-  --apl-muted: #9aa0aa;
+  --apl-card: rgba(18,24,33,.82);
+  --apl-ink: #e8edf3;
+  --apl-muted: #8b94a3;
   --apl-accent: #2997ff;
+  --apl-surface: rgba(255,255,255,.055);
+  --apl-surface-hover: rgba(255,255,255,.10);
+  --apl-border: rgba(255,255,255,.09);
+  --apl-border-strong: rgba(255,255,255,.17);
+  --apl-track: rgba(255,255,255,.13);
 }
 
