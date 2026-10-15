@@ -263,6 +263,8 @@ html.mal-dark #myapple-anime .apl-score > b { color: #fff !important; }
   transition: transform 180ms var(--apl-spring) !important;
 }
 #myapple-anime .apl-person:hover { transform: translateY(-2px) !important; }
+/* Carte texte (sans lien) : aucun indice d'interactivité au survol */
+#myapple-anime .apl-person:has(> span.apl-static):hover { transform: none !important; }
 #myapple-anime .apl-person > a,
 #myapple-anime .apl-person > span.apl-static { display: flex !important; flex-direction: column !important; gap: 4px !important; text-decoration: none !important; }
 #myapple-anime .apl-person img {
