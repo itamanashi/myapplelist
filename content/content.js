@@ -294,6 +294,9 @@
     if (ch[STATE_KEY]) {
       const s = { ...defaults, ...ch[STATE_KEY].newValue };
       applyTheme(s); togglePanel(s.panelOpen);
+      // Désactivation : retirer la vue reconstruite et RESTAURER les nœuds MAL
+      // déplacés (sinon la fiche reste custom avec du contenu natif incomplet).
+      if (!s.enabled) window.__myappleAnime?.destroyAnimeView?.();
       const bar = document.getElementById("myapple-topbar");
       if (bar) bar.style.display = s.enabled ? "flex" : "none";
     }

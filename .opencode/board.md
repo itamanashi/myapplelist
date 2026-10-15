@@ -86,6 +86,13 @@ Règles : 1 owner par carte, 1 writer par fichier, merge gate = `node --check` +
   "More…" en tête (match `includes`), sous-tables doubleurs filtrées, compteur de votes
   dédupliqué. Owner: opencode.
   Gate: `node --check` OK, `build-css.mjs --check` OK, captures relues OK.
+- [x] **anime-detail-v2-20261015** — Plan d'audit appliqué (P1+P2+QA) :
+  extraction non destructive + rollback + `destroyAnimeView` (désactivation réversible
+  prouvée live), boutons validés sémantiquement, hero éditorial (méta compacte, note
+  dominante teintée de l'affiche, titre `clamp()`, voile cinématographique, sommaire
+  sticky), infos/typo responsive (1100/980/640), fix bouton primaire en dark.
+  QA v2 : Bebop + FMAB + Berserk, mobile 390, 38 assertions TOUT-VERT (dont guest
+  sans faux boutons, 0 erreur JS). Owner: opencode.
 - [ ] **touch-menus** — Dropdowns au tap (mobile) en plus du hover. Scope: `content/content.js` + CSS.
 - [ ] **jikan-panel** — Top airing via API Jikan (ex-panneau Notes supprimé : re-scoper l'affichage). Scope: nouveau module, voir README.
 - [ ] **memory-review** — Relire/promouvoir les 4 mémoires `team` (statut `unreviewed`).

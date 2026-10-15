@@ -40,12 +40,32 @@ function el(tag, cls, parent, text) {
   return e;
 }
 
-function card(parent, title, moreHref) {
+function card(parent, title, moreHref, id) {
   const s = el("section", "apl-card", parent);
+  if (id) s.id = id;
   const h = el("header", null, s);
   el("h2", null, h, title);
   if (moreHref) { const a = el("a", "apl-card-link", h, "Tout voir ↗"); a.href = moreHref; }
   return el("div", "apl-card-body", s);
+}
+
+// Déplacements suivis : chaque nœud MAL garde (parent, suivant) pour restauration.
+// Utilisé par rollback() en cas d'échec et par destroyAnimeView() à la désactivation.
+const moved = [];
+function moveInto(node, dest) {
+  if (!node || !dest) return false;
+  moved.push({ node, parent: node.parentNode, next: node.nextSibling });
+  dest.appendChild(node);
+  return true;
+}
+function rollback() {
+  for (const { node, parent, next } of moved.splice(0)) {
+    try {
+      if (!parent) continue;
+      if (next && next.parentNode === parent) parent.insertBefore(node, next);
+      else parent.appendChild(node);
+    } catch { /* parent détaché : abandon, la page native reste lisible */ }
+  }
 }
 
 // Trouve le h2 MAL qui CONTIENT `start` : le lien "More…" ("More characters"/"More staff")
@@ -79,6 +99,32 @@ function parseScoredBy(scope) {
   const n = parseInt(digits, 10);
   if (!Number.isFinite(n)) return "";
   return n.toLocaleString("fr-FR").replace(/,/g, " ") + " votes";
+}
+
+// Teinte d'accent de la fiche depuis l'affiche (moyenne 24px, décoratif).
+// Échec silencieux (CORS CDN, canvas indisponible) : le CSS garde son fallback neutre.
+function tintFromPoster(url, heroEl) {
+  if (!url || !heroEl) return;
+  const im = new Image();
+  im.crossOrigin = "anonymous";
+  im.onload = () => {
+    try {
+      const c = document.createElement("canvas");
+      c.width = 24; c.height = 24;
+      const x = c.getContext("2d", { willReadFrequently: true });
+      if (!x) return;
+      x.drawImage(im, 0, 0, 24, 24);
+      const px = x.getImageData(0, 0, 24, 24).data;
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < px.length; i += 16) { r += px[i]; g += px[i + 1]; b += px[i + 2]; n++; }
+      r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n);
+      const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+      if (lum < 0.12 || lum > 0.9) return; // trop sombre/clair : garder le neutre
+      heroEl.style.setProperty("--apl-hero-accent", `rgb(${r}, ${g}, ${b})`);
+    } catch { /* canvas contaminé : fallback neutre */ }
+  };
+  im.onerror = () => {};
+  im.src = url;
 }
 
 // Tables RACINES de la liste seulement : chaque personnage = 1 table externe qui imbrique
@@ -122,13 +168,14 @@ function readAnime(content) {
   const posterIm = left?.querySelector("img[itemprop='image']") || left?.querySelector("img");
   if (!left || !titleEl || !posterIm) return null;
 
-  // Lignes "Label: valeur" de la colonne gauche
+  // Lignes "Label: valeur" de la colonne gauche — LECTURE SEULE, aucun nœud modifié
+  // (l'ancien lab.remove() altérait la page avant même de savoir si la vue se construirait).
   const rows = [...left.querySelectorAll(".spaceit_pad")].map((div) => {
     const lab = div.querySelector(".dark_text");
     const key = lab ? T(lab).replace(/:$/, "") : "";
-    lab?.remove();
     const links = [...div.querySelectorAll("a[href]")].map((a) => ({ label: T(a), href: a.getAttribute("href") || "" })).filter((l) => l.label);
-    return { key, text: T(div), links };
+    const text = lab ? T(div).replace(T(lab), "").trim() : T(div);
+    return { key, text, links };
   }).filter((r) => r.key || r.text);
 
   const alt = rows.filter((r) => ALT_KEYS.has(r.key));
@@ -140,6 +187,16 @@ function readAnime(content) {
   const scoreEl = content.querySelector(".score-label");
   const scoreScope = scoreEl?.closest("div.score, .stats-block") || scoreEl?.parentElement;
   const num = (sel) => content.querySelector(sel)?.textContent?.trim() || "";
+  // Boutons MAL validés sémantiquement (jamais de faux bouton) :
+  // - ajout : lien Lightbox ownlist/add (connecté, titre pas dans la liste) ;
+  // - favoris : lien dont href ou libellé mentionne les favoris.
+  // États connecté/déconnecté/déjà-dans-la-liste : action absente = action omise.
+  const addRaw = content.querySelector(".profileRows a.btn-user-status-add-list");
+  const addHref = addRaw?.getAttribute("href") || "";
+  const addListNode = (addRaw && (/ownlist\/[^/]+\/add/i.test(addHref) || /user-status/i.test(addRaw.className))) ? addRaw : null;
+  const favRaw = content.querySelector("#profileRows a");
+  const favText = (favRaw?.getAttribute("href") || "") + "|" + T(favRaw);
+  const favNode = (favRaw && favRaw !== addRaw && /favor/i.test(favText)) ? favRaw : null;
   const d = {
     isManga,
     title: T(titleEl),
@@ -156,8 +213,8 @@ function readAnime(content) {
     trailerLink: content.querySelector(".video-promotion a.iframe")?.getAttribute("href") || "",
     trailerNode: content.querySelector(".video-promotion"),
     themesNode: content.querySelector(".theme-songs"),
-    addListNode: content.querySelector(".profileRows a.btn-user-status-add-list"),
-    favNode: content.querySelector("#profileRows a"),
+    addListNode,
+    favNode,
     nav: [...content.querySelectorAll("#horiznav_nav a[href]")].map((a) => ({ label: T(a), href: a.getAttribute("href") || "" })).filter((l) => l.label),
     chars: [], charsMore: "", staff: [], staffMore: "", related: []
   };
@@ -266,21 +323,27 @@ function buildAnimeView() {
     const who = el("div", "apl-who", heroMain);
     el("p", "apl-kind", who, d.isManga ? "Manga" : "Anime");
     el("h1", null, who, d.title);
-    const altLine = d.alt.map((r) => r.text).filter(Boolean).slice(0, 3).join(" · ");
-    if (altLine) el("p", "apl-alt", who, altLine);
 
-    const badges = el("div", "apl-badges", who);
+    // Ligne méta compacte : format · année · nombre d'épisodes/chapitres
     const typeRow = d.info.find((r) => r.key === "Type");
-    if (typeRow?.text) el("span", "apl-badge", badges, typeRow.text);
+    const dateRow = d.info.find((r) => r.key === (d.isManga ? "Published" : "Aired"));
+    const year = dateRow?.text?.match(/\b(19|20)\d{2}\b/)?.[0] || "";
+    const countRow = d.info.find((r) => r.key === (d.isManga ? "Chapters" : "Episodes"));
+    const countTxt = (countRow?.text || "").trim();
+    const metaBits = [typeRow?.text || "", year,
+      (/^\d+/.test(countTxt) ? countTxt + (d.isManga ? " chapitres" : " épisodes") : "")].filter(Boolean);
+    if (metaBits.length) el("p", "apl-metaline", who, metaBits.join(" · "));
+
     const statusRow = d.info.find((r) => r.key === "Status");
     const stFR = STATUS_FR[statusRow?.text] || statusRow?.text || "";
     if (stFR) {
+      const badges = el("div", "apl-badges", who);
       const b = el("span", "apl-badge", badges, stFR);
       b.style.setProperty("--apl-badge-dot", STATUS_COLOR[stFR] || "var(--apl-accent)");
     }
-    const dateRow = d.info.find((r) => r.key === (d.isManga ? "Published" : "Aired"));
-    const year = dateRow?.text?.match(/\b(19|20)\d{2}\b/)?.[0] || "";
-    if (year) el("span", "apl-badge", badges, year);
+
+    const altLine = d.alt.map((r) => r.text).filter(Boolean).slice(0, 3).join(" · ");
+    if (altLine) el("p", "apl-alt", who, altLine);
 
     if (d.chips.length) {
       const ch = el("div", "apl-chips", who);
@@ -299,27 +362,35 @@ function buildAnimeView() {
       });
     }
 
+    // Note dominante + stats secondaires (hiérarchie éditoriale, pas 4 KPIs égaux)
+    if (d.score) {
+      const sc = el("div", "apl-score", who);
+      el("b", null, sc, "★ " + d.score);
+      el("span", null, sc, "Note" + (d.scoredBy ? " · " + d.scoredBy : ""));
+    }
     const kpis = el("div", "apl-kpis", who);
-    if (d.score) kpi(kpis, "★ " + d.score, "Note", d.scoredBy);
     if (d.ranked) kpi(kpis, d.ranked, "Rang");
     if (d.popularity) kpi(kpis, d.popularity, "Popularité");
     if (d.members) kpi(kpis, d.members, "Membres");
 
     const act = el("div", "apl-actions", who);
-    if (d.addListNode) { d.addListNode.classList.add("apl-pill-btn", "active"); act.appendChild(d.addListNode); }
-    if (d.favNode) { d.favNode.classList.add("apl-pill-btn"); act.appendChild(d.favNode); }
+    if (d.addListNode) { d.addListNode.classList.add("apl-pill-btn", "apl-primary"); moveInto(d.addListNode, act); }
+    if (d.favNode) { d.favNode.classList.add("apl-pill-btn"); moveInto(d.favNode, act); }
     if (d.trailerLink) {
       const t = el("a", "apl-pill-btn", act, "▶ Bande-annonce");
       t.href = d.trailerLink; t.target = "_blank"; t.rel = "noopener";
     }
+
+    // Teinte d'accent calculée depuis l'affiche (fallback neutre si CORS/canvas KO)
+    try { tintFromPoster(d.poster, hero); } catch { /* décoratif seulement */ }
 
     // ---- Colonnes ----
     const cols = el("div", "apl-cols", view);
     const main = el("div", "apl-col-main", cols);
     const side = el("div", "apl-col-side", cols);
 
-    const syn = card(main, "Synopsis");
-    syn.appendChild(d.synopsisNode);
+    const syn = card(main, "Synopsis", undefined, "apl-sec-synopsis");
+    moveInto(d.synopsisNode, syn);
 
     if (d.info.length) {
       const body = card(main, "Informations");
@@ -339,30 +410,30 @@ function buildAnimeView() {
     }
 
     if (d.chars.length) {
-      const body = card(main, d.isManga ? "Personnages" : "Personnages & doubleurs", d.charsMore || undefined);
+      const body = card(main, d.isManga ? "Personnages" : "Personnages & doubleurs", d.charsMore || undefined, "apl-sec-chars");
       const grid = el("div", "apl-persons", body);
       d.chars.forEach((p) => personCard(grid, p, !d.isManga));
     }
 
     if (d.staff.length) {
-      const body = card(main, "Staff", d.staffMore || undefined);
+      const body = card(main, "Staff", d.staffMore || undefined, "apl-sec-staff");
       const grid = el("div", "apl-persons", body);
       d.staff.forEach((p) => personCard(grid, p, false));
     }
 
     if (d.themesNode) {
       const body = card(main, "Génériques");
-      body.appendChild(d.themesNode);
+      moveInto(d.themesNode, body);
     }
 
     // ---- Latéral ----
     if (d.trailerNode) {
       const body = card(side, "Vidéo");
-      body.appendChild(d.trailerNode);
+      moveInto(d.trailerNode, body);
     }
 
     if (d.related.length) {
-      const body = card(side, "Œuvres liées");
+      const body = card(side, "Œuvres liées", undefined, "apl-sec-related");
       d.related.forEach((r) => {
         el("p", "apl-rel-type", body, r.type);
         const ul = el("ul", "apl-related", body);
@@ -385,13 +456,31 @@ function buildAnimeView() {
       });
     }
 
+    // Sommaire par ancres (sections réellement présentes uniquement)
+    const toc = el("nav", "apl-toc", null);
+    toc.setAttribute("aria-label", "Sections de la fiche");
+    const tocLink = (href, label) => { const a = el("a", null, toc, label); a.href = href; };
+    tocLink("#apl-sec-synopsis", "Aperçu");
+    if (d.chars.length) tocLink("#apl-sec-chars", "Personnages");
+    if (d.staff.length) tocLink("#apl-sec-staff", "Staff");
+    if (d.related.length) tocLink("#apl-sec-related", "Œuvres liées");
+    if (toc.children.length > 1) hero.after(toc);
+
     content.insertBefore(view, content.firstChild);
     document.body.classList.add("myapple-anime");
   } catch {
+    rollback();
     document.getElementById("myapple-anime")?.remove();
     document.body.classList.remove("myapple-anime");
   }
 }
 
-window.__myappleAnime = { readAnime, buildAnimeView };
+// Restauration complète de la page native (désactivation de l'extension).
+function destroyAnimeView() {
+  rollback();
+  document.getElementById("myapple-anime")?.remove();
+  document.body.classList.remove("myapple-anime");
+}
+
+window.__myappleAnime = { readAnime, buildAnimeView, destroyAnimeView };
 })();
