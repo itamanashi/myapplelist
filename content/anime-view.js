@@ -31,6 +31,18 @@ const STATUS_FR = {
   Finished: "Terminée", Publishing: "En cours", "On Hiatus": "En pause", Discontinued: "Interrompue"
 };
 const STATUS_COLOR = { "Terminé": "#34c759", "Terminée": "#34c759", "En cours": "#0071e3", "Annoncé": "#af52de", "En pause": "#ff9500", "Interrompue": "#ff3b30" };
+// Lignes de stats déjà visibles dans le hero (jamais dans la grille infos)
+const STAT_KEYS = new Set(["Score", "Ranked", "Popularity", "Members", "Favorites"]);
+// Grille infos : UNIQUEMENT les clés connues (lignes injectées par des extensions
+// tierces ou futures clés MAL inconnues = exclues, nœuds originaux intacts).
+const KNOWN_INFO = new Set([...Object.keys(KEY_FR)]);
+
+// Libellés MAL secondaires → français (URLs d'origine conservées)
+const NAV_FR = {
+  Details: "Détails", "Characters & Staff": "Personnages & staff", Episodes: "Épisodes",
+  Videos: "Vidéos", Stats: "Stats", Reviews: "Critiques", Recommendations: "Recos",
+  "Interest Stacks": "Stacks", News: "Actus", Forum: "Forum", Pictures: "Images", More: "Plus"
+};
 
 function el(tag, cls, parent, text) {
   const e = document.createElement(tag);
@@ -127,6 +139,23 @@ function tintFromPoster(url, heroEl) {
   im.src = url;
 }
 
+// Viewport mobile : MAL déclare initial-scale=1 SANS width=device-width, donc un
+// vrai téléphone affiche la version ~980px dézoomée et nos règles ≤640px ne servent jamais.
+// On bascule en width=device-width uniquement sur les fiches reconstruites
+// (contenu natif masqué ici : aucun effet sur le reste du site), avec restauration.
+function ensureViewport() {
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (!meta || meta.dataset.aplOrig !== undefined) return;
+  meta.dataset.aplOrig = meta.getAttribute("content") || "";
+  meta.setAttribute("content", "width=device-width, initial-scale=1");
+}
+function restoreViewport() {
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (!meta || meta.dataset.aplOrig === undefined) return;
+  meta.setAttribute("content", meta.dataset.aplOrig);
+  delete meta.dataset.aplOrig;
+}
+
 // Tables RACINES de la liste seulement : chaque personnage = 1 table externe qui imbrique
 // la sous-table du doubleur. On ignore les tables MAL de mise en page (hors liste).
 function topTables(list) {
@@ -202,7 +231,7 @@ function readAnime(content) {
     title: T(titleEl),
     poster: IMG(posterIm),
     alt,
-    info: info.filter((r) => !CHIP_KEYS.has(r.key)),
+    info: info.filter((r) => !CHIP_KEYS.has(r.key) && !STAT_KEYS.has(r.key) && KNOWN_INFO.has(r.key)),
     chips,
     score: T(scoreEl),
     scoredBy: parseScoredBy(scoreScope),
@@ -334,6 +363,18 @@ function buildAnimeView() {
       (/^\d+/.test(countTxt) ? countTxt + (d.isManga ? " chapitres" : " épisodes") : "")].filter(Boolean);
     if (metaBits.length) el("p", "apl-metaline", who, metaBits.join(" · "));
 
+    const altLine = d.alt.map((r) => r.text).filter(Boolean).slice(0, 3).join(" · ");
+    if (altLine) el("p", "apl-alt", who, altLine);
+
+    const studioRow = d.info.find((r) => r.key === (d.isManga ? "Authors" : "Studios")) || d.info.find((r) => r.key === "Authors");
+    if (studioRow?.links?.length) {
+      const line = el("p", "apl-studio-line", who);
+      studioRow.links.forEach((l, i) => {
+        if (i) line.appendChild(document.createTextNode(", "));
+        const a = el("a", "apl-studio", line, l.label); a.href = l.href;
+      });
+    }
+
     const statusRow = d.info.find((r) => r.key === "Status");
     const stFR = STATUS_FR[statusRow?.text] || statusRow?.text || "";
     if (stFR) {
@@ -342,9 +383,6 @@ function buildAnimeView() {
       b.style.setProperty("--apl-badge-dot", STATUS_COLOR[stFR] || "var(--apl-accent)");
     }
 
-    const altLine = d.alt.map((r) => r.text).filter(Boolean).slice(0, 3).join(" · ");
-    if (altLine) el("p", "apl-alt", who, altLine);
-
     if (d.chips.length) {
       const ch = el("div", "apl-chips", who);
       d.chips.slice(0, 8).forEach((c) => {
@@ -352,20 +390,12 @@ function buildAnimeView() {
         a.href = c.href;
       });
     }
-    const studioRow = d.info.find((r) => r.key === (d.isManga ? "Authors" : "Studios")) || d.info.find((r) => r.key === "Authors");
-    if (studioRow?.links?.length) {
-      const line = el("p", "apl-studio-line", who);
-      el("span", "apl-muted", line, (studioRow.key === "Authors" ? "Par " : "") );
-      studioRow.links.forEach((l, i) => {
-        if (i) line.appendChild(document.createTextNode(", "));
-        const a = el("a", null, line, l.label); a.href = l.href;
-      });
-    }
 
     // Note dominante + stats secondaires (hiérarchie éditoriale, pas 4 KPIs égaux)
     if (d.score) {
       const sc = el("div", "apl-score", who);
-      el("b", null, sc, "★ " + d.score);
+      el("i", "apl-star", sc, "★");
+      el("b", null, sc, d.score);
       el("span", null, sc, "Note" + (d.scoredBy ? " · " + d.scoredBy : ""));
     }
     const kpis = el("div", "apl-kpis", who);
@@ -448,11 +478,11 @@ function buildAnimeView() {
     }
 
     if (d.nav.length > 1) {
-      const body = card(side, "Navigation");
+      const body = card(side, "Explorer sur MAL");
       const ul = el("ul", "apl-navlist", body);
       d.nav.forEach((l) => {
         const li = el("li", null, ul);
-        const a = el("a", null, li, l.label); a.href = l.href;
+        const a = el("a", null, li, NAV_FR[l.label] || l.label); a.href = l.href;
       });
     }
 
@@ -468,6 +498,23 @@ function buildAnimeView() {
 
     content.insertBefore(view, content.firstChild);
     document.body.classList.add("myapple-anime");
+    ensureViewport();
+
+    // État actif du sommaire (IntersectionObserver, pas de scroll listener).
+    // Après insertion : observer des nœuds détachés ne déclencherait jamais.
+    try {
+      const links = [...toc.querySelectorAll("a")];
+      const secs = links.map((a) => document.getElementById(a.getAttribute("href").slice(1))).filter(Boolean);
+      if (links.length && secs.length && "IntersectionObserver" in window) {
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach((en) => {
+            if (!en.isIntersecting) return;
+            links.forEach((a) => a.classList.toggle("active", a.getAttribute("href") === "#" + en.target.id));
+          });
+        }, { rootMargin: "-30% 0px -60% 0px" });
+        secs.forEach((s) => io.observe(s));
+      }
+    } catch { /* sommaire non interactif : les ancres restent cliquables */ }
   } catch {
     rollback();
     document.getElementById("myapple-anime")?.remove();
@@ -478,6 +525,7 @@ function buildAnimeView() {
 // Restauration complète de la page native (désactivation de l'extension).
 function destroyAnimeView() {
   rollback();
+  restoreViewport();
   document.getElementById("myapple-anime")?.remove();
   document.body.classList.remove("myapple-anime");
 }

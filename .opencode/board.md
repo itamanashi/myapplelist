@@ -93,6 +93,16 @@ Règles : 1 owner par carte, 1 writer par fichier, merge gate = `node --check` +
   sticky), infos/typo responsive (1100/980/640), fix bouton primaire en dark.
   QA v2 : Bebop + FMAB + Berserk, mobile 390, 38 assertions TOUT-VERT (dont guest
   sans faux boutons, 0 erreur JS). Owner: opencode.
+- [x] **anime-fiche-v3-20261015** — 2e passe audit (lisibilité/largeur) :
+  P0 : fiche déjà à 1200px (cible 1160-1240, +1240px ≥1600) — les 820px venaient de
+  la colonne, pas de la fiche. P1 : titre `clamp(34→48)`, hero réordonné (méta, titre,
+  studio, statut+genres, note, stats, actions), note en encre/blanc + étoile accent,
+  infos filtrées par allowlist (stats/Chips/inconnus exclus, parasites impossibles),
+  tuile vidéo 16/9 (fini le rectangle blanc en dark). P2 : nav « Explorer sur MAL » FR,
+  sommaire actif (IntersectionObserver), responsive 1100/980/640 + gouttières mobiles
+  (258→362px via viewport device-width réversible + padding 10-base), synopsis 1.75/75ch.
+  QA : 56 assertions TOUT-VERT (Bebop/FMAB/Berserk, mobile 390, guest, disable+viewport).
+  Owner: opencode.
 - [ ] **touch-menus** — Dropdowns au tap (mobile) en plus du hover. Scope: `content/content.js` + CSS.
 - [ ] **jikan-panel** — Top airing via API Jikan (ex-panneau Notes supprimé : re-scoper l'affichage). Scope: nouveau module, voir README.
 - [ ] **memory-review** — Relire/promouvoir les 4 mémoires `team` (statut `unreviewed`).

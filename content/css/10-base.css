@@ -356,4 +356,20 @@ html.mal-custom .widget.store_popular_comics .widget-slide-block ul {
 /* (règle titre legacy supprimée — voir légende ci-dessus) */
 /* Flèches slider MAL inutiles en grille */
 html.mal-custom .btn-widget-slide-side { display: none !important; }
+/* Mobile : les 3 conteneurs imbriqués cumulent 3×22px de padding (132px perdus à 390px).
+   On ne garde qu'un seul niveau de gouttière, sur #content. */
+@media (max-width: 640px) {
+  html.mal-custom #myanimelist .wrapper,
+  html.mal-custom .wrapper,
+  html.mal-custom #wrapper,
+  html.mal-custom #contentWrapper,
+  html.mal-custom #main-content {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  html.mal-custom #content {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+}
 
