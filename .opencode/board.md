@@ -26,7 +26,9 @@ Règles : 1 owner par carte, 1 writer par fichier, merge gate = `node --check` +
 
 ## Backlog (prochaines cartes)
 
-- [ ] **notes-ux** — Panel Notes : retouche UX (état vide, autosave ?). Scope: `content/content.js` (panel), CSS panel.
+- [ ] **notes-remove-20261015** — ANNULÉ (revert le 15/10 : suppression non QA, panel Notes
+  conservé pour cohérence topbar/FAB/popup/docs ; voir notes-ux).
+  Owner: opencode. Gate: `build-css.mjs --check` OK, `node --check` OK.
 - [x] **responsive-bar** — Topbar repliée en burger ☰ sous 980px, menus en panneau
   vertical, recherche à largeur fixe (plus de décalage au focus).
   Owner: opencode. Gate: syntaxe OK, à valider visuellement.
@@ -56,8 +58,36 @@ Règles : 1 owner par carte, 1 writer par fichier, merge gate = `node --check` +
   sans doublons, date FR. Bugs audit corrigés : débordement, carte-dans-carte,
   h1 manquant. Script : `tools/qa-refonte.mjs`. Captures : `refonte-profile-*.png`.
   Owner: opencode. Gate: `node --check` OK (content.js + profile.js), captures relues OK.
+- [x] **list-data-v1-20261015** — Couche données listes : `content/list-data.js`
+  (schéma v1, cache 10 min, pagination load.json). Intégré au manifeste avant
+  `profile.js`. Tests simulés `tools/test-list-data.mjs`. Validation live à
+  relire (`tools/qa-list-data-live.mjs`). Owner: cursor.
+- [x] **list-view-grille** — Vue animelist et mangalist (reconstruction Apple
+  style Profile). Consomme `__myappleList.loadList` + `readInitial` instantané.
+  Hero (bannière floue, bascule Anime/Manga, KPIs), barre de contrôles flottante
+  (onglets de statuts dynamiques, recherche live, filtre type, tri avec direction,
+  bascule grille/tableau), affiches 2:3 avec note, pastille statut et barre de
+  progression, tableau compact, modal de détail Apple et dark mode complet.
+  Owner: opencode. Script : `tools/qa-list-view.mjs`. Captures : `list-anime-*.png`, `list-manga-*.png`.
+  Gate: `node --check` OK (4 scripts), `test-list-data.mjs` OK, captures relues OK.
+- [x] **css-split-20261015** — `overlay.css` (3323 lignes) découpé en `content/css/`
+  8 modules (00-tokens → 70-anime-detail) + `tools/build-css.mjs` qui régénère
+  le bundle (manifest + QA inchangés). Supprimé : bloc mort §8 `#myapple-anime`
+  (815 lignes, 2 passes dupliquées de la reconstruction abandonnée pour CSS-first)
+  + `overlay.css.tmp` orphelin. Diff bundle = 9 ajouts (headers) / 0 règle modifiée.
+  Owner: opencode. Gate: `build-css.mjs --check` OK, `node --check` OK (5 scripts), `test-list-data.mjs` OK.
+- [x] **anime-detail-v1-20261015** — Pages anime/manga reconstruites comme profil/listes :
+  `content/anime-view.js` (readAnime + hero bannière floue/affiche/badges/chips/KPIs,
+  synopsis + infos FR déplacés/reconstruits, personnages + doubleurs, staff, thèmes,
+  vidéo, œuvres liées avec vignettes, navigation). `70-anime-detail.css` réécrit pour
+  `#myapple-anime` (grilles, dark, responsive, reduced-motion). Script rejouable :
+  `tools/qa-anime-view.mjs` (FMAB + Berserk, clair/sombre). Bugs trouvés et corrigés :
+  titre/synopsis manga (`[itemprop=name]`, `span[itemprop=description]`), h2 avec lien
+  "More…" en tête (match `includes`), sous-tables doubleurs filtrées, compteur de votes
+  dédupliqué. Owner: opencode.
+  Gate: `node --check` OK, `build-css.mjs --check` OK, captures relues OK.
 - [ ] **touch-menus** — Dropdowns au tap (mobile) en plus du hover. Scope: `content/content.js` + CSS.
-- [ ] **jikan-panel** — Top airing via API Jikan dans le panneau. Scope: nouveau module, voir README.
+- [ ] **jikan-panel** — Top airing via API Jikan (ex-panneau Notes supprimé : re-scoper l'affichage). Scope: nouveau module, voir README.
 - [ ] **memory-review** — Relire/promouvoir les 4 mémoires `team` (statut `unreviewed`).
 
 ## Mémoire

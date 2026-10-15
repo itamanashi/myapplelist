@@ -1,0 +1,48 @@
+/* MyAppleList — §6 focus-visible, reduced-motion/transparency/contrast. Module 50-a11y.css (ordre : tools/build-css.mjs). */
+/* ===== 6. Accessibilité : équivalent doux, jamais rien de brutal ===== */
+/* Focus clavier toujours visible (la topbar mettait outline: 0 sans remplacement) */
+#myapple-topbar a:focus-visible,
+#myapple-topbar button:focus-visible,
+#myapple-topbar input:focus-visible,
+#myapple-panel button:focus-visible,
+#myapple-panel textarea:focus-visible,
+#myapple-fab:focus-visible,
+#myapple-profile a.apl-btn:focus-visible {
+  outline: 2px solid var(--apl-accent) !important;
+  outline-offset: 2px;
+}
+html.mal-dark #myapple-topbar a:focus-visible,
+html.mal-dark #myapple-topbar button:focus-visible,
+html.mal-dark #myapple-topbar input:focus-visible,
+html.mal-dark #myapple-panel button:focus-visible,
+html.mal-dark #myapple-panel textarea:focus-visible,
+html.mal-dark #myapple-fab:focus-visible {
+  outline-color: #2997ff !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  #myapple-topbar, #myapple-panel, #myapple-scrim {
+    animation: none !important; transition: opacity 200ms ease !important; transform: none !important;
+  }
+  html.mal-custom body div#myanimelist div#content li.btn-anime,
+  html.mal-custom body div#myanimelist div#content li.btn-anime:hover,
+  #myapple-profile a.apl-btn, #myapple-profile a.apl-btn:hover {
+    transition: none !important; transform: none !important;
+  }
+  #myapple-profile .apl-stats-content,
+  #myapple-profile .apl-fav-container,
+  #myapple-profile .apl-icon-btn,
+  #myapple-profile .apl-pill-btn,
+  #myapple-profile .apl-fav,
+  #myapple-profile .apl-ios-chevron {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  #myapple-topbar, #myapple-panel { background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  html.mal-dark #myapple-topbar, html.mal-dark #myapple-panel { background: #1c1c1e; }
+}
+@media (prefers-contrast: more) {
+  #myapple-topbar, #myapple-panel { border: 2px solid currentColor; }
+}
+

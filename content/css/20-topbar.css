@@ -1,0 +1,168 @@
+/* MyAppleList — §2 toolbar translucide + menus déroulants. Module 20-topbar.css (ordre : tools/build-css.mjs). */
+/* ===== 2. TOOLBAR translucide Apple — contenu dessous, pas bande opaque ===== */
+#myapple-topbar {
+  position: fixed;
+  top: 10px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 999999;
+  width: auto !important;
+  max-width: calc(100% - 24px);
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px 5px 12px;
+  background: rgba(255,255,255,.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(255,255,255,.4);
+  border-left: 1px solid rgba(0,0,0,.06);
+  border-right: 1px solid rgba(0,0,0,.06);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  border-radius: 16px;
+  box-shadow: var(--apl-shadow-small);
+  /* Materialize, pas juste fade */
+  animation: apl-material-in 320ms var(--apl-spring) backwards;
+  transform-origin: top center;
+  /* Discrète : s'efface au scroll vers le bas, revient vers le haut.
+     transform (compositor), jamais top (layout). */
+  transition: transform 280ms var(--apl-spring);
+}
+#myapple-topbar.hidden { transform: translate(-50%, -80px); }
+@keyframes apl-material-in {
+  from { opacity: 0; transform: translateX(-50%) scale(.98); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+#myapple-topbar .logo {
+  font-weight: 700; font-size: 13px; letter-spacing: -0.02em; line-height: 1.1;
+  white-space: nowrap; opacity: .8;
+}
+#myapple-topbar .logo span { color: var(--apl-accent); }
+#myapple-topbar nav { display: flex; gap: 0; align-items: center; }
+#myapple-topbar nav a {
+  font-size: 12.5px; font-weight: 600; color: var(--apl-ink) !important;
+  text-decoration: none; padding: 7px 9px; border-radius: 8px; white-space: nowrap;
+}
+/* Burger : caché sur desktop, remplace les 7 menus sous 980px */
+#myapple-burger {
+  display: none;
+  border: 0; cursor: pointer; padding: 7px 10px; border-radius: 9px;
+  font-size: 14px; font-weight: 700; background: rgba(0,0,0,.05); color: var(--apl-ink);
+}
+@media (max-width: 980px) {
+  #myapple-topbar { flex-wrap: nowrap; }
+  #myapple-burger { display: block; }
+  #myapple-topbar nav {
+    display: none;
+    position: absolute; top: calc(100% + 8px); left: 0;
+    min-width: 220px; max-height: min(70vh, 420px); overflow-y: auto;
+    flex-direction: column; align-items: stretch; gap: 2px;
+    padding: 8px;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(0,0,0,.08); border-radius: 14px;
+    box-shadow: var(--apl-shadow-small);
+  }
+  html.mal-dark #myapple-topbar nav { background: rgba(28,28,30,.95); border-color: rgba(255,255,255,.12); }
+  #myapple-topbar.nav-open nav { display: flex; }
+  #myapple-topbar.nav-open nav .menu { width: 100%; }
+  /* Sections regroupées : titre parent en accent, enfants indentés */
+  #myapple-topbar.nav-open nav .menu > a {
+    display: block; width: 100%; box-sizing: border-box;
+    font-weight: 800; color: var(--apl-accent) !important;
+    background: rgba(0,0,0,.04);
+  }
+  html.mal-dark #myapple-topbar.nav-open nav .menu > a { background: rgba(255,255,255,.06); }
+  #myapple-topbar.nav-open nav .drop {
+    position: static; opacity: 1; visibility: visible; transform: none;
+    pointer-events: auto; box-shadow: none; max-height: none;
+    background: transparent; border: 0; padding: 0 0 4px 8px;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+}
+/* Feedback sur pointer-down, pas au release */
+#myapple-topbar nav a:active, #myapple-topbar button:active, #myapple-fab:active {
+  transform: scale(.96);
+  transition: transform 100ms ease-out;
+}
+#myapple-topbar nav a:hover { background: rgba(0,0,0,.05); }
+/* Menus déroulants façon MAL : Anime Manga Community Industry Watch Read Help */
+#myapple-topbar nav .menu { position: relative; }
+#myapple-topbar nav .menu > a { display: block; }
+/* Pont invisible : évite la perte du hover dans les 8px entre l'onglet et le menu */
+#myapple-topbar nav .menu::after {
+  content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 10px;
+}
+#myapple-topbar nav .drop {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  min-width: 180px; max-width: 240px; padding: 6px;
+  max-height: min(60vh, 340px); overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin;
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(0,0,0,.08); border-radius: 12px;
+  box-shadow: var(--apl-shadow-small);
+  display: flex; flex-direction: column; gap: 1px;
+  /* Apparition douce au survol, que transform + opacity (compositor only) */
+  opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none;
+  transition: opacity 160ms ease, transform 220ms var(--apl-spring), visibility 0s linear 200ms;
+}
+#myapple-topbar nav .menu:hover .drop,
+#myapple-topbar nav .menu:focus-within .drop {
+  opacity: 1; visibility: visible; transform: none; pointer-events: auto;
+  transition: opacity 160ms ease, transform 220ms var(--apl-spring);
+}
+#myapple-topbar nav .drop a { font-size: 12.5px; padding: 7px 10px; }
+html.mal-dark #myapple-topbar nav .drop { background: rgba(28,28,30,.92); border-color: rgba(255,255,255,.12); }
+@media (prefers-reduced-motion: reduce) {
+  #myapple-topbar nav .drop { transition: opacity 120ms ease; transform: none; }
+}
+#myapple-topbar input {
+  border: 0; outline: 0; padding: 7px 10px; border-radius: 9px;
+  background: rgba(0,0,0,.055); font-size: 12.5px; font-family: inherit;
+  /* Largeur FIXE : l'expansion au focus décalait toute la pilule sous le curseur */
+  width: 150px;
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+#myapple-topbar input:focus { width: 150px; background: rgba(0,0,0,.08); }
+#myapple-topbar button {
+  border: 0; cursor: pointer; padding: 6px 9px; border-radius: 9px;
+  font-weight: 700; font-size: 12px; background: #1d1d1f; color: #fff;
+  will-change: transform; /* compositor only */
+}
+#myapple-topbar button.ghost {
+  background: rgba(0,0,0,.05); color: var(--apl-ink);
+}
+#myapple-account { display: flex; align-items: center; gap: 4px; margin-left: 0; }
+#myapple-account a {
+  font-size: 12px; font-weight: 700; text-decoration: none;
+  padding: 4px 9px 4px 4px; border-radius: 999px; white-space: nowrap;
+  background: rgba(0,0,0,.05); color: var(--apl-ink) !important;
+  display: flex; align-items: center; gap: 6px; max-width: 160px; overflow: hidden;
+}
+#myapple-account a#myapple-account-link {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+#myapple-account a#myapple-account-link .avatar-wrap {
+  position: relative; width: 20px; height: 20px; border-radius: 50%; overflow: hidden;
+  background: var(--apl-accent); color: #fff;
+  display: inline-flex !important; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; flex: none !important;
+  float: none !important; margin: 0 !important;
+}
+#myapple-account a#myapple-account-link .avatar-wrap img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block; padding: 0;
+}
+#myapple-account a#myapple-account-link .avatar-wrap img[hidden] { display: none; }
+#myapple-account a#myapple-account-link .avatar-name {
+  display: inline-block !important;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  float: none !important; margin: 0 !important;
+}
+#myapple-account a#myapple-signup { background: var(--apl-accent); color: #fff !important; }
+html.mal-dark #myapple-account a { background: rgba(255,255,255,.1); color: #fff !important; }
+

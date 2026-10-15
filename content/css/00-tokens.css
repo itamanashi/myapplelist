@@ -1,0 +1,17 @@
+/* MyAppleList — Tokens --apl-* + base :root. Module 00-tokens.css (ordre : tools/build-css.mjs). */
+/* MyAppleList — Apple replacement, pas overlay. D'après Designing Fluid Interfaces + Typography + Materials. */
+:root {
+  font: 100%/1.5 system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif;
+  --apl-bg: #f5f5f7;
+  --apl-card: rgba(255,255,255,.72);
+  --apl-ink: #1d1d1f;
+  --apl-muted: #6e6e73;
+  --apl-accent: #0071e3;
+  --apl-radius-l: 20px;
+  --apl-radius-m: 14px;
+  --apl-shadow-big: 0 24px 60px rgba(0,0,0,.18);
+  --apl-shadow-small: 0 8px 24px rgba(0,0,0,.12);
+  --apl-spring: cubic-bezier(.32,.72,.35,1);
+  --apl-spring-bounce: cubic-bezier(.32,1.2,.35,1);
+}
+

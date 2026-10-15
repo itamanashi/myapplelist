@@ -1,0 +1,613 @@
+/* MyAppleList — §4-5 profil legacy + vue custom #myapple-profile. Module 40-profile.css (ordre : tools/build-css.mjs). */
+/* ===== 4. PROFIL : sidebar carte + stats en barres douces (DOM MAL intact) ===== */
+/* Layout : 2 colonnes MAL (floats) -> flex moderne */
+html.mal-custom:root body div#myanimelist div#content .content-container {
+  display: flex !important;
+  gap: 18px !important;
+  align-items: flex-start !important;
+}
+html.mal-custom:root body div#myanimelist div#content .container-left {
+  float: none !important;
+  width: 264px !important;
+  flex: none !important;
+  margin: 0 !important;
+}
+html.mal-custom:root body div#myanimelist div#content .container-right {
+  float: none !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+/* Sidebar en carte Apple */
+html.mal-custom:root body div#myanimelist div#content .user-profile {
+  background: var(--apl-card) !important;
+  border: 1px solid rgba(0,0,0,.06) !important;
+  border-radius: var(--apl-radius-l) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.05) !important;
+  padding: 16px !important;
+}
+html.mal-custom:root body div#myanimelist div#content .user-image img {
+  width: 100% !important;
+  height: auto !important;
+  border-radius: var(--apl-radius-m) !important;
+  display: block !important;
+  opacity: 1 !important;
+}
+html.mal-custom:root body div#myanimelist div#content ul.user-status {
+  border-top: 1px solid rgba(0,0,0,.07) !important;
+  padding: 10px 2px !important;
+  margin: 0 0 8px 0 !important;
+}
+html.mal-custom:root body div#myanimelist div#content ul.user-status li {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  font-size: 12.5px !important;
+  padding: 3px 0 !important;
+}
+/* Boutons Anime List / Manga List en pills */
+html.mal-custom:root body div#myanimelist div#content .user-profile a[href*="/animelist/"],
+html.mal-custom:root body div#myanimelist div#content .user-profile a[href*="/mangalist/"] {
+  display: inline-block !important;
+  padding: 8px 14px !important;
+  margin: 2px 4px 2px 0 !important;
+  border-radius: 999px !important;
+  background: var(--apl-accent) !important;
+  color: #fff !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+/* Cartes stats */
+html.mal-custom:root body div#myanimelist div#content .stats.anime,
+html.mal-custom:root body div#myanimelist div#content .stats.manga {
+  background: var(--apl-card) !important;
+  border: 1px solid rgba(0,0,0,.06) !important;
+  border-radius: var(--apl-radius-l) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.05) !important;
+  padding: 16px 18px !important;
+  margin-bottom: 16px !important;
+}
+html.mal-custom:root body div#myanimelist div#content .stats h5 {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  margin: 0 0 8px 0 !important;
+}
+/* Barre de progression : segments collés, bouts arrondis */
+html.mal-custom:root body div#myanimelist div#content .stats-graph {
+  display: flex !important;
+  height: 10px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  background: rgba(0,0,0,.08) !important;
+}
+html.mal-dark:root body div#myanimelist div#content .stats-graph {
+  background: rgba(255,255,255,.12) !important;
+}
+html.mal-custom:root body div#myanimelist div#content .stats-graph .graph {
+  height: 100% !important;
+  border-radius: 0 !important;
+}
+html.mal-custom:root body div#myanimelist div#content ul.stats-status,
+html.mal-custom:root body div#myanimelist div#content ul.stats-data {
+  margin: 0 !important;
+}
+html.mal-custom:root body div#myanimelist div#content ul.stats-status li,
+html.mal-custom:root body div#myanimelist div#content ul.stats-data li {
+  padding: 4px 0 !important;
+  font-size: 12.5px !important;
+}
+/* Updates : covers arrondies */
+html.mal-custom:root body div#myanimelist div#content .container-right td img,
+html.mal-custom:root body div#myanimelist div#content .container-right .updates img {
+  border-radius: 10px !important;
+}
+@media (max-width: 980px) {
+  html.mal-custom:root body div#myanimelist div#content .content-container {
+    flex-direction: column !important;
+  }
+  html.mal-custom:root body div#myanimelist div#content .container-left {
+    width: 100% !important;
+  }
+}
+
+/* ===== 5. VUE PROFIL CUSTOM (#myapple-profile remplace le conteneur d'origine) ===== */
+html.mal-custom body.myapple-profile div#myanimelist div#content .content-container {
+  display: none !important;
+}
+html.mal-custom body.myapple-profile div#myanimelist div#contentWrapper > div:has(> h1.h1) {
+  display: none !important;
+}
+#myapple-profile { display: flex; flex-direction: column; gap: 18px; }
+/* Hero : banniere floue (1re affiche) + contenu net par-dessus */
+#myapple-profile .apl-hero {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: 16px;
+  background: var(--apl-card);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: var(--apl-radius-l);
+  box-shadow: 0 4px 20px rgba(0,0,0,.05);
+  padding: 22px;
+}
+#myapple-profile .apl-banner {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center 20%;
+  filter: blur(28px) saturate(1.4); opacity: .38;
+  transform: scale(1.15);
+  pointer-events: none;
+}
+#myapple-profile .apl-hero-main, #myapple-profile .apl-kpis { position: relative; }
+#myapple-profile .apl-hero-main { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 20px !important; flex: 1; min-width: 0; }
+#myapple-profile .apl-avatar { width: 96px; flex: none; }
+#myapple-profile .apl-avatar img {
+  width: 96px; height: 96px; object-fit: cover; display: block;
+  border-radius: 26px !important;
+  box-shadow: var(--apl-shadow-small) !important;
+}
+@media (prefers-reduced-transparency: reduce) {
+  #myapple-profile .apl-banner { display: none; }
+}
+#myapple-profile .apl-who { min-width: 0; flex: 1; }
+#myapple-profile .apl-who h1 {
+  margin: 0 0 8px 0 !important;
+  font-size: clamp(1.8rem, 3.4vw, 2.6rem) !important;
+  letter-spacing: -0.022em !important;
+  line-height: 1.05 !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-profile .apl-who-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+#myapple-profile .apl-who-title-row h1 {
+  margin: 0 !important;
+}
+#myapple-profile .apl-online {
+  font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  color: #146c2e; background: rgba(46,160,67,.14);
+  padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+}
+html.mal-dark #myapple-profile .apl-online { color: #7ee787; background: rgba(126,231,135,.14); }
+
+/* Puces de métadonnées modernes */
+#myapple-profile .apl-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-bottom: 12px; }
+#myapple-profile .apl-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,.05);
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--apl-muted);
+  font-weight: 500;
+}
+html.mal-dark #myapple-profile .apl-meta-chip {
+  background: rgba(255,255,255,.08);
+  color: #f5f5f7;
+}
+#myapple-profile .apl-chip-icon { font-size: 13px; line-height: 1; }
+
+#myapple-profile .apl-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Chiffres cles : point d'entree du regard (32-40px + libelle 12px) */
+#myapple-profile .apl-kpis {
+  display: flex; flex-wrap: wrap; gap: 10px 28px;
+  border-top: 1px solid rgba(0,0,0,.07);
+  padding-top: 14px;
+}
+html.mal-dark #myapple-profile .apl-kpis { border-top-color: rgba(255,255,255,.12); }
+#myapple-profile .apl-kpi { display: flex; flex-direction: column; gap: 0; min-width: 90px; text-decoration: none !important; }
+#myapple-profile .apl-kpi > b { font-size: 34px; font-weight: 800; letter-spacing: -0.022em; line-height: 1.1; color: var(--apl-ink); }
+#myapple-profile .apl-kpi > span { font-size: 12px; color: var(--apl-muted); font-weight: 600; }
+#myapple-profile .apl-kpi-bar { min-width: 150px; }
+#myapple-profile .apl-bar { height: 6px; border-radius: 999px; background: rgba(0,0,0,.08); overflow: hidden; margin-top: 6px; }
+html.mal-dark #myapple-profile .apl-bar { background: rgba(255,255,255,.14); }
+#myapple-profile .apl-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--apl-accent); }
+
+/* Jauge segmentée stacked (façon stockage iCloud) */
+#myapple-profile .apl-stats-tabs { margin-left: auto; }
+#myapple-profile .apl-stacked-bar {
+  display: flex;
+  height: 10px;
+  width: 100%;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0,0,0,.08);
+  margin: 12px 0 16px 0;
+}
+html.mal-dark #myapple-profile .apl-stacked-bar {
+  background: rgba(255,255,255,.14);
+}
+#myapple-profile .apl-stacked-segment {
+  height: 100%;
+  transition: width 300ms var(--apl-spring);
+}
+#myapple-profile .apl-stats-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+#myapple-profile .apl-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--apl-ink);
+  text-decoration: none !important;
+  padding: 5px 8px;
+  border-radius: 8px;
+  transition: background 120ms;
+}
+#myapple-profile .apl-legend-item:hover {
+  background: rgba(0,0,0,.04);
+}
+html.mal-dark #myapple-profile .apl-legend-item:hover {
+  background: rgba(255,255,255,.08);
+}
+#myapple-profile .apl-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+#myapple-profile .apl-legend-label {
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+}
+#myapple-profile .apl-legend-count {
+  font-weight: 800;
+}
+#myapple-profile .apl-legend-pct {
+  font-size: 11px;
+  color: var(--apl-muted);
+}
+#myapple-profile .apl-totals {
+  display: grid; grid-template-columns: auto auto; gap: 4px 14px; justify-content: start;
+  margin: 12px 0 0 0; padding-top: 12px; border-top: 1px solid rgba(0,0,0,.07);
+  font-size: 12.5px;
+}
+html.mal-dark #myapple-profile .apl-totals { border-top-color: rgba(255,255,255,.12); }
+#myapple-profile .apl-totals dt { color: var(--apl-muted); margin: 0; }
+#myapple-profile .apl-totals dd { margin: 0; font-weight: 700; color: var(--apl-ink); text-align: right; }
+
+/* Favoris avec onglets & affiches soignées */
+#myapple-profile .apl-fav-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+#myapple-profile .apl-favgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 14px 12px;
+}
+#myapple-profile .apl-fav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none !important;
+  transition: transform 160ms var(--apl-spring);
+}
+#myapple-profile .apl-fav:hover {
+  transform: translateY(-3px);
+}
+#myapple-profile .apl-fav-thumb {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0,0,0,.06);
+  box-shadow: 0 2px 10px rgba(0,0,0,.08);
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+#myapple-profile .apl-fav:hover .apl-fav-thumb {
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+}
+#myapple-profile .apl-fav-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+#myapple-profile .apl-favgrid-people .apl-fav-thumb {
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+}
+#myapple-profile .apl-fav-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+#myapple-profile .apl-fav-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--apl-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.25;
+}
+#myapple-profile .apl-fav-sub {
+  font-size: 11px;
+  color: var(--apl-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Navigation latérale façon Réglages iOS */
+#myapple-profile .apl-ios-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0,0,0,.02);
+}
+html.mal-dark #myapple-profile .apl-ios-list {
+  background: rgba(255,255,255,.03);
+}
+#myapple-profile .apl-ios-item {
+  border-bottom: 1px solid rgba(0,0,0,.05);
+}
+#myapple-profile .apl-ios-item:last-child {
+  border-bottom: 0;
+}
+html.mal-dark #myapple-profile .apl-ios-item {
+  border-bottom-color: rgba(255,255,255,.07);
+}
+#myapple-profile .apl-ios-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  text-decoration: none !important;
+  transition: background 120ms;
+}
+#myapple-profile .apl-ios-link:hover {
+  background: rgba(0,0,0,.05);
+}
+html.mal-dark #myapple-profile .apl-ios-link:hover {
+  background: rgba(255,255,255,.08);
+}
+#myapple-profile .apl-ios-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--apl-ink);
+}
+#myapple-profile .apl-ios-icon {
+  font-size: 15px;
+  width: 20px;
+  text-align: center;
+}
+#myapple-profile .apl-ios-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#myapple-profile .apl-ios-badge {
+  font-size: 11px;
+  background: rgba(0,0,0,.07);
+  color: var(--apl-muted);
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+html.mal-dark #myapple-profile .apl-ios-badge {
+  background: rgba(255,255,255,.1);
+  color: #f5f5f7;
+}
+#myapple-profile .apl-ios-chevron {
+  font-size: 16px;
+  color: var(--apl-muted);
+  opacity: .6;
+}
+
+/* Activite : timeline */
+#myapple-profile .apl-tl { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+#myapple-profile .apl-tl > li {
+  position: relative; display: flex; gap: 10px; align-items: flex-start;
+  padding: 8px 0 8px 16px; border-left: 2px solid rgba(0,0,0,.1); margin-left: 24px;
+}
+#myapple-profile .apl-tl > li::before {
+  content: ""; position: absolute; left: -5px; top: 14px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--apl-accent);
+}
+html.mal-dark #myapple-profile .apl-tl > li { border-left-color: rgba(255,255,255,.16); }
+#myapple-profile .apl-tl img { width: 40px; height: 56px; object-fit: cover; border-radius: 8px; flex: none; }
+#myapple-profile .apl-tl a { font-size: 13px; font-weight: 700; display: block; }
+#myapple-profile .apl-muted { color: var(--apl-muted) !important; font-size: 12.5px; }
+#myapple-profile .apl-muted span { display: block; font-weight: 400; }
+#myapple-profile .apl-card .user-profile-about { font-size: 13.5px; line-height: 1.6; color: var(--apl-ink); }
+/* Carte navigation (reste sidebar) */
+#myapple-profile .apl-hero-side { width: 240px; flex: none; }
+#myapple-profile .apl-hero-side .apl-card { margin: 0; }
+/* Colonnes */
+#myapple-profile .apl-cols { display: flex; gap: 18px; align-items: flex-start; }
+#myapple-profile .apl-col-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+#myapple-profile .apl-col-side { width: 360px; flex: none; display: flex; flex-direction: column; gap: 18px; }
+
+/* Focus visible Apple-style */
+#myapple-profile .apl-card a:focus-visible,
+#myapple-profile .apl-icon-btn:focus-visible,
+#myapple-profile .apl-pill-btn:focus-visible,
+#myapple-profile .apl-ios-link:focus-visible {
+  outline: 2px solid var(--apl-accent, #2997ff) !important;
+  outline-offset: 2px !important;
+  border-radius: 6px;
+}
+
+/* Tabs transitions */
+#myapple-profile .apl-stats-content,
+#myapple-profile .apl-fav-container {
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+#myapple-profile .apl-icon-btn,
+#myapple-profile .apl-pill-btn {
+  transition: background 120ms ease, color 120ms ease;
+}
+
+/* Favoris hover */
+#myapple-profile .apl-fav:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
+}
+html.mal-dark #myapple-profile .apl-fav:hover {
+  box-shadow: 0 8px 20px rgba(0,0,0,.35);
+}
+
+/* Navigation iOS hover */
+#myapple-profile .apl-ios-chevron {
+  transition: transform 160ms ease;
+}
+#myapple-profile .apl-ios-link:hover .apl-ios-chevron {
+  transform: translateX(3px);
+}
+/* Cards */
+#myapple-profile .apl-card {
+  background: var(--apl-card);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: var(--apl-radius-l);
+  box-shadow: 0 4px 20px rgba(0,0,0,.05);
+  padding: 18px 20px;
+  margin: 0 !important;
+  min-width: 0;
+}
+#myapple-profile .apl-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+#myapple-profile .apl-card > header h2 { margin: 0 !important; font-size: 17px !important; letter-spacing: -0.01em !important; color: var(--apl-ink) !important; }
+#myapple-profile .apl-card > header a { font-size: 12px !important; font-weight: 700 !important; white-space: nowrap; }
+/* Lignes updates : cover + titre + date */
+#myapple-profile .statistics-updates {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+  padding: 8px 0 !important;
+  margin: 0 !important;
+  border-top: 1px solid rgba(0,0,0,.06) !important;
+  width: 100% !important;
+  float: none !important;
+}
+#myapple-profile .statistics-updates:first-of-type { border-top: 0 !important; }
+#myapple-profile .statistics-updates a.image { flex: none !important; float: none !important; margin: 0 !important; }
+#myapple-profile .statistics-updates img {
+  width: 48px !important; height: 68px !important;
+  object-fit: cover !important;
+  border-radius: 10px !important;
+  display: block !important;
+}
+#myapple-profile .statistics-updates .data { flex: 1 !important; min-width: 0 !important; float: none !important; }
+#myapple-profile .statistics-updates .data > a { font-size: 13.5px !important; font-weight: 700 !important; }
+#myapple-profile .statistics-updates .graph-content { display: flex !important; align-items: center !important; gap: 8px !important; padding-top: 6px !important; }
+#myapple-profile .statistics-updates .graph {
+  flex: 1 !important; height: 6px !important; float: none !important;
+  border-radius: 999px !important; overflow: hidden !important;
+  background: rgba(0,0,0,.08) !important;
+}
+html.mal-dark #myapple-profile .statistics-updates .graph { background: rgba(255,255,255,.12) !important; }
+#myapple-profile .statistics-updates .graph-inner { display: block !important; height: 100% !important; border-radius: 999px !important; }
+/* Stats déplacées : reset marges flottantes MAL (spécificité > règle section 4) */
+html.mal-custom:root body div#myanimelist #myapple-profile .stats.anime,
+html.mal-custom:root body div#myanimelist #myapple-profile .stats.manga { margin: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; padding: 0 !important; }
+/* Paires label/valeur MAL : flex plutôt que floats (sinon "Total Entries1,643" collé) */
+html.mal-custom:root body div#myanimelist #myapple-profile ul.stats-status li,
+html.mal-custom:root body div#myanimelist #myapple-profile ul.stats-data li {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+}
+/* Liens triés du hero : liste verticale propre dans la carte Navigation */
+#myapple-profile .apl-navlist {
+  list-style: none !important;
+  margin: 0 0 10px 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+#myapple-profile .apl-navlist a {
+  display: block !important;
+  padding: 7px 10px !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+}
+#myapple-profile .apl-navlist a:hover { background: rgba(0,0,0,.05) !important; }
+html.mal-dark #myapple-profile .apl-navlist a:hover { background: rgba(255,255,255,.09) !important; }
+#myapple-profile .apl-hero-side:empty { display: none !important; }
+@media (max-width: 980px) {
+  #myapple-profile .apl-hero, #myapple-profile .apl-cols { flex-direction: column; }
+  #myapple-profile .apl-hero-side, #myapple-profile .apl-col-side { width: 100%; }
+}
+
+/* MAL peint SES titres de page en gris clair (#e0e0e0) :
+   illisibles sur nos cartes blanches en mode jour. Scope = titres uniquement
+   (jamais les .data/.light/.di-ib secondaires). Équivalent dark déjà présent. */
+html.mal-custom body div#myanimelist div#contentWrapper > h1.h1,
+html.mal-custom body div#myanimelist div#contentWrapper > div > h1.h1,
+html.mal-custom body div#myanimelist div#content .widget-header,
+html.mal-custom body div#myanimelist div#content h2.widget-header {
+  color: var(--apl-ink) !important;
+}
+/* MAL peint aussi le CORPS en clair (#e0e0e0 / #a3a3a3) : sur cartes blanches
+   le texte devient fantôme en mode jour. Scope = colonne droite connectée
+   (jamais les blocs bas type shoutbox à fond clair). */
+html.mal-custom body div#myanimelist div#content .right-column .widget,
+html.mal-custom body div#myanimelist div#content .right-column .widget p,
+html.mal-custom body div#myanimelist div#content .right-column .widget li,
+html.mal-custom body div#myanimelist div#content .right-column .widget td,
+html.mal-custom body div#myanimelist div#content .right-column .widget .data,
+html.mal-custom body div#myanimelist #myapple-profile .apl-card,
+html.mal-custom body div#myanimelist #myapple-profile ul.stats-status li,
+html.mal-custom body div#myanimelist #myapple-profile ul.stats-data li,
+html.mal-custom body div#myanimelist #myapple-profile .space,
+html.mal-custom body div#myanimelist #myapple-profile .data {
+  color: var(--apl-ink) !important;
+}
+/* Liens : MAL force sa couleur dark (#abc4ed) partout — en mode jour elle est
+   fantôme sur carte blanche. On restaure un bleu accessible (AA 4.70 déjà
+   mesuré sur --apl-accent). Le dark garde sa règle existante. */
+html.mal-custom body div#myanimelist div#content .widget a,
+html.mal-custom body div#myanimelist div#content .widget a span,
+html.mal-custom body div#myanimelist #myapple-profile .apl-card a,
+html.mal-custom body div#myanimelist div#contentWrapper a.header-right {
+  color: var(--apl-accent) !important;
+}
+/* Nos propres boutons gardent leur texte blanc (pas le bleu lien). */
+html.mal-custom body div#myanimelist #myapple-profile a.apl-btn {
+  color: #fff !important;
+}
+/* Footer de widget MAL (ex. "Settings" Recent Friend Updates) : le nœud
+   interne .btn-settings garde son fond bouton sombre en mode jour. */
+html.mal-custom body div#myanimelist div#content .widget .widget-footer,
+html.mal-custom body div#myanimelist div#content .widget .footer,
+html.mal-custom body div#myanimelist div#content .widget .widget-footer a,
+html.mal-custom body div#myanimelist div#content .widget .footer a,
+html.mal-custom body div#myanimelist div#content .widget .btn-settings {
+  border: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+html.mal-custom body div#myanimelist #myapple-profile ul.stats-data li span,
+html.mal-custom body div#myanimelist #myapple-profile .apl-meta {
+  color: var(--apl-muted) !important;
+}
+/* Sur fond clair MAL résiduel (shoutbox bas de page), le texte garde sa couleur native. */
+html.mal-custom body div#myanimelist div#content .widget .light,
+html.mal-custom body div#myanimelist div#content .widget .data.light {
+  color: inherit !important;
+}
+

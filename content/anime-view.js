@@ -1,22 +1,397 @@
-// Vue Anime/Manga Detail : STYLISATION DIRECTE (Apple Style).
-// Applique un redesign Apple directement sur les éléments MAL existants.
+// Vue Anime/Manga Detail : EXTRACTION + RECONSTRUCTION (même niveau que profil/listes).
+// readAnime() extrait les données du DOM MAL ; buildAnimeView() reconstruit :
+// hero (bannière floue + affiche + titre + badges + genres + KPIs + actions MAL déplacées),
+// colonne principale (synopsis, informations, personnages, staff, thèmes),
+// colonne latérale (bande-annonce, œuvres liées, navigation).
+// Les nœuds interactifs MAL (Add to My List, favoris, vidéo, thèmes) sont DÉPLACÉS, jamais dupliqués.
 // Appel : window.__myappleAnime?.buildAnimeView() depuis content.js
 (() => {
 "use strict";
 
-function buildAnimeView() {
-  // Détecte si on est sur une page anime/manga
-  const path = location.pathname;
-  const isAnime = /^\/anime\/\d+/.test(path);
-  const isManga = /^\/manga\/\d+/.test(path);
-  if (!isAnime && !isManga) return;
+const T = (el) => (el?.textContent || "").replace(/\s+/g, " ").trim();
+const IMG = (im) => im?.getAttribute("data-src") || im?.getAttribute("src") || im?.src || "";
 
-  // Marqueur pour le CSS
-  document.body.classList.add("myapple-anime-detail");
-  
-  console.log("[myapplelist] Anime/Manga detail view stylisée");
+// Clés de la colonne gauche MAL (titres alternatifs : affichés sous le titre, pas dans la grille infos)
+const ALT_KEYS = new Set(["Synonyms", "Japanese", "English", "French", "German", "Spanish"]);
+// Clés affichées en chips dans le hero (exclues de la grille infos)
+const CHIP_KEYS = new Set(["Genres", "Genre", "Themes", "Theme", "Demographic", "Demographics"]);
+
+const KEY_FR = {
+  Type: "Format", Episodes: "Épisodes", Status: "Statut", Aired: "Diffusion",
+  Published: "Publication", Premiered: "Saison", Broadcast: "Horaire",
+  Producers: "Producteurs", Licensors: "Licences", Studios: "Studio",
+  Source: "Source", Rating: "Classification", Duration: "Durée",
+  Chapters: "Chapitres", Volumes: "Tomes", Authors: "Auteurs",
+  Serialization: "Magazine", Genres: "Genres", Genre: "Genres",
+  Themes: "Thèmes", Theme: "Thèmes", Demographic: "Public", Demographics: "Public"
+};
+
+const STATUS_FR = {
+  "Finished Airing": "Terminé", "Currently Airing": "En cours", "Not yet aired": "Annoncé",
+  Finished: "Terminée", Publishing: "En cours", "On Hiatus": "En pause", Discontinued: "Interrompue"
+};
+const STATUS_COLOR = { "Terminé": "#34c759", "Terminée": "#34c759", "En cours": "#0071e3", "Annoncé": "#af52de", "En pause": "#ff9500", "Interrompue": "#ff3b30" };
+
+function el(tag, cls, parent, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
 }
 
-// Export pour content.js
-window.__myappleAnime = { buildAnimeView };
+function card(parent, title, moreHref) {
+  const s = el("section", "apl-card", parent);
+  const h = el("header", null, s);
+  el("h2", null, h, title);
+  if (moreHref) { const a = el("a", "apl-card-link", h, "Tout voir ↗"); a.href = moreHref; }
+  return el("div", "apl-card-body", s);
+}
+
+// Trouve le h2 MAL qui CONTIENT `start` : le lien "More…" ("More characters"/"More staff")
+// peut précéder le titre dans le textContent selon les pages (anime vs manga).
+function findH2(root, start) {
+  return [...root.querySelectorAll("h2")].find((h) => T(h).includes(start)) || null;
+}
+
+// La liste qui suit un h2 MAL : le h2 est dernier enfant de son wrapper
+// (<div><div class="floatRightHeader">…</div><h2>…</h2></div>), la liste vient après.
+// Fallback : première .detail-characters-list située après le h2 dans l'ordre document.
+function listAfterH2(h2) {
+  let n = h2?.parentElement?.nextElementSibling || null;
+  while (n && !(n.classList?.contains("detail-characters-list"))) n = n.nextElementSibling;
+  if (n) return n;
+  if (!h2) return null;
+  const doc = h2.ownerDocument;
+  return [...doc.querySelectorAll(".detail-characters-list")]
+    .find((l) => h2.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING) || null;
+}
+
+// "scored by 2,347,877 users" — le chiffre existe en double dans le DOM (copie cachée),
+// on déduplique (moitiés identiques) et on reformate en fr-FR.
+function parseScoredBy(scope) {
+  const m = (scope?.textContent || "").match(/([\d,]+)\s+users/i);
+  if (!m) return "";
+  let digits = m[1].replace(/,/g, "");
+  while (digits.length > 1 && digits.length % 2 === 0 && digits.slice(0, digits.length / 2) === digits.slice(digits.length / 2)) {
+    digits = digits.slice(0, digits.length / 2);
+  }
+  const n = parseInt(digits, 10);
+  if (!Number.isFinite(n)) return "";
+  return n.toLocaleString("fr-FR").replace(/,/g, " ") + " votes";
+}
+
+// Tables RACINES de la liste seulement : chaque personnage = 1 table externe qui imbrique
+// la sous-table du doubleur. On ignore les tables MAL de mise en page (hors liste).
+function topTables(list) {
+  return [...list.querySelectorAll("table")].filter((t) => {
+    let p = t.parentElement;
+    while (p && p !== list) {
+      if (p.tagName === "TABLE") return false;
+      p = p.parentElement;
+    }
+    return true;
+  });
+}
+
+// Extrait {img, name, href, sub} (+ va:{...} éventuel) d'un tableau MAL personnages/staff
+function parsePerson(table) {
+  const imgs = [...table.querySelectorAll("img")];
+  const links = [...table.querySelectorAll("a[href]")].filter((a) => T(a));
+  if (!links.length) return null;
+  const nameLink = links.find((a) => !a.querySelector("img")) || links[0];
+  const pic = imgs[0] ? IMG(imgs[0]) : "";
+  const smalls = [...table.querySelectorAll("small")].map(T).filter(Boolean);
+  const out = { img: pic, name: T(nameLink), href: nameLink.getAttribute("href") || "", sub: smalls[0] || "" };
+  // Ligne anime : 2e moitié = doubleur (dernière image + dernier lien non-image)
+  if (imgs.length > 1 && links.length > 1) {
+    const vaLink = [...links].reverse().find((a) => !a.querySelector("img"));
+    if (vaLink && vaLink !== nameLink) {
+      out.va = { img: IMG(imgs[imgs.length - 1]), name: T(vaLink), href: vaLink.getAttribute("href") || "", lang: smalls[1] || "" };
+    }
+  }
+  return out;
+}
+
+function readAnime(content) {
+  const path = location.pathname;
+  const isManga = /^\/manga\/\d+/.test(path);
+  const left = content.querySelector(".leftside");
+  // Anime : h1.title-name ; manga : titre dans [itemprop=name] (h1.edit-info)
+  const titleEl = document.querySelector("h1.title-name") || document.querySelector("[itemprop='name']");
+  const posterIm = left?.querySelector("img[itemprop='image']") || left?.querySelector("img");
+  if (!left || !titleEl || !posterIm) return null;
+
+  // Lignes "Label: valeur" de la colonne gauche
+  const rows = [...left.querySelectorAll(".spaceit_pad")].map((div) => {
+    const lab = div.querySelector(".dark_text");
+    const key = lab ? T(lab).replace(/:$/, "") : "";
+    lab?.remove();
+    const links = [...div.querySelectorAll("a[href]")].map((a) => ({ label: T(a), href: a.getAttribute("href") || "" })).filter((l) => l.label);
+    return { key, text: T(div), links };
+  }).filter((r) => r.key || r.text);
+
+  const alt = rows.filter((r) => ALT_KEYS.has(r.key));
+  const info = rows.filter((r) => r.key && !ALT_KEYS.has(r.key));
+  const chips = [];
+  info.filter((r) => CHIP_KEYS.has(r.key)).forEach((r) => r.links.forEach((l) => chips.push(l)));
+
+  // Score + stats (bloc de droite, sélecteurs défensifs)
+  const scoreEl = content.querySelector(".score-label");
+  const scoreScope = scoreEl?.closest("div.score, .stats-block") || scoreEl?.parentElement;
+  const num = (sel) => content.querySelector(sel)?.textContent?.trim() || "";
+  const d = {
+    isManga,
+    title: T(titleEl),
+    poster: IMG(posterIm),
+    alt,
+    info: info.filter((r) => !CHIP_KEYS.has(r.key)),
+    chips,
+    score: T(scoreEl),
+    scoredBy: parseScoredBy(scoreScope),
+    ranked: num("span.numbers.ranked strong"),
+    popularity: num("span.numbers.popularity strong"),
+    members: num("span.numbers.members strong"),
+    synopsisNode: content.querySelector("p[itemprop='description'], span[itemprop='description']"),
+    trailerLink: content.querySelector(".video-promotion a.iframe")?.getAttribute("href") || "",
+    trailerNode: content.querySelector(".video-promotion"),
+    themesNode: content.querySelector(".theme-songs"),
+    addListNode: content.querySelector(".profileRows a.btn-user-status-add-list"),
+    favNode: content.querySelector("#profileRows a"),
+    nav: [...content.querySelectorAll("#horiznav_nav a[href]")].map((a) => ({ label: T(a), href: a.getAttribute("href") || "" })).filter((l) => l.label),
+    chars: [], charsMore: "", staff: [], staffMore: "", related: []
+  };
+
+  // Personnages (top 8)
+  const h2c = findH2(content, "Characters");
+  const listC = listAfterH2(h2c);
+  if (listC) {
+    d.chars = topTables(listC).map(parsePerson).filter(Boolean).slice(0, 8);
+    d.charsMore = h2c.parentElement?.querySelector("a[href]")?.getAttribute("href") || "";
+  }
+
+  // Staff (top 6)
+  const h2s = findH2(content, "Staff");
+  const listS = listAfterH2(h2s);
+  if (listS) {
+    d.staff = topTables(listS).map(parsePerson).filter(Boolean).slice(0, 6);
+    d.staffMore = h2s.parentElement?.querySelector("a[href]")?.getAttribute("href") || "";
+  }
+
+  // Œuvres liées — nouveau markup .related-entries (fallback ancien tableau)
+  const relBox = content.querySelector(".related-entries");
+  if (relBox) {
+    const groups = new Map();
+    relBox.querySelectorAll(".entry").forEach((en) => {
+      const type = T(en.querySelector(".relation")).replace(/:$/, "") || "Lié";
+      const a = en.querySelector(".content a[href]") || en.querySelector("a[href]");
+      const imgEl = en.querySelector(".image img");
+      const label = T(a) || imgEl?.getAttribute("alt") || "";
+      const item = a ? { label, href: a.getAttribute("href") || "", img: IMG(imgEl) } : null;
+      if (!type || !item?.label) return;
+      if (!groups.has(type)) groups.set(type, []);
+      groups.get(type).push(item);
+    });
+    d.related = [...groups].map(([type, items]) => ({ type, items }));
+  } else {
+    content.querySelectorAll("table[class*='_related_'] tr").forEach((tr) => {
+      const cells = [...tr.querySelectorAll("td")];
+      if (cells.length < 2) return;
+      const type = T(cells[0]).replace(/:$/, "");
+      const items = [...cells.slice(1).flatMap((c) => [...c.querySelectorAll("a[href]")])]
+        .map((a) => ({ label: T(a), href: a.getAttribute("href") || "" })).filter((l) => l.label);
+      if (type && items.length) d.related.push({ type, items });
+    });
+  }
+
+  return d;
+}
+
+function kpi(parent, value, label, sub) {
+  const k = el("div", "apl-kpi", parent);
+  el("b", null, k, value || "—");
+  el("span", null, k, label);
+  if (sub) el("i", null, k, sub);
+  return k;
+}
+
+function personCard(parent, p, showVa) {
+  const c = el("div", "apl-person", parent);
+  const a = el("a", null, c);
+  a.href = p.href || "#";
+  if (p.img) { const im = el("img", null, a); im.src = p.img; im.alt = p.name; im.loading = "lazy"; }
+  el("b", null, a, p.name);
+  if (p.sub) el("span", "apl-muted", a, p.sub);
+  if (showVa && p.va) {
+    const v = el("a", "apl-va", c);
+    v.href = p.va.href || "#";
+    if (p.va.img) { const im = el("img", null, v); im.src = p.va.img; im.alt = p.va.name; im.loading = "lazy"; }
+    const tx = el("span", null, v);
+    if (p.va.lang) el("i", "apl-muted", tx, p.va.lang);
+    el("b", null, tx, p.va.name);
+  }
+  return c;
+}
+
+function buildAnimeView() {
+  if (document.getElementById("myapple-anime")) return;
+  const path = location.pathname;
+  if (!/^\/anime\/\d+/.test(path) && !/^\/manga\/\d+/.test(path)) return;
+  const content = document.getElementById("content");
+  const table = content?.querySelector(":scope > table");
+  if (!content || !table) return;
+
+  let d;
+  try { d = readAnime(content); } catch { return; }
+  // Données minimales : titre + affiche + synopsis, sinon on laisse le MAL natif
+  if (!d || !d.title || !d.poster || !d.synopsisNode) return;
+
+  try {
+    const view = el("div", null, null);
+    view.id = "myapple-anime";
+
+    // ---- Hero ----
+    const hero = el("section", "apl-hero", view);
+    el("div", "apl-banner", hero, null).setAttribute("aria-hidden", "true");
+    if (d.poster) {
+      const im = new Image();
+      im.onload = () => { hero.querySelector(".apl-banner").style.backgroundImage = `url("${d.poster}")`; };
+      im.src = d.poster;
+    }
+    const heroMain = el("div", "apl-hero-main", view.querySelector(".apl-hero"));
+    const posterWrap = el("div", "apl-poster", heroMain);
+    const poster = el("img", null, posterWrap);
+    poster.src = d.poster; poster.alt = d.title;
+
+    const who = el("div", "apl-who", heroMain);
+    el("p", "apl-kind", who, d.isManga ? "Manga" : "Anime");
+    el("h1", null, who, d.title);
+    const altLine = d.alt.map((r) => r.text).filter(Boolean).slice(0, 3).join(" · ");
+    if (altLine) el("p", "apl-alt", who, altLine);
+
+    const badges = el("div", "apl-badges", who);
+    const typeRow = d.info.find((r) => r.key === "Type");
+    if (typeRow?.text) el("span", "apl-badge", badges, typeRow.text);
+    const statusRow = d.info.find((r) => r.key === "Status");
+    const stFR = STATUS_FR[statusRow?.text] || statusRow?.text || "";
+    if (stFR) {
+      const b = el("span", "apl-badge", badges, stFR);
+      b.style.setProperty("--apl-badge-dot", STATUS_COLOR[stFR] || "var(--apl-accent)");
+    }
+    const dateRow = d.info.find((r) => r.key === (d.isManga ? "Published" : "Aired"));
+    const year = dateRow?.text?.match(/\b(19|20)\d{2}\b/)?.[0] || "";
+    if (year) el("span", "apl-badge", badges, year);
+
+    if (d.chips.length) {
+      const ch = el("div", "apl-chips", who);
+      d.chips.slice(0, 8).forEach((c) => {
+        const a = el("a", "apl-chip", ch, c.label);
+        a.href = c.href;
+      });
+    }
+    const studioRow = d.info.find((r) => r.key === (d.isManga ? "Authors" : "Studios")) || d.info.find((r) => r.key === "Authors");
+    if (studioRow?.links?.length) {
+      const line = el("p", "apl-studio-line", who);
+      el("span", "apl-muted", line, (studioRow.key === "Authors" ? "Par " : "") );
+      studioRow.links.forEach((l, i) => {
+        if (i) line.appendChild(document.createTextNode(", "));
+        const a = el("a", null, line, l.label); a.href = l.href;
+      });
+    }
+
+    const kpis = el("div", "apl-kpis", who);
+    if (d.score) kpi(kpis, "★ " + d.score, "Note", d.scoredBy);
+    if (d.ranked) kpi(kpis, d.ranked, "Rang");
+    if (d.popularity) kpi(kpis, d.popularity, "Popularité");
+    if (d.members) kpi(kpis, d.members, "Membres");
+
+    const act = el("div", "apl-actions", who);
+    if (d.addListNode) { d.addListNode.classList.add("apl-pill-btn", "active"); act.appendChild(d.addListNode); }
+    if (d.favNode) { d.favNode.classList.add("apl-pill-btn"); act.appendChild(d.favNode); }
+    if (d.trailerLink) {
+      const t = el("a", "apl-pill-btn", act, "▶ Bande-annonce");
+      t.href = d.trailerLink; t.target = "_blank"; t.rel = "noopener";
+    }
+
+    // ---- Colonnes ----
+    const cols = el("div", "apl-cols", view);
+    const main = el("div", "apl-col-main", cols);
+    const side = el("div", "apl-col-side", cols);
+
+    const syn = card(main, "Synopsis");
+    syn.appendChild(d.synopsisNode);
+
+    if (d.info.length) {
+      const body = card(main, "Informations");
+      const grid = el("dl", "apl-infos", body);
+      d.info.filter((r) => r.key !== "Type" && r.key !== "Status").forEach((r) => {
+        el("dt", null, grid, KEY_FR[r.key] || r.key);
+        const dd = el("dd", null, grid);
+        if (r.links.length) {
+          r.links.forEach((l, i) => {
+            if (i) dd.appendChild(document.createTextNode(", "));
+            const a = el("a", null, dd, l.label); a.href = l.href;
+          });
+          const rest = r.text;
+          if (rest && !r.links.some((l) => rest.includes(l.label))) dd.appendChild(document.createTextNode(" " + rest));
+        } else dd.textContent = r.text;
+      });
+    }
+
+    if (d.chars.length) {
+      const body = card(main, d.isManga ? "Personnages" : "Personnages & doubleurs", d.charsMore || undefined);
+      const grid = el("div", "apl-persons", body);
+      d.chars.forEach((p) => personCard(grid, p, !d.isManga));
+    }
+
+    if (d.staff.length) {
+      const body = card(main, "Staff", d.staffMore || undefined);
+      const grid = el("div", "apl-persons", body);
+      d.staff.forEach((p) => personCard(grid, p, false));
+    }
+
+    if (d.themesNode) {
+      const body = card(main, "Génériques");
+      body.appendChild(d.themesNode);
+    }
+
+    // ---- Latéral ----
+    if (d.trailerNode) {
+      const body = card(side, "Vidéo");
+      body.appendChild(d.trailerNode);
+    }
+
+    if (d.related.length) {
+      const body = card(side, "Œuvres liées");
+      d.related.forEach((r) => {
+        el("p", "apl-rel-type", body, r.type);
+        const ul = el("ul", "apl-related", body);
+        r.items.forEach((it) => {
+          const li = el("li", null, ul);
+          const a = el("a", null, li);
+          a.href = it.href;
+          if (it.img) { const im = el("img", null, a); im.src = it.img; im.alt = it.label; im.loading = "lazy"; }
+          el("span", null, a, it.label);
+        });
+      });
+    }
+
+    if (d.nav.length > 1) {
+      const body = card(side, "Navigation");
+      const ul = el("ul", "apl-navlist", body);
+      d.nav.forEach((l) => {
+        const li = el("li", null, ul);
+        const a = el("a", null, li, l.label); a.href = l.href;
+      });
+    }
+
+    content.insertBefore(view, content.firstChild);
+    document.body.classList.add("myapple-anime");
+  } catch {
+    document.getElementById("myapple-anime")?.remove();
+    document.body.classList.remove("myapple-anime");
+  }
+}
+
+window.__myappleAnime = { readAnime, buildAnimeView };
 })();
