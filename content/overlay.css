@@ -3357,8 +3357,73 @@ html.mal-dark #myapple-anime .apl-person .apl-va { border-color: rgba(255,255,25
   box-shadow: none !important;
 }
 
+/* ---- Bloc de gestion de liste FORCÉ dans le hero (sous les actions) ---- */
+#myapple-anime .apl-manage {
+  margin-top: 16px !important;
+  padding: 14px 16px !important;
+  border-radius: var(--apl-radius-m) !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  max-width: 640px !important;
+}
+#myapple-anime .apl-manage-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .07em !important;
+  color: var(--apl-muted) !important;
+  margin: 0 0 10px 0 !important;
+}
+#myapple-anime .apl-manage-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr !important;
+  gap: 0 14px !important;
+}
+#myapple-anime .apl-manage .apl-list-widget-row { margin-bottom: 0 !important; }
+#myapple-anime .apl-manage .apl-list-widget-save-row { margin-top: 12px !important; }
+#myapple-anime .apl-list-widget-total {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--apl-muted) !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+#myapple-anime .apl-manage-hint {
+  font-size: 12px !important;
+  color: var(--apl-muted) !important;
+  margin: 8px 0 0 0 !important;
+  min-height: 0 !important;
+}
+#myapple-anime .apl-manage-hint:not(:empty) { min-height: 18px !important; }
+#myapple-anime .apl-manage-guest {
+  font-size: 13px !important;
+  color: var(--apl-muted) !important;
+  margin: 0 0 10px 0 !important;
+}
+#myapple-anime a.apl-manage-login {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 8px 18px !important;
+  border-radius: 999px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  background: var(--apl-accent) !important;
+  color: #fff !important;
+}
+/* Dark mode : le bloc hero garde son contraste sur fond carte sombre */
+html.mal-dark #myapple-anime .apl-manage {
+  background: rgba(255,255,255,.06) !important;
+  border-color: rgba(255,255,255,.09) !important;
+}
+@media (max-width: 640px) {
+  #myapple-anime .apl-manage { max-width: none !important; padding: 12px 14px !important; }
+  #myapple-anime .apl-manage-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 10px 0 !important; }
+}
 @media (prefers-reduced-motion: reduce) {
-  #myapple-anime .apl-chip, #myapple-anime a.apl-pill-btn, #myapple-anime .apl-person {
+  #myapple-anime .apl-chip, #myapple-anime a.apl-pill-btn, #myapple-anime .apl-person,
+  #myapple-anime .apl-list-widget-select, #myapple-anime .apl-list-widget-btn,
+  #myapple-anime .apl-list-widget-input, #myapple-anime .apl-list-widget-save {
     transition: none !important;
     transform: none !important;
   }

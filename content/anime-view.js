@@ -372,145 +372,219 @@ function personCard(parent, p, showVa) {
   return c;
 }
 
-// Widget de gestion de liste interactif
-function buildListWidget(parent, idInfo, listStatus, isManga, username) {
-  const STATUS_OPTIONS = isManga
+// Libellés de score imposés (spec) : 10 Masterpiece … 1 Appalling.
+const SCORE_LABELS = {
+  10: "Masterpiece", 9: "Great", 8: "Very Good", 7: "Good", 6: "Fine",
+  5: "Average", 4: "Bad", 3: "Very Bad", 2: "Horrible", 1: "Appalling",
+};
+
+// Options de statut : libellés MAL anglais (spec). Manga : Reading / Plan to Read.
+function statusOptions(isManga) {
+  return isManga
     ? [
-        { id: 1, label: "En cours" },
-        { id: 2, label: "Terminé" },
-        { id: 3, label: "En pause" },
-        { id: 4, label: "Abandonné" },
-        { id: 6, label: "À lire" },
+        { id: 1, label: "Reading" },
+        { id: 2, label: "Completed" },
+        { id: 3, label: "On-Hold" },
+        { id: 4, label: "Dropped" },
+        { id: 6, label: "Plan to Read" },
       ]
     : [
-        { id: 1, label: "En cours" },
-        { id: 2, label: "Terminé" },
-        { id: 3, label: "En pause" },
-        { id: 4, label: "Abandonné" },
-        { id: 6, label: "À voir" },
+        { id: 1, label: "Watching" },
+        { id: 2, label: "Completed" },
+        { id: 3, label: "On-Hold" },
+        { id: 4, label: "Dropped" },
+        { id: 6, label: "Plan to Watch" },
       ];
+}
 
-  const scoreOptions = Array.from({ length: 11 }, (_, i) => ({ value: i, label: i === 0 ? "—" : String(i) }));
+// Totaux connus depuis la grille infos MAL (lecture seule) : "24" -> 24, "Unknown" -> null.
+function parseTotalText(txt) {
+  if (!txt) return null;
+  const m = String(txt).match(/(\d[\d,]*)/);
+  if (!m) return null;
+  const n = parseInt(m[1].replace(/,/g, ""), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+function getTotals(d) {
+  const epRow = d.info.find((r) => r.key === "Episodes");
+  const chRow = d.info.find((r) => r.key === "Chapters");
+  const volRow = d.info.find((r) => r.key === "Volumes");
+  return {
+    eps: parseTotalText(epRow?.text),
+    chapters: parseTotalText(chRow?.text),
+    volumes: parseTotalText(volRow?.text),
+  };
+}
 
-  // Statut
-  const statusRow = el("div", "apl-list-widget-row", parent);
-  el("label", "apl-list-widget-label", statusRow, "Statut");
-  const statusSelect = el("select", "apl-list-widget-select", statusRow);
-  STATUS_OPTIONS.forEach((s) => {
+// Widget de gestion de liste interactif FORCÉ.
+// Ne dépend jamais du bloc MAL natif pour le rendu (masqué par l'overlay) :
+// on construit notre propre bloc connecté à POST /ownlist/{anime|manga}/edit.json
+// via window.__myappleList.updateEntry (CSRF frais, jamais de retry auto).
+// ctx : { idInfo, listStatus, isManga, totals, username, isInList }
+function buildListWidget(parent, ctx) {
+  const { idInfo, isManga, totals } = ctx;
+  let { listStatus, username, isInList } = ctx;
+  listStatus = listStatus || { statusId: 6, score: 0, episodes: 0, volumes: 0 };
+
+  const progTotal = isManga ? totals.chapters : totals.eps;
+  const progLabel = isManga ? "Chapters" : "Episodes";
+  const progValue = listStatus.episodes || 0;
+
+  // Invité : pas d'écriture possible → CTA login, jamais de faux contrôle.
+  if (!username) {
+    const guest = el("p", "apl-manage-guest", parent);
+    guest.textContent = "Connecte-toi sur MAL pour gérer ta liste.";
+    const a = el("a", "apl-manage-login", parent, "Se connecter");
+    a.href = "https://myanimelist.net/login.php";
+    return null;
+  }
+
+  const api = () => window.__myappleList || null;
+
+  const controls = el("div", "apl-manage-grid", parent);
+
+  // 1. Sélecteur de statut
+  const statusWrap = el("div", "apl-list-widget-row", controls);
+  el("label", "apl-list-widget-label", statusWrap, "Status");
+  const statusSelect = el("select", "apl-list-widget-select", statusWrap);
+  statusSelect.setAttribute("aria-label", "Statut dans la liste");
+  statusOptions(isManga).forEach((s) => {
     const opt = el("option", null, statusSelect, s.label);
     opt.value = String(s.id);
     if (listStatus.statusId === s.id) opt.selected = true;
   });
+  // Statut inconnu côté serveur : repli sur Plan (6), jamais de select vide.
+  if (!statusOptions(isManga).some((s) => s.id === listStatus.statusId)) statusSelect.value = "6";
 
-  // Score
-  const scoreRow = el("div", "apl-list-widget-row", parent);
-  el("label", "apl-list-widget-label", scoreRow, "Note");
-  const scoreSelect = el("select", "apl-list-widget-select", scoreRow);
-  scoreOptions.forEach((s) => {
-    const opt = el("option", null, scoreSelect, s.label);
-    opt.value = String(s.value);
-    if (listStatus.score === s.value) opt.selected = true;
-  });
+  // 2. Sélecteur de score 1..10 + libellés imposés, 0 = non noté.
+  const scoreWrap = el("div", "apl-list-widget-row", controls);
+  el("label", "apl-list-widget-label", scoreWrap, "Score");
+  const scoreSelect = el("select", "apl-list-widget-select", scoreWrap);
+  scoreSelect.setAttribute("aria-label", "Note de 1 à 10");
+  const noneOpt = el("option", null, scoreSelect, "— Select score");
+  noneOpt.value = "0";
+  if (!listStatus.score) noneOpt.selected = true;
+  for (let v = 10; v >= 1; v--) {
+    const opt = el("option", null, scoreSelect, `(${v}) ${SCORE_LABELS[v]}`);
+    opt.value = String(v);
+    if (listStatus.score === v) opt.selected = true;
+  }
 
-  // Progression
-  const progRow = el("div", "apl-list-widget-row", parent);
-  el("label", "apl-list-widget-label", progRow, isManga ? "Chapitres" : "Épisodes");
-  const progWrap = el("div", "apl-list-widget-prog", progRow);
-  const minusBtn = el("button", "apl-list-widget-btn", progWrap, "−");
+  // 3. Progression épisodes / chapitres : [actuel] / [total] + contrôles +1 / -1.
+  const progWrap = el("div", "apl-list-widget-row", controls);
+  el("label", "apl-list-widget-label", progWrap, progLabel);
+  const progLine = el("div", "apl-list-widget-prog", progWrap);
+  const minusBtn = el("button", "apl-list-widget-btn", progLine, "−");
   minusBtn.type = "button";
-  minusBtn.setAttribute("aria-label", "Diminuer");
-  const progInput = el("input", "apl-list-widget-input", progWrap);
+  minusBtn.setAttribute("aria-label", "Retirer un épisode");
+  const progInput = el("input", "apl-list-widget-input", progLine);
   progInput.type = "number";
   progInput.min = "0";
-  progInput.value = String(listStatus.episodes);
-  const plusBtn = el("button", "apl-list-widget-btn", progWrap, "+");
+  if (progTotal) progInput.max = String(progTotal);
+  progInput.value = String(progValue);
+  progInput.setAttribute("aria-label", `${progLabel} vus`);
+  el("span", "apl-list-widget-total", progLine, `/ ${progTotal || "?"}`);
+  const plusBtn = el("button", "apl-list-widget-btn", progLine, "+");
   plusBtn.type = "button";
-  plusBtn.setAttribute("aria-label", "Augmenter");
+  plusBtn.setAttribute("aria-label", "Ajouter un épisode");
 
   // Volumes (manga uniquement)
+  let volInput = null;
   if (isManga) {
-    const volRow = el("div", "apl-list-widget-row", parent);
+    const volRow = el("div", "apl-list-widget-row", controls);
     el("label", "apl-list-widget-label", volRow, "Tomes");
-    const volWrap = el("div", "apl-list-widget-prog", volRow);
-    const volMinus = el("button", "apl-list-widget-btn", volWrap, "−");
+    const volLine = el("div", "apl-list-widget-prog", volRow);
+    const volMinus = el("button", "apl-list-widget-btn", volLine, "−");
     volMinus.type = "button";
-    const volInput = el("input", "apl-list-widget-input", volWrap);
+    volMinus.setAttribute("aria-label", "Retirer un tome");
+    volInput = el("input", "apl-list-widget-input", volLine);
     volInput.type = "number";
     volInput.min = "0";
-    volInput.value = String(listStatus.volumes);
-    const volPlus = el("button", "apl-list-widget-btn", volWrap, "+");
+    if (totals.volumes) volInput.max = String(totals.volumes);
+    volInput.value = String(listStatus.volumes || 0);
+    volInput.setAttribute("aria-label", "Tomes lus");
+    el("span", "apl-list-widget-total", volLine, `/ ${totals.volumes || "?"}`);
+    const volPlus = el("button", "apl-list-widget-btn", volLine, "+");
     volPlus.type = "button";
-  }
-
-  // Bouton Enregistrer
-  const saveRow = el("div", "apl-list-widget-row", parent);
-  const saveBtn = el("button", "apl-list-widget-save", saveRow, "Enregistrer");
-  saveBtn.type = "button";
-
-  // Événements
-  let pending = false;
-
-  saveBtn.addEventListener("click", async () => {
-    if (pending) return;
-    pending = true;
-    saveBtn.textContent = "Enregistrement...";
-    saveBtn.disabled = true;
-
-    const status = parseInt(statusSelect.value, 10);
-    const score = parseInt(scoreSelect.value, 10);
-    const episodes = parseInt(progInput.value, 10) || 0;
-    const volumes = isManga ? (parseInt(volInput?.value, 10) || 0) : 0;
-
-    try {
-      const L = root.__myappleList;
-      if (!L) throw new Error("Couche données indisponible");
-
-      const fields = isManga
-        ? { status, score, chapters: episodes, volumes }
-        : { status, score, episodes };
-
-      await L.updateEntry({ kind: idInfo.kind, id: idInfo.id, fields });
-      // Invalider le cache de la liste utilisateur après modification
-      if (username) await L.dropCacheFor(idInfo.kind, username);
-
-      saveBtn.textContent = "Enregistré ✓";
-      setTimeout(() => {
-        saveBtn.textContent = "Enregistrer";
-        saveBtn.disabled = false;
-        pending = false;
-      }, 2000);
-    } catch (e) {
-      saveBtn.textContent = "Erreur";
-      setTimeout(() => {
-        saveBtn.textContent = "Enregistrer";
-        saveBtn.disabled = false;
-        pending = false;
-      }, 2000);
-    }
-  });
-
-  // Boutons +/-
-  minusBtn.addEventListener("click", () => {
-    const cur = parseInt(progInput.value, 10) || 0;
-    progInput.value = String(Math.max(0, cur - 1));
-  });
-
-  plusBtn.addEventListener("click", () => {
-    const cur = parseInt(progInput.value, 10) || 0;
-    progInput.value = String(cur + 1);
-  });
-
-  if (isManga && volMinus && volPlus) {
+    volPlus.setAttribute("aria-label", "Ajouter un tome");
     volMinus.addEventListener("click", () => {
-      const cur = parseInt(volInput.value, 10) || 0;
-      volInput.value = String(Math.max(0, cur - 1));
+      volInput.value = String(Math.max(0, (parseInt(volInput.value, 10) || 0) - 1));
+      persist();
     });
-
     volPlus.addEventListener("click", () => {
       const cur = parseInt(volInput.value, 10) || 0;
-      volInput.value = String(cur + 1);
+      const max = totals.volumes || Infinity;
+      volInput.value = String(Math.min(max, cur + 1));
+      persist();
     });
   }
+
+  // Enregistrement : un seul POST par action, jamais de retry auto (un retry = +1 en double).
+  const saveRow = el("div", "apl-list-widget-row apl-list-widget-save-row", parent);
+  const saveBtn = el("button", "apl-list-widget-save", saveRow, isInList ? "Enregistrer" : "Add to My List");
+  saveBtn.type = "button";
+  const hint = el("p", "apl-manage-hint", saveRow, "");
+  hint.setAttribute("role", "status");
+  hint.setAttribute("aria-live", "polite");
+
+  let pending = false;
+  const setHint = (msg) => { hint.textContent = msg; };
+
+  async function persist() {
+    if (pending) return false;
+    const L = api();
+    if (!L?.updateEntry) { setHint("Couche données indisponible."); return false; }
+    pending = true;
+    saveBtn.disabled = true;
+    const prevLabel = saveBtn.textContent;
+    saveBtn.textContent = "Enregistrement…";
+    const status = parseInt(statusSelect.value, 10);
+    const score = parseInt(scoreSelect.value, 10);
+    const prog = Math.max(0, parseInt(progInput.value, 10) || 0);
+    const vols = isManga && volInput ? Math.max(0, parseInt(volInput.value, 10) || 0) : 0;
+    // Total connu et atteint → bascule auto en Completed (2), comme MAL natif.
+    let effStatus = status;
+    if (progTotal && prog >= progTotal && (status === 1 || status === 6)) {
+      effStatus = 2;
+      statusSelect.value = "2";
+    }
+    const fields = isManga
+      ? { status: effStatus, score, chapters: prog, volumes: vols }
+      : { status: effStatus, score, episodes: prog };
+    try {
+      await L.updateEntry({ kind: idInfo.kind, id: idInfo.id, fields });
+      if (username) await L.dropCacheFor(idInfo.kind, username);
+      isInList = true;
+      saveBtn.textContent = "Enregistré ✓";
+      setHint("");
+      pending = false;
+      saveBtn.disabled = false;
+      setTimeout(() => { if (saveBtn.textContent === "Enregistré ✓") saveBtn.textContent = "Enregistrer"; }, 2000);
+      return true;
+    } catch (e) {
+      pending = false;
+      saveBtn.disabled = false;
+      saveBtn.textContent = prevLabel;
+      setHint(e?.code === "csrf" ? "Session expirée : recharge la page."
+        : e?.code === "auth" ? "Reconnecte-toi sur MAL pour enregistrer."
+        : "Échec d'enregistrement.");
+      return false;
+    }
+  }
+
+  saveBtn.addEventListener("click", () => { persist(); });
+  minusBtn.addEventListener("click", () => {
+    progInput.value = String(Math.max(0, (parseInt(progInput.value, 10) || 0) - 1));
+    persist();
+  });
+  plusBtn.addEventListener("click", () => {
+    const cur = parseInt(progInput.value, 10) || 0;
+    const max = progTotal || Infinity;
+    progInput.value = String(Math.min(max, cur + 1));
+    persist();
+  });
+
+  return { persist, statusSelect, scoreSelect, progInput };
 }
 
 function buildAnimeView() {
@@ -526,13 +600,17 @@ function buildAnimeView() {
   // Données minimales : titre + affiche + synopsis, sinon on laisse le MAL natif
   if (!d || !d.title || !d.poster || !d.synopsisNode) return;
 
-  // Extraction ID et état liste si déjà dans la liste
+  // Extraction ID + état liste. Le bloc MAL natif (ul.user-status) sert à la LECTURE
+  // seule ; le RENDU est toujours notre widget forcé (hero), même hors-liste / invité.
   const idInfo = extractId(path);
-  const listStatus = d.isInList ? readListStatus(content) : null;
+  const rawStatus = readListStatus(content);
+  const listStatus = rawStatus || { statusId: 6, score: 0, episodes: 0, volumes: 0 };
 
-  // Extraction username pour le cache (profil dans header)
-  const userEl = document.querySelector("#headerSmall .profile-link, #header-menu .profile-link");
-  const username = userEl ? userEl.textContent.trim() : null;
+  // Extraction username (même source que content.js : header connecté = .header-profile-link).
+  const userEl = document.querySelector(
+    "#headerSmall .header-profile-link, #header-menu .header-profile-link, #headerSmall .profile-link, #header-menu .profile-link"
+  );
+  const username = userEl ? (userEl.textContent || "").trim().slice(0, 20) || null : null;
 
   try {
     const view = el("div", null, null);
@@ -613,6 +691,22 @@ function buildAnimeView() {
       t.href = d.trailerLink; t.target = "_blank"; t.rel = "noopener";
     }
 
+    // Bloc de gestion de liste FORCÉ dans le hero, sous les actions principales.
+    // Toujours affiché sur /anime/* et /manga/* : si le bloc MAL d'origine est
+    // absent ou masqué par le restyling, notre widget prend le relais.
+    if (idInfo) {
+      const manage = el("div", "apl-manage", who);
+      manage.setAttribute("role", "group");
+      manage.setAttribute("aria-label", "Gestion de ma liste");
+      el("p", "apl-manage-title", manage, d.isInList ? "Ma liste" : "Ajouter à ma liste");
+      try {
+        buildListWidget(manage, {
+          idInfo, listStatus, isManga: d.isManga,
+          totals: getTotals(d), username, isInList: d.isInList,
+        });
+      } catch { /* widget non bloquant : le hero reste lisible */ }
+    }
+
     // Teinte d'accent calculée depuis l'affiche (fallback neutre si CORS/canvas KO)
     try { tintFromPoster(d.poster, hero); } catch { /* décoratif seulement */ }
 
@@ -659,12 +753,6 @@ function buildAnimeView() {
     }
 
     // ---- Latéral ----
-    // Widget de gestion de liste (si connecté et dans la liste)
-    if (d.isInList && idInfo && listStatus && username) {
-      const listWidget = card(side, "Ma liste");
-      buildListWidget(listWidget, idInfo, listStatus, d.isManga, username);
-    }
-
     if (d.trailerNode) {
       const body = card(side, "Vidéo");
       moveInto(d.trailerNode, body);
