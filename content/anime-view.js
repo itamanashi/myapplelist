@@ -208,8 +208,9 @@ function renderStreamCard(side, groups) {
   if (!sec) {
     body = card(side, "Streaming", undefined, "apl-sec-stream");
     sec = body.parentElement;
-    const infos = document.getElementById("apl-sec-infos");
-    if (infos && infos.parentElement === side && infos.nextSibling) side.insertBefore(sec, infos.nextSibling);
+    // Carte Streaming en TÊTE de colonne latérale (position déterministe,
+    // devant Informations) : aucun nœud MAL-Sync ne subsiste ailleurs.
+    if (side.firstChild && side.firstChild !== sec) side.insertBefore(sec, side.firstChild);
   }
   // Fournisseurs déjà affichés : une seule carte par service, même si
   // MAL-Sync réinjecte le même h2 en async après notre premier rendu.
@@ -271,15 +272,50 @@ function renderExtRow(who, links) {
 // travail layout-forçant. Déconnecté à la destruction de la vue.
 let msObserver = null;
 let msTimer = 0;
+// AniList : pas d'icône dans le hero. Le lien injecté par MAL-Sync est
+// consommé pour rendre le titre principal cliquable (nouvel onglet) ;
+// sa source est verrouillée pour ne jamais réapparaître en balayage.
+let heroTitleEl = null;
+function isAniListLink(l) {
+  return /anilist\.co/i.test(l?.href || "") || /^anilist$/i.test((l?.name || "").trim());
+}
+function linkifyTitle(href) {
+  // Pas d'exigence isConnected : l'interception précoce lie le titre AVANT
+  // l'insertion de la vue (le nœud est muté puis inséré) ; le flag aplLinked
+  // rend l'opération idempotente pour les balayages suivants.
+  if (!href || !heroTitleEl || heroTitleEl.dataset.aplLinked) return false;
+  try {
+    const a = document.createElement("a");
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.title = "Voir sur AniList";
+    a.textContent = heroTitleEl.textContent;
+    heroTitleEl.textContent = "";
+    heroTitleEl.appendChild(a);
+    heroTitleEl.dataset.aplLinked = "1";
+    return true;
+  } catch { return false; }
+}
+// Dispatche les liens externes : AniList → titre, le reste → rangée 24px.
+function consumeExtLinks(links, who) {
+  const rest = [];
+  (links || []).forEach((l) => {
+    if (isProcessed(l.src)) return;
+    if (isAniListLink(l)) {
+      markProcessed(l.src);
+      if (l.href) linkifyTitle(l.href);
+    } else rest.push(l);
+  });
+  if (rest.length && who?.isConnected) renderExtRow(who, rest);
+}
+
 function sweepMalSync(content, side, who) {
   if (!document.getElementById("myapple-anime")) return;
   try {
     const fresh = malsyncGroups(content).filter((g) => !isProcessed(g.head));
     if (fresh.length && side?.isConnected) renderStreamCard(side, fresh);
-    if (who?.isConnected) {
-      const ext = malsyncExtLinks(content).filter((l) => !isProcessed(l.src));
-      if (ext.length) renderExtRow(who, ext);
-    }
+    if (who?.isConnected) consumeExtLinks(malsyncExtLinks(content), who);
   } catch { /* intégration tierce non bloquante */ }
 }
 function watchMalSync(content, side, who) {
@@ -928,6 +964,16 @@ function buildAnimeView() {
   );
   const username = userEl ? (userEl.textContent || "").trim().slice(0, 20) || null : null;
 
+  // Interception précoce MAL-Sync : les nœuds déjà injectés sont capturés
+  // AVANT toute construction de carte, pour que la carte Streaming soit
+  // remplie avant le bloc Informations (header strictement <h2> seul).
+  let earlyGroups = [];
+  let earlyExt = [];
+  try {
+    earlyGroups = malsyncGroups(content);
+    earlyExt = malsyncExtLinks(content);
+  } catch { /* intégration tierce non bloquante */ }
+
   try {
     const view = el("div", null, null);
     view.id = "myapple-anime";
@@ -941,7 +987,9 @@ function buildAnimeView() {
 
     const who = el("div", "apl-who", heroMain);
     el("p", "apl-kind", who, d.isManga ? "Manga" : "Anime");
-    el("h1", null, who, d.title);
+    // Titre principal : devient cliquable vers AniList si MAL-Sync fournit
+    // le lien (consommé via consumeExtLinks, jamais d'icône dans le hero).
+    heroTitleEl = el("h1", null, who, d.title);
 
     // Ligne méta compacte : format · année · nombre d'épisodes/chapitres
     const typeRow = d.info.find((r) => r.key === "Type");
@@ -1025,6 +1073,11 @@ function buildAnimeView() {
     const main = el("div", "apl-col-main", cols);
     const side = el("div", "apl-col-side", cols);
 
+    // Carte Streaming remplie AVANT le bloc Informations : aucun nœud
+    // mal_links ne peut subsister dans le header <h2>Informations</h2>.
+    if (earlyGroups.length) renderStreamCard(side, earlyGroups);
+    consumeExtLinks(earlyExt, who);
+
     // ---- Colonne principale : Synopsis → Personnages/Staff → Recommandations ----
     const syn = card(main, "Synopsis", undefined, "apl-sec-synopsis");
     moveInto(d.synopsisNode, syn);
@@ -1073,7 +1126,7 @@ function buildAnimeView() {
       });
     }
 
-    // ---- Colonne latérale : Informations (tags) → Vidéo → Génériques → Liés ----
+    // ---- Colonne latérale : Streaming → Informations (tags) → Vidéo → Génériques → Liés ----
     if (d.info.length || d.genreGroups.length) {
       const body = card(side, "Informations", undefined, "apl-sec-infos");
       if (d.info.length) {
@@ -1179,6 +1232,7 @@ function buildAnimeView() {
   } catch {
     unwatchMalSync();
     rollback();
+    heroTitleEl = null;
     document.getElementById("myapple-anime")?.remove();
     document.body.classList.remove("myapple-anime");
   }
@@ -1189,6 +1243,7 @@ function destroyAnimeView() {
   unwatchMalSync();
   rollback();
   restoreViewport();
+  heroTitleEl = null;
   document.getElementById("myapple-anime")?.remove();
   document.body.classList.remove("myapple-anime");
 }
@@ -1201,5 +1256,7 @@ window.__myappleAnime = { readAnime, buildAnimeView, destroyAnimeView,
   _malsyncGroups: malsyncGroups, _malsyncExt: malsyncExtLinks,
   _renderStream: renderStreamCard, _renderExt: renderExtRow,
   _relatedLabel: relatedLabel, _providerKey: providerKey,
-  _isProcessed: isProcessed, _markProcessed: markProcessed };
+  _isProcessed: isProcessed, _markProcessed: markProcessed,
+  _isAniList: isAniListLink, _linkTitle: linkifyTitle,
+  _consumeExt: consumeExtLinks };
 })();

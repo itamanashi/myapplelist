@@ -2899,6 +2899,16 @@ html.mal-dark body.myapple-anime {
   color: var(--apl-ink) !important;
   overflow-wrap: break-word !important;
 }
+/* Titre cliquable AniList : sobre (couleur héritée, pas de soulignement,
+   curseur pointer, léger fondu au survol) */
+#myapple-anime .apl-who h1 a {
+  color: inherit !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: opacity 140ms ease !important;
+}
+#myapple-anime .apl-who h1 a:hover { opacity: .8 !important; }
+#myapple-anime .apl-who h1 a:focus-visible { outline: 2px solid var(--apl-accent) !important; outline-offset: 2px !important; border-radius: 4px !important; }
 /* Ligne méta compacte : format · année · épisodes */
 #myapple-anime .apl-metaline {
   font-size: 13.5px !important;
@@ -3728,7 +3738,7 @@ html.mal-dark #myapple-anime .apl-manage .apl-list-widget-input {
 #myapple-anime .apl-ext img { width: 16px !important; height: 16px !important; display: block !important; }
 
 @media (prefers-reduced-motion: reduce) {
-  #myapple-anime a.apl-pill-btn, #myapple-anime .apl-person,
+  #myapple-anime .apl-who h1 a, #myapple-anime a.apl-pill-btn, #myapple-anime .apl-person,
   #myapple-anime .apl-genre-pill, #myapple-anime .apl-rec, #myapple-anime .apl-rel-card,
   #myapple-anime .apl-card-body .video-promotion a,
   #myapple-anime div.mal_links a, #myapple-anime .apl-ext a,
