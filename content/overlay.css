@@ -2875,6 +2875,13 @@ html.mal-dark body.myapple-anime {
   display: block !important;
 }
 #myapple-anime .apl-who { flex: 1 !important; min-width: 0 !important; }
+/* Reset strict anti-puce : aucune liste native MAL ou tierce déplacée dans le
+   hero ne doit afficher de marker. Le seul ::before légitime du hero est le
+   point inline du badge de statut (.apl-badge, jamais absolu en haut-gauche). */
+#myapple-anime .apl-hero ul,
+#myapple-anime .apl-hero ol { list-style: none !important; margin: 0 !important; padding: 0 !important; }
+#myapple-anime .apl-hero li { list-style: none !important; }
+#myapple-anime .apl-hero li::marker { content: "" !important; }
 #myapple-anime .apl-kind {
   font-size: 12px !important;
   font-weight: 700 !important;
@@ -3032,8 +3039,9 @@ html.mal-dark #myapple-anime .apl-score > b { color: #fff !important; }
   border-bottom: 0 none !important;
   background: none !important;
 }
-/* Ligne d'accentuation des titres de section */
-#myapple-anime .apl-card:not(.apl-card-soft) h2::before {
+/* Ligne d'accentuation des titres de section : limitée au h2 d'en-tête
+   (un h2 déplacé dans le corps — ex. h2.mal_links — ne doit jamais en hériter) */
+#myapple-anime .apl-card:not(.apl-card-soft) > header > h2::before {
   content: "" !important;
   position: absolute !important;
   left: 0 !important;
@@ -3473,13 +3481,13 @@ html.mal-dark #myapple-anime .apl-person .apl-va { border-color: rgba(255,255,25
   border-color: var(--apl-accent) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--apl-accent) 22%, transparent) !important;
 }
-/* Bouton principal bleu Apple : plein, 44px, radius 12px, hover/active */
+/* Bouton Enregistrer sobre : plein, 40px, radius 10px, hover/active */
 #myapple-anime .apl-list-widget-save {
   width: 100% !important;
-  min-height: 44px !important;
-  padding: 10px 16px !important;
-  border-radius: 12px !important;
-  font-size: 14px !important;
+  min-height: 40px !important;
+  padding: 8px 16px !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
   font-weight: 700 !important;
   border: 1px solid #007AFF !important;
   background: #007AFF !important;
@@ -3501,17 +3509,13 @@ html.mal-dark #myapple-anime .apl-list-widget-save { border-color: var(--apl-acc
   box-shadow: none !important;
 }
 
-/* ---- Panneau MA LISTE : carte englobante (#121821 en sombre), padding 20px ---- */
+/* ---- Panneau MA LISTE : flush éditorial (filet haut subtil, pas de double carte) ---- */
 #myapple-anime .apl-manage {
   margin-top: 20px !important;
-  padding: 20px !important;
+  padding: 18px 0 0 0 !important;
+  border-top: 1px solid var(--apl-border) !important;
   max-width: 720px !important;
-  background: var(--apl-card) !important;
-  border: 1px solid var(--apl-border) !important;
-  border-radius: 16px !important;
-  box-shadow: var(--apl-shadow-small) !important;
 }
-html.mal-dark #myapple-anime .apl-manage { background: #121821 !important; border-color: rgba(255,255,255,.09) !important; }
 #myapple-anime .apl-manage-head {
   display: flex !important;
   align-items: center !important;
@@ -3589,10 +3593,10 @@ html.mal-dark #myapple-anime .apl-manage { background: #121821 !important; borde
   background: var(--apl-accent) !important;
   color: #fff !important;
 }
-/* Contrôles MA LISTE : fond sombre, sans style natif OS, radius 10px, 44px, typo nette */
+/* Contrôles MA LISTE : fond sombre, sans style natif OS, radius 10px, 40px, typo nette */
 #myapple-anime .apl-manage .apl-list-widget-select,
 #myapple-anime .apl-manage .apl-list-widget-input {
-  min-height: 44px !important;
+  min-height: 40px !important;
   border-radius: 10px !important;
   background-color: var(--apl-surface) !important;
   border: 1px solid var(--apl-border) !important;
