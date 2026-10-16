@@ -32,31 +32,50 @@ function extractId(path) {
   return m ? { kind: m[1], id: parseInt(m[2], 10) } : null;
 }
 
-// Lecture de l'état actuel de la liste depuis le DOM MAL
+// Lecture de l'état actuel de la liste depuis le DOM MAL natif.
+// Source primaire (vérifiée live) : div.user-status-block, rendu serveur avec
+// l'option `selected` correcte — select#myinfo_status (1/2/3/4/6),
+// select#myinfo_score (0..10), input#myinfo_watchedeps (anime),
+// input#myinfo_chapters + input#myinfo_volumes (manga).
+// L'ancien sélecteur ul.user-status n'existe sur aucune fiche (retournait
+// toujours null → repli "Plan to Watch" systématique) : conservé en fallback.
 function readListStatus(content) {
-  const statusBlock = content.querySelector("ul.user-status");
-  if (!statusBlock) return null;
+  const intVal = (root, sel) => {
+    const n = parseInt(root.querySelector(sel)?.value, 10);
+    return Number.isFinite(n) ? n : null;
+  };
+  const block = content.querySelector("div.user-status-block");
+  if (block) {
+    return {
+      statusId: intVal(block, 'select#myinfo_status, select[name="myinfo_status"]'),
+      score: intVal(block, 'select#myinfo_score, select[name="myinfo_score"]') ?? 0,
+      episodes: intVal(block, "input#myinfo_watchedeps") ?? intVal(block, "input#myinfo_chapters") ?? 0,
+      volumes: intVal(block, "input#myinfo_volumes") ?? 0,
+    };
+  }
 
-  const statusId = (() => {
-    const active = statusBlock.querySelector("li.selected");
-    if (!active) return null;
-    const link = active.querySelector("a");
-    if (!link) return null;
-    const href = link.getAttribute("href") || "";
-    const m = href.match(/status=(\d+)/);
-    return m ? parseInt(m[1], 10) : null;
-  })();
+  const legacy = content.querySelector("ul.user-status");
+  if (!legacy) return null;
+  const active = legacy.querySelector("li.selected a");
+  const m = (active?.getAttribute("href") || "").match(/status=(\d+)/);
+  const num = (sel) => parseInt(content.querySelector(sel)?.textContent, 10) || 0;
+  return {
+    statusId: m ? parseInt(m[1], 10) : null,
+    score: num("span#scoretext"),
+    episodes: num("span#curEps, span#cur_chaps"),
+    volumes: num("span#cur_vols"),
+  };
+}
 
-  const scoreEl = content.querySelector("span#scoretext");
-  const score = scoreEl ? parseFloat(scoreEl.textContent) || 0 : 0;
-
-  const episodesEl = content.querySelector("span#curEps, span#cur_chaps");
-  const episodes = episodesEl ? parseInt(episodesEl.textContent, 10) || 0 : 0;
-
-  const volumesEl = content.querySelector("span#cur_vols");
-  const volumes = volumesEl ? parseInt(volumesEl.textContent, 10) || 0 : 0;
-
-  return { statusId, score, episodes, volumes };
+// Totaux servis par le bloc natif (manga : span#totalChaps/#totalVols[data-num]).
+// Anime : le bloc ne donne que le compteur courant → total via la grille infos.
+function readBlockTotals(content) {
+  const num = (sel) => {
+    const e = content.querySelector(sel);
+    const n = parseInt(e?.getAttribute("data-num") ?? e?.textContent, 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  return { chapters: num("span#totalChaps"), volumes: num("span#totalVols") };
 }
 
 const STATUS_FR = {
@@ -234,8 +253,15 @@ function readAnime(content) {
   const path = location.pathname;
   const isManga = /^\/manga\/\d+/.test(path);
   const left = content.querySelector(".leftside");
-  // Anime : h1.title-name ; manga : titre dans [itemprop=name] (h1.edit-info)
-  const titleEl = document.querySelector("h1.title-name") || document.querySelector("[itemprop='name']");
+  // Titre : sur les fiches manga, [itemprop=name] englobe aussi le sous-titre
+  // anglais (<br> + .title-english) → on le retire sur un CLONE (DOM intact).
+  const rawTitleEl = document.querySelector("h1.title-name") || document.querySelector("[itemprop='name']");
+  const titleEl = (() => {
+    if (!rawTitleEl) return null;
+    const c = rawTitleEl.cloneNode(true);
+    c.querySelectorAll("br, small, .title-english").forEach((n) => n.remove());
+    return c;
+  })();
   const posterIm = left?.querySelector("img[itemprop='image']") || left?.querySelector("img");
   if (!left || !titleEl || !posterIm) return null;
 
@@ -269,10 +295,11 @@ function readAnime(content) {
   const favText = (favRaw?.getAttribute("href") || "") + "|" + T(favRaw);
   const favNode = (favRaw && favRaw !== addRaw && /favor/i.test(favText)) ? favRaw : null;
 
-  // Bloc de gestion de liste existant (déjà dans la liste)
-  // MAL affiche ul.user-status avec des boutons de statut et un sélecteur de score
-  const listStatusBlock = content.querySelector("ul.user-status");
-  const listStatusEdit = content.querySelector(".user-status-edit-block");
+  // Bloc de gestion de liste existant (déjà dans la liste) : le marqueur réel
+  // est div.user-status-block (avec select#myinfo_status). Les anciens
+  // sélecteurs ul.user-status / .user-status-edit-block n'existent pas (fallback).
+  const listStatusBlock = content.querySelector("div.user-status-block, select#myinfo_status");
+  const listStatusEdit = content.querySelector("ul.user-status, .user-status-edit-block");
   const isInList = !!(listStatusBlock || listStatusEdit);
   const d = {
     isManga,
@@ -429,15 +456,33 @@ function buildListWidget(parent, ctx) {
   const progTotal = isManga ? totals.chapters : totals.eps;
   const progLabel = isManga ? "Chapters" : "Episodes";
   const progValue = listStatus.episodes || 0;
+  const opts = statusOptions(isManga);
+  const optLabel = (id) => opts.find((o) => o.id === id)?.label || "";
 
-  // Invité : pas d'écriture possible → CTA login, jamais de faux contrôle.
+  // Invité : pas d'écriture possible → titre + CTA login, jamais de faux contrôle.
   if (!username) {
+    el("p", "apl-manage-title", parent, "Ma liste");
     const guest = el("p", "apl-manage-guest", parent);
     guest.textContent = "Connecte-toi sur MAL pour gérer ta liste.";
     const a = el("a", "apl-manage-login", parent, "Se connecter");
     a.href = "https://myanimelist.net/login.php";
     return null;
   }
+
+  // En-tête du panneau : titre + pastille de statut LIVE (tokens --apl-st-*,
+  // classes qualifiées .apl-status-dot.st-N). La pastille reflète le <select>,
+  // pas la valeur lue : jamais de divergence affichée.
+  const head = el("div", "apl-manage-head", parent);
+  el("p", "apl-manage-title", head, isInList ? "Ma liste" : "Ajouter à ma liste");
+  const curWrap = el("p", "apl-manage-current", head);
+  const dot = el("span", "apl-status-dot st-6", curWrap);
+  dot.setAttribute("aria-hidden", "true");
+  const curLabel = el("span", null, curWrap, "");
+  const syncHead = () => {
+    const id = parseInt(statusSelect.value, 10) || 6;
+    dot.className = `apl-status-dot st-${id}`;
+    curLabel.textContent = optLabel(id);
+  };
 
   const api = () => window.__myappleList || null;
 
@@ -455,6 +500,8 @@ function buildListWidget(parent, ctx) {
   });
   // Statut inconnu côté serveur : repli sur Plan (6), jamais de select vide.
   if (!statusOptions(isManga).some((s) => s.id === listStatus.statusId)) statusSelect.value = "6";
+  syncHead();
+  statusSelect.addEventListener("change", syncHead);
 
   // 2. Sélecteur de score 1..10 + libellés imposés, 0 = non noté.
   const scoreWrap = el("div", "apl-list-widget-row", controls);
@@ -676,7 +723,8 @@ function buildAnimeView() {
       const sc = el("div", "apl-score", who);
       el("i", "apl-star", sc, "★");
       el("b", null, sc, d.score);
-      el("span", null, sc, "Note" + (d.scoredBy ? " · " + d.scoredBy : ""));
+      el("span", "apl-score-scale", sc, "/10");
+      el("span", null, sc, (d.scoredBy ? " · " + d.scoredBy : ""));
     }
     const kpis = el("div", "apl-kpis", who);
     if (d.ranked) kpi(kpis, d.ranked, "Rang");
@@ -691,18 +739,25 @@ function buildAnimeView() {
       t.href = d.trailerLink; t.target = "_blank"; t.rel = "noopener";
     }
 
-    // Bloc de gestion de liste FORCÉ dans le hero, sous les actions principales.
-    // Toujours affiché sur /anime/* et /manga/* : si le bloc MAL d'origine est
-    // absent ou masqué par le restyling, notre widget prend le relais.
+    // Panneau de gestion intégré au hero (éditorial, pas un bloc rapporté) :
+    // Statut, Score 1-10, Stepper épisodes/chapitres — toujours affiché sur
+    // /anime/* et /manga/*, avec le VRAI statut lu du bloc natif MAL.
+    // Totaux : bloc natif prioritaire (data-num), grille infos en repli.
     if (idInfo) {
       const manage = el("div", "apl-manage", who);
       manage.setAttribute("role", "group");
       manage.setAttribute("aria-label", "Gestion de ma liste");
-      el("p", "apl-manage-title", manage, d.isInList ? "Ma liste" : "Ajouter à ma liste");
       try {
+        const infoTotals = getTotals(d);
+        const blockTotals = readBlockTotals(content);
         buildListWidget(manage, {
           idInfo, listStatus, isManga: d.isManga,
-          totals: getTotals(d), username, isInList: d.isInList,
+          totals: {
+            eps: infoTotals.eps,
+            chapters: blockTotals.chapters || infoTotals.chapters,
+            volumes: blockTotals.volumes || infoTotals.volumes,
+          },
+          username, isInList: d.isInList,
         });
       } catch { /* widget non bloquant : le hero reste lisible */ }
     }
@@ -830,5 +885,7 @@ function destroyAnimeView() {
 
 window.__myappleAnime = { readAnime, buildAnimeView, destroyAnimeView,
   // Crochets de test (lecture seule du parseur, aucun effet sur la vue).
-  _parsePerson: parsePerson, _personCard: personCard };
+  _parsePerson: parsePerson, _personCard: personCard,
+  _readListStatus: readListStatus, _readBlockTotals: readBlockTotals,
+  _statusOptions: statusOptions, _getTotals: getTotals };
 })();
