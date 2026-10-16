@@ -120,7 +120,7 @@ html.mal-custom body.myapple-profile div#myanimelist div#contentWrapper > div:ha
   display: none !important;
 }
 #myapple-profile { display: flex; flex-direction: column; gap: 18px; }
-/* Hero : banniere floue (1re affiche) + contenu net par-dessus */
+/* Hero : surface pleine et opaque (Clean & Crisp, sans bannière floutée) */
 #myapple-profile .apl-hero {
   position: relative; overflow: hidden;
   display: flex; flex-direction: column; gap: 16px;
@@ -130,13 +130,6 @@ html.mal-custom body.myapple-profile div#myanimelist div#contentWrapper > div:ha
   box-shadow: 0 4px 20px rgba(0,0,0,.05);
   padding: 22px;
 }
-#myapple-profile .apl-banner {
-  position: absolute; inset: 0;
-  background-size: cover; background-position: center 20%;
-  filter: blur(28px) saturate(1.4); opacity: .38;
-  transform: scale(1.15);
-  pointer-events: none;
-}
 #myapple-profile .apl-hero-main, #myapple-profile .apl-kpis { position: relative; }
 #myapple-profile .apl-hero-main { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 20px !important; flex: 1; min-width: 0; }
 #myapple-profile .apl-avatar { width: 96px; flex: none; }
@@ -144,9 +137,6 @@ html.mal-custom body.myapple-profile div#myanimelist div#contentWrapper > div:ha
   width: 96px; height: 96px; object-fit: cover; display: block;
   border-radius: 26px !important;
   box-shadow: var(--apl-shadow-small) !important;
-}
-@media (prefers-reduced-transparency: reduce) {
-  #myapple-profile .apl-banner { display: none; }
 }
 #myapple-profile .apl-who { min-width: 0; flex: 1; }
 #myapple-profile .apl-who h1 {

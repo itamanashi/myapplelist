@@ -26,7 +26,7 @@ html.mal-custom body.myapple-anime div#myanimelist div#content > #horiznav_nav {
 #myapple-anime a { color: var(--apl-accent) !important; }
 #myapple-anime .apl-muted { color: var(--apl-muted) !important; }
 
-/* ---- Hero cinématographique ---- */
+/* ---- Hero : surface pleine et opaque, lavis d'accent statique net (aucun flou) ---- */
 #myapple-anime .apl-hero {
   position: relative !important;
   border-radius: var(--apl-radius-l) !important;
@@ -34,15 +34,6 @@ html.mal-custom body.myapple-anime div#myanimelist div#content > #horiznav_nav {
   background: var(--apl-card) !important;
   border: 1px solid rgba(0,0,0,.06) !important;
   box-shadow: var(--apl-shadow-small) !important;
-}
-#myapple-anime .apl-banner {
-  position: absolute !important;
-  inset: 0 !important;
-  background-size: cover !important;
-  background-position: center 20% !important;
-  filter: blur(40px) saturate(180%) !important;
-  opacity: .32 !important;
-  pointer-events: none !important;
 }
 /* Voile directionnel : teinte de l'œuvre à gauche, profondeur en bas */
 #myapple-anime .apl-hero::before {
@@ -162,7 +153,7 @@ html.mal-dark #myapple-anime .apl-score > b { color: #fff !important; }
   text-decoration: none !important;
   border: 1px solid rgba(0,0,0,.1) !important;
   color: var(--apl-ink) !important;
-  background: rgba(255,255,255,.6) !important;
+  background: #fff !important;
   transition: transform 180ms var(--apl-spring), box-shadow 180ms ease !important;
 }
 #myapple-anime a.apl-pill-btn.apl-primary {
@@ -183,8 +174,6 @@ html.mal-dark #myapple-anime .apl-score > b { color: #fff !important; }
   padding: 10px 14px !important;
   overflow-x: auto !important;
   background: var(--apl-card) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
   border: 1px solid rgba(0,0,0,.06) !important;
   border-radius: 999px !important;
   box-shadow: var(--apl-shadow-small) !important;
@@ -361,10 +350,10 @@ html.mal-dark #myapple-anime a:focus-visible, html.mal-dark #myapple-anime butto
   outline-color: #2997ff !important;
 }
 
-/* Dark mode */
+/* Dark mode : surfaces pleines #121821 (aucun flou) */
 html.mal-dark #myapple-anime .apl-hero, html.mal-dark #myapple-anime .apl-card,
 html.mal-dark #myapple-anime .apl-toc {
-  background: rgba(28,28,30,.72) !important;
+  background: #121821 !important;
   border-color: rgba(255,255,255,.09) !important;
 }
 html.mal-dark #myapple-anime .apl-hero::before {

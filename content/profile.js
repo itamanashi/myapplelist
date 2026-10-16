@@ -264,15 +264,6 @@ function frDate(s) {
 }
 
 function renderHero(view, d) {
-  const sec = view.querySelector(".apl-hero");
-  const banner = view.querySelector(".apl-banner");
-  const firstImg = d.favorites[0]?.items[0]?.img || "";
-  if (firstImg) {
-    const im = new Image();
-    im.onload = () => { banner.style.backgroundImage = `url("${firstImg}")`; };
-    im.src = firstImg;
-  }
-
   const main = view.querySelector(".apl-hero-main");
 
   // Avatar avec contour doux
@@ -546,9 +537,8 @@ function buildProfileView() {
     const view = el("div", null, null);
     view.id = "myapple-profile";
 
-    // Hero
+    // Hero (surface pleine, sans bannière floutée)
     const sec = el("section", "apl-hero", view);
-    el("div", "apl-banner", sec, null).setAttribute("aria-hidden", "true");
     el("div", "apl-hero-main", sec);
 
     // Colonnes (Main + Side)

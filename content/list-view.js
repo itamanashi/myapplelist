@@ -339,17 +339,9 @@ class ListView {
     }
   }
 
-  // Structure complète
+  // Structure complète (surface pleine, sans bannière floutée)
   renderFull() {
     this.container.innerHTML = "";
-
-    // Bannière floue d'ambiance
-    const topItem = this.items.find((it) => it.note >= 9 && it.img) || this.items[0];
-    const banner = el("div", "apl-list-banner", this.container);
-    banner.setAttribute("aria-hidden", "true");
-    if (topItem?.img) {
-      banner.style.backgroundImage = `url("${topItem.img}")`;
-    }
 
     // 1. Hero
     this.renderHero();

@@ -40,7 +40,7 @@ html.mal-dark #myapple-fab:focus-visible {
 }
 @media (prefers-reduced-transparency: reduce) {
   #myapple-topbar, #myapple-panel { background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
-  html.mal-dark #myapple-topbar, html.mal-dark #myapple-panel { background: #1c1c1e; }
+  html.mal-dark #myapple-topbar, html.mal-dark #myapple-panel { background: #121821; }
 }
 @media (prefers-contrast: more) {
   #myapple-topbar, #myapple-panel { border: 2px solid currentColor; }

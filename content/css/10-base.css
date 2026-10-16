@@ -170,8 +170,6 @@ html.mal-custom body div#myanimelist div#contentWrapper > div:has(> h1.h1) {
   margin-bottom: 14px !important;
   padding: 12px max(22px, calc((100vw - 1400px) / 2 + 22px)) !important;
   background: var(--apl-card) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-top: 1px solid rgba(0,0,0,.06) !important;
   border-bottom: 1px solid rgba(0,0,0,.06) !important;
   border-radius: 0 !important;

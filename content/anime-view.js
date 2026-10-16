@@ -663,14 +663,8 @@ function buildAnimeView() {
     const view = el("div", null, null);
     view.id = "myapple-anime";
 
-    // ---- Hero ----
+    // ---- Hero (surface pleine, sans bannière floutée) ----
     const hero = el("section", "apl-hero", view);
-    el("div", "apl-banner", hero, null).setAttribute("aria-hidden", "true");
-    if (d.poster) {
-      const im = new Image();
-      im.onload = () => { hero.querySelector(".apl-banner").style.backgroundImage = `url("${d.poster}")`; };
-      im.src = d.poster;
-    }
     const heroMain = el("div", "apl-hero-main", view.querySelector(".apl-hero"));
     const posterWrap = el("div", "apl-poster", heroMain);
     const poster = el("img", null, posterWrap);

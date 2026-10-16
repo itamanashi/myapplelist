@@ -3,7 +3,8 @@
 :root {
   font: 100%/1.5 system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif;
   --apl-bg: #f5f5f7;
-  --apl-card: rgba(255,255,255,.72);
+  /* Surfaces pleines et opaques (Clean & Crisp : aucun flou, aucun verre dépoli) */
+  --apl-card: #ffffff;
   --apl-ink: #1d1d1f;
   --apl-muted: #6e6e73;
   --apl-accent: #0071e3;
@@ -32,7 +33,7 @@
 }
 html.mal-dark {
   --apl-bg: #0b0e14;
-  --apl-card: rgba(18,24,33,.82);
+  --apl-card: #121821;
   --apl-ink: #e8edf3;
   --apl-muted: #8b94a3;
   --apl-accent: #2997ff;
