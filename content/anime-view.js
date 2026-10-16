@@ -338,7 +338,20 @@ function readAnime(content) {
     synopsisNode: content.querySelector("p[itemprop='description'], span[itemprop='description']"),
     trailerLink: content.querySelector(".video-promotion a.iframe")?.getAttribute("href") || "",
     trailerNode: content.querySelector(".video-promotion"),
-    themesNode: content.querySelector(".theme-songs"),
+    // Génériques : un bloc .theme-songs par section, précédé d'un marqueur
+    // "Edit Opening Theme" / "Edit Ending Theme" (vérifié live). Les nœuds
+    // sont DÉPLACÉS entiers (préviews audio + popup MAL gardées fonctionnelles),
+    // jamais reconstruits.
+    themesBlocks: [...content.querySelectorAll(".theme-songs")].map((node) => {
+      let marker = "", s = node.previousElementSibling, hops = 0;
+      while (s && hops < 3 && !marker) {
+        const t = T(s).slice(0, 120);
+        if (/opening|ending/i.test(t)) marker = t;
+        s = s.previousElementSibling;
+        hops++;
+      }
+      return { node, kind: /ending/i.test(marker) ? "ed" : /opening/i.test(marker) ? "op" : "" };
+    }),
     addListNode,
     favNode,
     isInList,
@@ -365,16 +378,26 @@ function readAnime(content) {
     d.staffMore = h2s.parentElement?.querySelector("a[href]")?.getAttribute("href") || "";
   }
 
-  // Œuvres liées — nouveau markup .related-entries (fallback ancien tableau)
+  // Œuvres liées — nouveau markup .related-entries (fallback ancien tableau).
+  // .relation contient type + format : "Sequel (TV)". L'année n'est PAS dans
+  // le DOM (jamais inventée) : on affiche type (badge) + format si présents.
+  const parseRelation = (txt) => {
+    const t = String(txt || "").replace(/:$/, "").trim();
+    const fm = t.match(/\(([^)]+)\)\s*$/);
+    return {
+      type: (fm ? t.slice(0, fm.index) : t).trim() || "Lié",
+      format: fm ? fm[1].trim() : "",
+    };
+  };
   const relBox = content.querySelector(".related-entries");
   if (relBox) {
     const groups = new Map();
     relBox.querySelectorAll(".entry").forEach((en) => {
-      const type = T(en.querySelector(".relation")).replace(/:$/, "") || "Lié";
+      const { type, format } = parseRelation(T(en.querySelector(".relation")));
       const a = en.querySelector(".content a[href]") || en.querySelector("a[href]");
       const imgEl = en.querySelector(".image img");
       const label = T(a) || imgEl?.getAttribute("alt") || "";
-      const item = a ? { label, href: a.getAttribute("href") || "", img: IMG(imgEl) } : null;
+      const item = a ? { label, href: a.getAttribute("href") || "", img: cleanThumb(IMG(imgEl)), format } : null;
       if (!type || !item?.label) return;
       if (!groups.has(type)) groups.set(type, []);
       groups.get(type).push(item);
@@ -893,24 +916,27 @@ function buildAnimeView() {
       moveInto(d.trailerNode, body);
     }
 
-    if (d.themesNode) {
+    if (d.themesBlocks.length) {
       const body = card(side, "Génériques");
-      moveInto(d.themesNode, body);
+      d.themesBlocks.forEach((b) => {
+        if (b.kind) el("p", "apl-op-type", body, b.kind === "op" ? "Opening Themes" : "Ending Themes");
+        moveInto(b.node, body);
+      });
     }
 
     if (d.related.length) {
       const body = card(side, "Œuvres liées", undefined, "apl-sec-related");
-      d.related.forEach((r) => {
-        el("p", "apl-rel-type", body, r.type);
-        const ul = el("ul", "apl-related", body);
-        r.items.forEach((it) => {
-          const li = el("li", null, ul);
-          const a = el("a", null, li);
-          a.href = it.href;
-          if (it.img) { const im = el("img", null, a); im.src = it.img; im.alt = it.label; im.loading = "lazy"; }
-          el("span", null, a, it.label);
-        });
-      });
+      const list = el("div", "apl-rel-cards", body);
+      d.related.forEach((g) => g.items.forEach((it) => {
+        const a = el("a", "apl-rel-card", list);
+        a.href = it.href;
+        a.title = it.label;
+        if (it.img) { const im = el("img", null, a); im.src = it.img; im.alt = ""; im.loading = "lazy"; }
+        const tx = el("span", "apl-rel-text", a);
+        el("b", null, tx, it.label);
+        if (it.format) el("i", null, tx, it.format);
+        el("span", "apl-rel-badge", a, g.type);
+      }));
     }
 
     if (d.nav.length > 1) {
