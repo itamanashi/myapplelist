@@ -179,12 +179,15 @@ function readProfile(left, right) {
         const title = T(link);
         let metaRaw = T(u.querySelector(".data")).replace(title, "").trim().slice(0, 100);
 
-        // Formatage français plus naturel
+        // Formatage français plus naturel ; "Scored -" (sans note) est un
+        // résidu brut MAL → supprimé, jamais affiché tel quel.
         metaRaw = metaRaw
           .replace(/Watching\s+(\d+)\/(\d+)/i, "En cours · Ép. $1/$2")
           .replace(/Reading\s+(\d+)\/(\d+)/i, "En cours · Ch. $1/$2")
           .replace(/Completed\s+(\d+)\/(\d+)/i, "Terminé · Ép. $1/$2")
-          .replace(/Scored\s+(\d+)/i, "· ★ $1");
+          .replace(/\s*·?\s*Scored\s+(\d+)/i, " · ★ $1")
+          .replace(/\s*·?\s*Scored\s*-?/gi, "")
+          .replace(/^[·\s]+/, "");
 
         return { img: IMG(u.querySelector("img")), title, href: link?.href || "", meta: metaRaw, kind };
       })
@@ -264,6 +267,7 @@ function frDate(s) {
 }
 
 function renderHero(view, d) {
+  const sec = view.querySelector(".apl-hero");
   const main = view.querySelector(".apl-hero-main");
 
   // Avatar avec contour doux
@@ -321,13 +325,15 @@ function renderHero(view, d) {
 function renderUnifiedStats(parent, d) {
   if (!d.anime && !d.manga) return;
 
-  const tabsWrap = el("div", "apl-btn-group apl-stats-tabs", null);
-  const btnAnime = el("button", "apl-icon-btn active", tabsWrap, "Anime");
+  // Contrôle segmenté Anime/Manga (classes dédiées : .apl-icon-btn est un
+  // bouton carré 32px qui faisait se chevaucher les libellés texte).
+  const tabsWrap = el("div", "apl-seg apl-stats-tabs", null);
+  const btnAnime = el("button", "apl-seg-btn active", tabsWrap, "Anime");
   btnAnime.type = "button";
   btnAnime.setAttribute("aria-pressed", "true");
   let btnManga = null;
   if (d.manga) {
-    btnManga = el("button", "apl-icon-btn", tabsWrap, "Manga");
+    btnManga = el("button", "apl-seg-btn", tabsWrap, "Manga");
     btnManga.type = "button";
     btnManga.setAttribute("aria-pressed", "false");
   }
@@ -563,10 +569,10 @@ function buildProfileView() {
     // Navigation façon iOS
     renderIosNavigation(side, d);
 
-    // Communauté
+    // Communauté ("No friend yet." est un résidu brut MAL → traduit, jamais tel quel)
     if (d.friends || d.clubs) {
       const cb = card(side, "Communauté");
-      if (d.friends) el("p", "apl-muted", cb, d.friends);
+      if (d.friends) el("p", "apl-muted", cb, /no friends?\s+yet/i.test(d.friends) ? "Aucun ami pour l'instant." : d.friends);
       if (d.clubs) {
         const a = el("a", "apl-card-link", cb, d.clubs.label);
         a.href = d.clubs.href;

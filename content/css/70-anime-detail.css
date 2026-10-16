@@ -32,7 +32,7 @@ html.mal-custom body.myapple-anime div#myanimelist div#content > #horiznav_nav {
   border-radius: var(--apl-radius-l) !important;
   overflow: hidden !important;
   background: var(--apl-card) !important;
-  border: 1px solid rgba(0,0,0,.06) !important;
+  border: 1px solid var(--apl-border) !important;
   box-shadow: var(--apl-shadow-small) !important;
 }
 /* Voile directionnel : teinte de l'œuvre à gauche, profondeur en bas */
@@ -174,7 +174,7 @@ html.mal-dark #myapple-anime .apl-score > b { color: #fff !important; }
   padding: 10px 14px !important;
   overflow-x: auto !important;
   background: var(--apl-card) !important;
-  border: 1px solid rgba(0,0,0,.06) !important;
+  border: 1px solid var(--apl-border) !important;
   border-radius: 999px !important;
   box-shadow: var(--apl-shadow-small) !important;
   scrollbar-width: none !important;
@@ -202,11 +202,11 @@ html.mal-dark #myapple-anime .apl-score > b { color: #fff !important; }
 #myapple-anime .apl-col-main { display: flex !important; flex-direction: column !important; gap: 20px !important; min-width: 0 !important; }
 #myapple-anime .apl-col-side { display: flex !important; flex-direction: column !important; gap: 20px !important; min-width: 0 !important; }
 
-/* Cartes : surface calme, rayon 18px */
+/* Cartes : opaques et détachées du fond (filet visible, radius 16, padding 24px) */
 #myapple-anime .apl-card {
   background: var(--apl-card) !important;
-  border: 1px solid rgba(0,0,0,.06) !important;
-  border-radius: 18px !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 16px !important;
   box-shadow: var(--apl-shadow-small) !important;
   overflow: hidden !important;
   scroll-margin-top: 130px !important;
@@ -215,7 +215,7 @@ html.mal-dark #myapple-anime .apl-score > b { color: #fff !important; }
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 16px 20px 0 20px !important;
+  padding: 20px 24px 0 24px !important;
 }
 #myapple-anime .apl-card h2 {
   font-size: 20px !important;
@@ -229,7 +229,7 @@ html.mal-dark #myapple-anime .apl-score > b { color: #fff !important; }
   background: none !important;
 }
 #myapple-anime .apl-card-link { font-size: 14px !important; font-weight: 600 !important; text-decoration: none !important; }
-#myapple-anime .apl-card-body { padding: 12px 20px 20px 20px !important; font-size: 14px !important; line-height: 1.7 !important; }
+#myapple-anime .apl-card-body { padding: 16px 24px 24px 24px !important; font-size: 14px !important; line-height: 1.7 !important; }
 #myapple-anime #apl-sec-synopsis .apl-card-body { max-width: 75ch !important; }
 /* Règle directe sur p : l'héritage seul perd contre les règles p natives MAL (lh 1.5 mesuré) */
 #myapple-anime .apl-card-body p { margin: 0 0 12px 0 !important; line-height: 1.7 !important; }
@@ -402,8 +402,8 @@ html.mal-dark #myapple-anime .apl-person .apl-va { border-color: rgba(255,255,25
   #myapple-anime dl.apl-infos { grid-template-columns: minmax(0, 1fr) !important; gap: 1px 0 !important; }
   #myapple-anime dl.apl-infos dt { margin-top: 8px !important; }
   #myapple-anime dl.apl-infos dt:first-child { margin-top: 0 !important; }
-  #myapple-anime .apl-card-body { padding: 10px 16px 16px 16px !important; }
-  #myapple-anime .apl-card > header { padding: 14px 16px 0 16px !important; }
+  #myapple-anime .apl-card-body { padding: 12px 20px 20px 20px !important; }
+  #myapple-anime .apl-card > header { padding: 16px 20px 0 20px !important; }
 }
 /* ---- Widget de gestion de liste ---- */
 #myapple-anime .apl-list-widget-row {

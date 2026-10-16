@@ -26,6 +26,13 @@ const KEY_FR = {
   Themes: "Thèmes", Theme: "Thèmes", Demographic: "Public", Demographics: "Public"
 };
 
+// Valeurs bouche-trous MAL ("Licensors: None found, [add some→dbchanges.php]") :
+// résidus bruts exclus de NOTRE grille (le DOM natif reste intact).
+// Un lien dbchanges.php seul ne sauve jamais la ligne ; "Unknown" est conservé.
+const JUNK_VALUE = /^(add some|none|none found(,? add some)?|n\/a|\?|-)$/i;
+const isJunkRow = (r) => JUNK_VALUE.test(r.text)
+  && r.links.every((l) => /dbchanges\.php/i.test(l.href));
+
 // Extraction de l'ID anime/manga depuis l'URL
 function extractId(path) {
   const m = path.match(/^\/(anime|manga)\/(\d+)/);
@@ -276,7 +283,7 @@ function readAnime(content) {
   }).filter((r) => r.key || r.text);
 
   const alt = rows.filter((r) => ALT_KEYS.has(r.key));
-  const info = rows.filter((r) => r.key && !ALT_KEYS.has(r.key));
+  const info = rows.filter((r) => r.key && !ALT_KEYS.has(r.key) && !isJunkRow(r));
   const chips = [];
   info.filter((r) => CHIP_KEYS.has(r.key)).forEach((r) => r.links.forEach((l) => chips.push(l)));
 
