@@ -3629,10 +3629,100 @@ html.mal-dark #myapple-anime .apl-person .apl-va { border-color: rgba(255,255,25
   #myapple-anime .apl-manage-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 10px 0 !important; }
   #myapple-anime .apl-manage-grid > .apl-list-widget-row:nth-child(4) .apl-list-widget-prog { max-width: none !important; }
 }
+/* ---- Intégration MAL-Sync : carte Streaming + liens externes ----
+   Nœuds tiers DÉPLACÉS (handlers d'origine préservés), jamais reconstruits. */
+#myapple-anime .apl-ms-group { margin-bottom: 12px !important; }
+#myapple-anime .apl-ms-group:last-child { margin-bottom: 0 !important; }
+#myapple-anime h2.mal_links {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  margin: 0 0 8px 0 !important;
+  padding: 0 !important;
+  border: 0 none !important;
+  background: none !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-anime h2.mal_links::before { content: none !important; }
+#myapple-anime h2.mal_links img {
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 4px !important;
+  flex: none !important;
+  display: block !important;
+}
+/* Bouton de fermeture MAL-Sync : croix grise discrète, handler d'origine intact */
+#myapple-anime h2.mal_links .remove-mal-sync {
+  margin-left: auto !important;
+  float: none !important;
+  color: var(--apl-muted) !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+}
+#myapple-anime h2.mal_links .remove-mal-sync:hover {
+  color: var(--apl-ink) !important;
+  background: var(--apl-surface) !important;
+}
+/* Liens Quicksearch en pills */
+#myapple-anime .apl-ms-links { display: flex !important; flex-wrap: wrap !important; gap: 6px !important; }
+#myapple-anime div.mal_links { display: contents !important; }
+#myapple-anime div.mal_links a {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: var(--apl-text-secondary) !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  padding: 6px 12px !important;
+  border-radius: 999px !important;
+  text-decoration: none !important;
+  transition: transform 200ms ease, border-color 140ms ease, color 140ms ease !important;
+}
+#myapple-anime div.mal_links a:hover {
+  transform: scale(1.02) !important;
+  border-color: var(--apl-accent) !important;
+  color: var(--apl-accent) !important;
+}
+#myapple-anime div.mal_links a:focus-visible { outline: 2px solid var(--apl-accent) !important; outline-offset: 2px !important; }
+#myapple-anime br.mal_links { display: none !important; }
+/* Liens externes (tracking 24px, infobulle native via title) */
+#myapple-anime .apl-ext {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+  margin-top: 12px !important;
+}
+#myapple-anime .apl-ext a {
+  width: 24px !important;
+  height: 24px !important;
+  box-sizing: border-box !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  overflow: hidden !important;
+  text-decoration: none !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: var(--apl-muted) !important;
+  transition: transform 200ms ease !important;
+}
+#myapple-anime .apl-ext a:hover { transform: scale(1.1) !important; }
+#myapple-anime .apl-ext a:focus-visible { outline: 2px solid var(--apl-accent) !important; outline-offset: 2px !important; }
+#myapple-anime .apl-ext img { width: 16px !important; height: 16px !important; display: block !important; }
+
 @media (prefers-reduced-motion: reduce) {
   #myapple-anime .apl-chip, #myapple-anime a.apl-pill-btn, #myapple-anime .apl-person,
   #myapple-anime .apl-genre-pill, #myapple-anime .apl-rec, #myapple-anime .apl-rel-card,
   #myapple-anime .apl-card-body .video-promotion a,
+  #myapple-anime div.mal_links a, #myapple-anime .apl-ext a,
   #myapple-anime .apl-list-widget-select, #myapple-anime .apl-list-widget-btn,
   #myapple-anime .apl-list-widget-input, #myapple-anime .apl-list-widget-save {
     transition: none !important;

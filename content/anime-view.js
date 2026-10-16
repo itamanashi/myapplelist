@@ -76,6 +76,137 @@ function readListStatus(content) {
   };
 }
 
+// ---------- Intégration MAL-Sync (streaming & liens externes) ----------
+// MAL-Sync, SI installé, injecte de façon asynchrone sur les fiches (source :
+// MALSync/MALSync src/myanimelist/myanimelistClass.ts) :
+//  - malToKiss : h2.mal_links#<Nom>Links (favicon + .remove-mal-sync [x]) puis
+//    div.mal_links > a (liens) puis br.mal_links, devant le h2 "Information" ;
+//  - streamingUI : #mal-sync-stream-div (reprise + flèches) dans .breadcrumb ;
+//  - pageRelation : <li><a title><img></a></li> (AniList…) dans #horiznav_nav.
+// Nœuds DÉPLACÉS (jamais clonés : les handlers MAL-Sync suivent, dont le [x]
+// qui recharge la page), jamais reconstruits. Absent → rien : aucune carte
+// vide, aucune erreur. Les badges de statut que MAL-Sync ajoute dans les
+// liens liés sont exclus de nos libellés (labelOf).
+function malsyncGroups(content) {
+  const groups = [];
+  content.querySelectorAll("h2.mal_links").forEach((h) => {
+    if (h.dataset.aplClaimed) return;
+    const nodes = [];
+    let n = h.nextElementSibling;
+    while (n && !(n.tagName === "H2" && n.classList.contains("mal_links"))) {
+      const cur = n;
+      n = n.nextElementSibling;
+      if (cur.matches?.("div.mal_links, br.mal_links")) nodes.push(cur);
+    }
+    groups.push({ head: h, nodes });
+  });
+  return groups;
+}
+
+// Icônes de suivi : liens img-only avec title (natifs = texte, jamais d'image
+// seule). Inclut la reprise MAL-Sync du fil d'Ariane (styles inline neutralisés
+// en CSS, handlers inexistants : recréés à neuf, aucun risque).
+function malsyncExtLinks(content) {
+  const out = [];
+  content.querySelectorAll("#horiznav_nav > ul > li > a[title]").forEach((a) => {
+    if (a.dataset.aplClaimed || T(a)) return;
+    const img = a.querySelector("img");
+    if (!img) return;
+    out.push({ src: a, name: a.getAttribute("title") || "", href: a.getAttribute("href") || "", icon: img.getAttribute("src") || "" });
+  });
+  content.querySelectorAll("#mal-sync-stream-div a[href]").forEach((a) => {
+    if (a.dataset.aplClaimed) return;
+    const img = a.querySelector("img");
+    out.push({ src: a, name: a.getAttribute("title") || "Reprendre", href: a.getAttribute("href") || "", icon: img?.getAttribute("src") || "" });
+  });
+  return out.filter((l) => l.href && l.name);
+}
+
+// Libellé d'un lien lié : clone + retrait des enfants (badges de statut
+// MAL-Sync), jamais le texte brut pollué. Repli : alt de la miniature.
+function relatedLabel(a, imgEl) {
+  if (a) {
+    const c = a.cloneNode(true);
+    c.querySelectorAll("span, img, i, em, strong").forEach((n) => n.remove());
+    const t = T(c);
+    if (t) return t;
+  }
+  return T(a) || imgEl?.getAttribute("alt") || "";
+}
+
+// Carte Streaming latérale (créée à la demande, après la carte Infos si présente).
+// Retourne le body ou null. Marque les sources réclamées (pas de doublon au
+// re-balayage de l'observer).
+function renderStreamCard(side, groups) {
+  if (!groups.length) return null;
+  let sec = document.getElementById("apl-sec-stream");
+  let body = sec?.querySelector(":scope > .apl-card-body") || null;
+  if (!sec) {
+    body = card(side, "Streaming", undefined, "apl-sec-stream");
+    sec = body.parentElement;
+    const infos = document.getElementById("apl-sec-infos");
+    if (infos && infos.parentElement === side && infos.nextSibling) side.insertBefore(sec, infos.nextSibling);
+  }
+  groups.forEach((g) => {
+    const box = el("div", "apl-ms-group", body);
+    moveInto(g.head, box);
+    g.head.dataset.aplClaimed = "1";
+    const links = el("div", "apl-ms-links", box);
+    g.nodes.forEach((n) => moveInto(n, links));
+  });
+  return body;
+}
+
+// Rangée de liens externes 24px dans le hero (créée à la demande).
+function renderExtRow(who, links) {
+  if (!links.length) return null;
+  let row = who.querySelector(":scope > .apl-ext");
+  if (!row) {
+    row = el("div", "apl-ext", who);
+    row.setAttribute("role", "group");
+    row.setAttribute("aria-label", "Liens externes");
+  }
+  links.forEach((l) => {
+    const a = el("a", null, row);
+    a.href = l.href;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.title = l.name;
+    if (l.icon) { const im = el("img", null, a); im.src = l.icon; im.alt = ""; im.loading = "lazy"; }
+    else a.textContent = l.name.slice(0, 2);
+    l.src.dataset.aplClaimed = "1";
+  });
+  return row;
+}
+
+// Observateur MAL-Sync : balayage ciblé + debouncé (150 ms), jamais de
+// travail layout-forçant. Déconnecté à la destruction de la vue.
+let msObserver = null;
+let msTimer = 0;
+function sweepMalSync(content, side, who) {
+  if (!document.getElementById("myapple-anime")) return;
+  try {
+    const fresh = malsyncGroups(content).filter((g) => !g.head.dataset.aplClaimed);
+    if (fresh.length && side?.isConnected) renderStreamCard(side, fresh);
+    if (who?.isConnected) {
+      const ext = malsyncExtLinks(content).filter((l) => !l.src.dataset.aplClaimed);
+      if (ext.length) renderExtRow(who, ext);
+    }
+  } catch { /* intégration tierce non bloquante */ }
+}
+function watchMalSync(content, side, who) {
+  if (msObserver) msObserver.disconnect();
+  msObserver = new MutationObserver(() => {
+    clearTimeout(msTimer);
+    msTimer = setTimeout(() => sweepMalSync(content, side, who), 150);
+  });
+  msObserver.observe(content, { childList: true, subtree: true });
+}
+function unwatchMalSync() {
+  if (msObserver) { msObserver.disconnect(); msObserver = null; }
+  clearTimeout(msTimer);
+}
+
 // Totaux servis par le bloc natif (manga : span#totalChaps/#totalVols[data-num]).
 // Anime : le bloc ne donne que le compteur courant → total via la grille infos.
 function readBlockTotals(content) {
@@ -396,7 +527,7 @@ function readAnime(content) {
       const { type, format } = parseRelation(T(en.querySelector(".relation")));
       const a = en.querySelector(".content a[href]") || en.querySelector("a[href]");
       const imgEl = en.querySelector(".image img");
-      const label = T(a) || imgEl?.getAttribute("alt") || "";
+      const label = relatedLabel(a, imgEl);
       const item = a ? { label, href: a.getAttribute("href") || "", img: cleanThumb(IMG(imgEl)), format } : null;
       if (!type || !item?.label) return;
       if (!groups.has(type)) groups.set(type, []);
@@ -428,7 +559,7 @@ function readAnime(content) {
         const a = li.querySelector("a[href]");
         const href = a?.getAttribute("href") || "";
         if (!href) return null;
-        const title = li.getAttribute("title") || T(a) || "";
+        const title = li.getAttribute("title") || relatedLabel(a, null) || "";
         const img = cleanThumb(IMG(li.querySelector("img")));
         return title ? { title, href, img } : null;
       }).filter(Boolean).slice(0, 8);
@@ -949,6 +1080,9 @@ function buildAnimeView() {
       });
     }
 
+    // Intégration MAL-Sync : l'observer prend le relais pour les injections
+    // asynchrones (voir balayage initial ci-dessous, après insertion).
+
     // Sommaire par ancres (sections réellement présentes uniquement)
     const toc = el("nav", "apl-toc", null);
     toc.setAttribute("aria-label", "Sections de la fiche");
@@ -964,6 +1098,8 @@ function buildAnimeView() {
     content.insertBefore(view, content.firstChild);
     document.body.classList.add("myapple-anime");
     ensureViewport();
+    sweepMalSync(content, side, who);
+    watchMalSync(content, side, who);
 
     // État actif du sommaire (IntersectionObserver, pas de scroll listener).
     // Après insertion : observer des nœuds détachés ne déclencherait jamais.
@@ -981,6 +1117,7 @@ function buildAnimeView() {
       }
     } catch { /* sommaire non interactif : les ancres restent cliquables */ }
   } catch {
+    unwatchMalSync();
     rollback();
     document.getElementById("myapple-anime")?.remove();
     document.body.classList.remove("myapple-anime");
@@ -989,6 +1126,7 @@ function buildAnimeView() {
 
 // Restauration complète de la page native (désactivation de l'extension).
 function destroyAnimeView() {
+  unwatchMalSync();
   rollback();
   restoreViewport();
   document.getElementById("myapple-anime")?.remove();
@@ -999,5 +1137,8 @@ window.__myappleAnime = { readAnime, buildAnimeView, destroyAnimeView,
   // Crochets de test (lecture seule du parseur, aucun effet sur la vue).
   _parsePerson: parsePerson, _personCard: personCard,
   _readListStatus: readListStatus, _readBlockTotals: readBlockTotals,
-  _statusOptions: statusOptions, _getTotals: getTotals };
+  _statusOptions: statusOptions, _getTotals: getTotals,
+  _malsyncGroups: malsyncGroups, _malsyncExt: malsyncExtLinks,
+  _renderStream: renderStreamCard, _renderExt: renderExtRow,
+  _relatedLabel: relatedLabel };
 })();
