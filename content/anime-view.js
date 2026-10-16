@@ -208,9 +208,13 @@ function renderStreamCard(side, groups) {
   if (!sec) {
     body = card(side, "Streaming", undefined, "apl-sec-stream");
     sec = body.parentElement;
-    // Carte Streaming en TÊTE de colonne latérale (position déterministe,
-    // devant Informations) : aucun nœud MAL-Sync ne subsiste ailleurs.
-    if (side.firstChild && side.firstChild !== sec) side.insertBefore(sec, side.firstChild);
+    // Carte Streaming immédiatement APRÈS Informations (jamais devant) :
+    // Informations reste le premier bloc de la sidebar. Recherche scopée à
+    // `side` (document.getElementById ignore la vue tant qu'elle est détachée).
+    // Sans carte Infos (cas limite), repli en tête de colonne.
+    const infos = side.querySelector(":scope > #apl-sec-infos");
+    if (infos) infos.insertAdjacentElement("afterend", sec);
+    else if (side.firstChild && side.firstChild !== sec) side.insertBefore(sec, side.firstChild);
   }
   // Fournisseurs déjà affichés : une seule carte par service, même si
   // MAL-Sync réinjecte le même h2 en async après notre premier rendu.
@@ -965,8 +969,9 @@ function buildAnimeView() {
   const username = userEl ? (userEl.textContent || "").trim().slice(0, 20) || null : null;
 
   // Interception précoce MAL-Sync : les nœuds déjà injectés sont capturés
-  // AVANT toute construction de carte, pour que la carte Streaming soit
-  // remplie avant le bloc Informations (header strictement <h2> seul).
+  // AVANT toute construction de carte (le bloc Informations, construit à
+  // partir des données parsées avec un header strictement <h2> seul, ne peut
+  // en absorber aucun) ; la carte Streaming est rendue juste après Infos.
   let earlyGroups = [];
   let earlyExt = [];
   try {
@@ -1073,9 +1078,9 @@ function buildAnimeView() {
     const main = el("div", "apl-col-main", cols);
     const side = el("div", "apl-col-side", cols);
 
-    // Carte Streaming remplie AVANT le bloc Informations : aucun nœud
-    // mal_links ne peut subsister dans le header <h2>Informations</h2>.
-    if (earlyGroups.length) renderStreamCard(side, earlyGroups);
+    // Liens externes interceptés tôt (titre AniList linkifié avant insertion).
+    // Les groupes Streaming (earlyGroups) sont rendus APRÈS le bloc
+    // Informations (voir ci-dessous) : Infos reste le premier bloc sidebar.
     consumeExtLinks(earlyExt, who);
 
     // ---- Colonne principale : Synopsis → Personnages/Staff → Recommandations ----
@@ -1126,7 +1131,7 @@ function buildAnimeView() {
       });
     }
 
-    // ---- Colonne latérale : Streaming → Informations (tags) → Vidéo → Génériques → Liés ----
+    // ---- Colonne latérale : Informations → Streaming → Vidéo → Génériques → Liés ----
     if (d.info.length || d.genreGroups.length) {
       const body = card(side, "Informations", undefined, "apl-sec-infos");
       if (d.info.length) {
@@ -1155,6 +1160,9 @@ function buildAnimeView() {
         });
       });
     }
+    // Groupes MAL-Sync interceptés tôt : rendus ici, juste APRÈS Informations
+    // (premier bloc sidebar), proprement isolés dans leur carte dédiée.
+    if (earlyGroups.length) renderStreamCard(side, earlyGroups);
     if (d.trailerNode) {
       const body = card(side, "Vidéo");
       moveInto(d.trailerNode, body);
