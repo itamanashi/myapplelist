@@ -15,7 +15,8 @@ const cleanThumb = (u) => String(u || "").replace(/\/r\/\d+x\d+\//, "/").split("
 
 // Clés de la colonne gauche MAL (titres alternatifs : affichés sous le titre, pas dans la grille infos)
 const ALT_KEYS = new Set(["Synonyms", "Japanese", "English", "French", "German", "Spanish"]);
-// Clés affichées en chips dans le hero (exclues de la grille infos)
+// Clés affichées en pills dans la colonne latérale Informations
+// (jamais dans le hero : pas de redondance ; exclues de la grille infos)
 const CHIP_KEYS = new Set(["Genres", "Genre", "Themes", "Theme", "Demographic", "Demographics"]);
 
 const KEY_FR = {
@@ -401,32 +402,6 @@ function parseScoredBy(scope) {
   return n.toLocaleString("fr-FR").replace(/,/g, " ") + " votes";
 }
 
-// Teinte d'accent de la fiche depuis l'affiche (moyenne 24px, décoratif).
-// Échec silencieux (CORS CDN, canvas indisponible) : le CSS garde son fallback neutre.
-function tintFromPoster(url, heroEl) {
-  if (!url || !heroEl) return;
-  const im = new Image();
-  im.crossOrigin = "anonymous";
-  im.onload = () => {
-    try {
-      const c = document.createElement("canvas");
-      c.width = 24; c.height = 24;
-      const x = c.getContext("2d", { willReadFrequently: true });
-      if (!x) return;
-      x.drawImage(im, 0, 0, 24, 24);
-      const px = x.getImageData(0, 0, 24, 24).data;
-      let r = 0, g = 0, b = 0, n = 0;
-      for (let i = 0; i < px.length; i += 16) { r += px[i]; g += px[i + 1]; b += px[i + 2]; n++; }
-      r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n);
-      const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-      if (lum < 0.12 || lum > 0.9) return; // trop sombre/clair : garder le neutre
-      heroEl.style.setProperty("--apl-hero-accent", `rgb(${r}, ${g}, ${b})`);
-    } catch { /* canvas contaminé : fallback neutre */ }
-  };
-  im.onerror = () => {};
-  im.src = url;
-}
-
 // Viewport mobile : MAL déclare initial-scale=1 SANS width=device-width, donc un
 // vrai téléphone affiche la version ~980px dézoomée et nos règles ≤640px ne servent jamais.
 // On bascule en width=device-width uniquement sur les fiches reconstruites
@@ -513,8 +488,6 @@ function readAnime(content) {
 
   const alt = rows.filter((r) => ALT_KEYS.has(r.key));
   const info = rows.filter((r) => r.key && !ALT_KEYS.has(r.key) && !isJunkRow(r));
-  const chips = [];
-  info.filter((r) => CHIP_KEYS.has(r.key)).forEach((r) => r.links.forEach((l) => chips.push(l)));
   // Groupes de tags pour la carte Infos latérale (Genres / Thèmes / Public),
   // fusionnés par libellé FR (Genre+Genres éventuellement doublés par MAL).
   const genreGroups = [];
@@ -556,7 +529,6 @@ function readAnime(content) {
     poster: IMG(posterIm),
     alt,
     info: info.filter((r) => !CHIP_KEYS.has(r.key) && !STAT_KEYS.has(r.key) && KNOWN_INFO.has(r.key)),
-    chips,
     score: T(scoreEl),
     scoredBy: parseScoredBy(scoreScope),
     ranked: num("span.numbers.ranked strong"),
@@ -1001,13 +973,8 @@ function buildAnimeView() {
       b.style.setProperty("--apl-badge-dot", STATUS_COLOR[stFR] || "var(--apl-accent)");
     }
 
-    if (d.chips.length) {
-      const ch = el("div", "apl-chips", who);
-      d.chips.slice(0, 8).forEach((c) => {
-        const a = el("a", "apl-chip", ch, c.label);
-        a.href = c.href;
-      });
-    }
+    // Genres/thèmes : affichés UNIQUEMENT dans la colonne latérale
+    // (genreGroups → carte Informations), jamais en double dans le hero.
 
     // Note dominante + stats secondaires (hiérarchie éditoriale, pas 4 KPIs égaux)
     if (d.score) {
@@ -1052,9 +1019,6 @@ function buildAnimeView() {
         });
       } catch { /* widget non bloquant : le hero reste lisible */ }
     }
-
-    // Teinte d'accent calculée depuis l'affiche (fallback neutre si CORS/canvas KO)
-    try { tintFromPoster(d.poster, hero); } catch { /* décoratif seulement */ }
 
     // ---- Colonnes ----
     const cols = el("div", "apl-cols", view);

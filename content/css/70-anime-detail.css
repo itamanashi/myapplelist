@@ -15,7 +15,6 @@ html.mal-dark body.myapple-anime {
 }
 
 #myapple-anime {
-  --apl-hero-accent: var(--apl-accent);
   width: 100% !important;
   max-width: 1200px !important;
   margin: 0 auto !important;
@@ -30,7 +29,7 @@ html.mal-dark body.myapple-anime {
 #myapple-anime a { color: var(--apl-accent) !important; }
 #myapple-anime .apl-muted { color: var(--apl-muted) !important; }
 
-/* ---- Hero : surface pleine et opaque, lavis d'accent statique net (aucun flou) ---- */
+/* ---- Hero : aplat strict, zéro dégradé / glow (fond uni + filet + ombre) ---- */
 #myapple-anime .apl-hero {
   position: relative !important;
   border-radius: var(--apl-radius-l) !important;
@@ -38,16 +37,6 @@ html.mal-dark body.myapple-anime {
   background: var(--apl-card) !important;
   border: 1px solid var(--apl-border) !important;
   box-shadow: var(--apl-shadow-small) !important;
-}
-/* Voile directionnel : teinte de l'œuvre à gauche, profondeur en bas */
-#myapple-anime .apl-hero::before {
-  content: "" !important;
-  position: absolute !important;
-  inset: 0 !important;
-  pointer-events: none !important;
-  background:
-    linear-gradient(100deg, color-mix(in srgb, var(--apl-hero-accent) 16%, transparent) 0%, transparent 55%),
-    linear-gradient(0deg, rgba(0,0,0,.14), transparent 40%) !important;
 }
 #myapple-anime .apl-hero-main {
   position: relative !important;
@@ -115,28 +104,13 @@ html.mal-dark body.myapple-anime {
   margin: 0 0 10px 0 !important;
   overflow-wrap: anywhere !important;
 }
-#myapple-anime .apl-chips { display: flex !important; flex-wrap: wrap !important; gap: 8px !important; margin-bottom: 10px !important; }
-/* Genres/thèmes hero : badges discrets translucides, filet très fin, hover doux */
-#myapple-anime .apl-chip {
-  font-size: 12.5px !important;
-  font-weight: 500 !important;
-  padding: 5px 13px !important;
-  border-radius: 999px !important;
-  background: var(--apl-surface) !important;
-  border: 1px solid var(--apl-border) !important;
-  color: var(--apl-text-secondary) !important;
-  text-decoration: none !important;
-  transition: transform 180ms var(--apl-spring), background 180ms ease, border-color 140ms ease, color 140ms ease !important;
-}
-#myapple-anime .apl-chip:hover { transform: translateY(-1px) !important; border-color: var(--apl-accent) !important; color: var(--apl-accent) !important; }
-html.mal-dark #myapple-anime .apl-chip { border-color: rgba(255,255,255,0.08) !important; }
 #myapple-anime .apl-studio-line { font-size: 14.5px !important; font-weight: 600 !important; margin: 0 0 12px 0 !important; overflow-wrap: anywhere !important; }
 #myapple-anime .apl-studio-line a { text-decoration: none !important; }
 #myapple-anime .apl-studio-line a:hover { text-decoration: underline !important; }
 
-/* Note dominante : 36px/800 en encre, étoile en accent, votes en secondaire */
+/* Note dominante : 36px/800 en encre, étoile ambre token, votes en secondaire */
 #myapple-anime .apl-score { display: flex !important; align-items: baseline !important; gap: 10px !important; margin-bottom: 10px !important; }
-#myapple-anime .apl-score > .apl-star { font-size: 24px !important; font-style: normal !important; color: var(--apl-hero-accent, var(--apl-accent)) !important; }
+#myapple-anime .apl-score > .apl-star { font-size: 24px !important; font-style: normal !important; color: var(--apl-star) !important; }
 #myapple-anime .apl-score > b { font-size: 36px !important; font-weight: 800 !important; letter-spacing: -0.02em !important; color: var(--apl-ink) !important; font-variant-numeric: tabular-nums !important; }
 #myapple-anime .apl-score > .apl-score-scale { font-size: 15px !important; font-weight: 600 !important; color: var(--apl-muted) !important; margin-left: -6px !important; }
 #myapple-anime .apl-score > span:last-child { font-size: 13px !important; color: var(--apl-muted) !important; }
@@ -560,11 +534,6 @@ html.mal-dark #myapple-anime .apl-toc {
   background: #121821 !important;
   border-color: rgba(255,255,255,.09) !important;
 }
-html.mal-dark #myapple-anime .apl-hero::before {
-  background:
-    linear-gradient(100deg, color-mix(in srgb, var(--apl-hero-accent) 26%, transparent) 0%, transparent 60%),
-    linear-gradient(0deg, rgba(0,0,0,.45), transparent 50%) !important;
-}
 html.mal-dark #myapple-anime a.apl-pill-btn {
   background: rgba(255,255,255,.08) !important;
   border-color: rgba(255,255,255,.14) !important;
@@ -935,7 +904,7 @@ html.mal-dark #myapple-anime .apl-manage .apl-list-widget-input {
 #myapple-anime .apl-ext img { width: 16px !important; height: 16px !important; display: block !important; }
 
 @media (prefers-reduced-motion: reduce) {
-  #myapple-anime .apl-chip, #myapple-anime a.apl-pill-btn, #myapple-anime .apl-person,
+  #myapple-anime a.apl-pill-btn, #myapple-anime .apl-person,
   #myapple-anime .apl-genre-pill, #myapple-anime .apl-rec, #myapple-anime .apl-rel-card,
   #myapple-anime .apl-card-body .video-promotion a,
   #myapple-anime div.mal_links a, #myapple-anime .apl-ext a,
