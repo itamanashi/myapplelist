@@ -7,6 +7,8 @@
   --apl-card: #ffffff;
   --apl-ink: #1d1d1f;
   --apl-muted: #6e6e73;
+  /* Texte courant secondaire : très lisible sur carte (synopsis) */
+  --apl-text-secondary: #3a3a3c;
   --apl-accent: #0071e3;
   --apl-radius-l: 20px;
   --apl-radius-m: 14px;
@@ -34,6 +36,7 @@
 html.mal-dark {
   --apl-bg: #0b0e14;
   --apl-card: #121821;
+  --apl-text-secondary: #c7cdd6;
   --apl-ink: #e8edf3;
   --apl-muted: #8b94a3;
   --apl-accent: #2997ff;

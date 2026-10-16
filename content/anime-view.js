@@ -10,6 +10,8 @@
 
 const T = (el) => (el?.textContent || "").replace(/\s+/g, " ").trim();
 const IMG = (im) => im?.getAttribute("data-src") || im?.getAttribute("src") || im?.src || "";
+// Miniatures CDN : même nettoyage que list-data (retire le préfixe /r/<w>x<h>/ et ?s=...).
+const cleanThumb = (u) => String(u || "").replace(/\/r\/\d+x\d+\//, "/").split("?")[0];
 
 // Clés de la colonne gauche MAL (titres alternatifs : affichés sous le titre, pas dans la grille infos)
 const ALT_KEYS = new Set(["Synonyms", "Japanese", "English", "French", "German", "Spanish"]);
@@ -286,6 +288,19 @@ function readAnime(content) {
   const info = rows.filter((r) => r.key && !ALT_KEYS.has(r.key) && !isJunkRow(r));
   const chips = [];
   info.filter((r) => CHIP_KEYS.has(r.key)).forEach((r) => r.links.forEach((l) => chips.push(l)));
+  // Groupes de tags pour la carte Infos latérale (Genres / Thèmes / Public),
+  // fusionnés par libellé FR (Genre+Genres éventuellement doublés par MAL).
+  const genreGroups = [];
+  {
+    const byType = new Map();
+    info.filter((r) => CHIP_KEYS.has(r.key) && r.links.length).forEach((r) => {
+      const type = KEY_FR[r.key] || r.key;
+      if (!byType.has(type)) byType.set(type, []);
+      const seen = new Set(byType.get(type).map((l) => l.label));
+      r.links.forEach((l) => { if (l.label && !seen.has(l.label)) { seen.add(l.label); byType.get(type).push(l); } });
+    });
+    for (const [type, items] of byType) if (items.length) genreGroups.push({ type, items });
+  }
 
   // Score + stats (bloc de droite, sélecteurs défensifs)
   const scoreEl = content.querySelector(".score-label");
@@ -330,7 +345,8 @@ function readAnime(content) {
     listStatusBlock,
     listStatusEdit,
     nav: [...content.querySelectorAll("#horiznav_nav a[href]")].map((a) => ({ label: T(a), href: a.getAttribute("href") || "" })).filter((l) => l.label),
-    chars: [], charsMore: "", staff: [], staffMore: "", related: []
+    chars: [], charsMore: "", staff: [], staffMore: "", related: [],
+    genreGroups, recs: [], recsMore: ""
   };
 
   // Personnages (top 8)
@@ -375,6 +391,29 @@ function readAnime(content) {
     });
   }
 
+  // Recommandations — slider natif ul.anime-slide après le h2#recommendations.
+  // Carte affichée seulement si ≥1 entrée (jamais de bloc vide).
+  const h2r = findH2(content, "Recommendations");
+  if (h2r) {
+    const slideScope = h2r.parentElement?.nextElementSibling || null;
+    const slide = slideScope?.querySelector?.("ul.anime-slide")
+      || [...content.querySelectorAll("ul.anime-slide")]
+        .find((l) => h2r.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING)
+      || null;
+    if (slide) {
+      d.recs = [...slide.querySelectorAll("li.btn-anime")].map((li) => {
+        const a = li.querySelector("a[href]");
+        const href = a?.getAttribute("href") || "";
+        if (!href) return null;
+        const title = li.getAttribute("title") || T(a) || "";
+        const img = cleanThumb(IMG(li.querySelector("img")));
+        return title ? { title, href, img } : null;
+      }).filter(Boolean).slice(0, 8);
+    }
+    d.recsMore = slideScope?.querySelector?.("a.btn-detail-recommendations-view-all")?.getAttribute("href")
+      || content.querySelector('a[href*="userrecs"]')?.getAttribute("href") || "";
+  }
+
   return d;
 }
 
@@ -393,8 +432,9 @@ function personCard(parent, p, showVa) {
   const a = p.href ? el("a", null, c) : el("span", "apl-static", c);
   if (p.href) a.href = p.href;
   if (p.img) { const im = el("img", null, a); im.src = p.img; im.alt = p.name; im.loading = "lazy"; }
-  el("b", null, a, p.name);
-  if (p.sub) el("span", "apl-muted", a, p.sub);
+  const ptx = el("span", "apl-person-text", a);
+  el("b", null, ptx, p.name);
+  if (p.sub) el("span", "apl-muted", ptx, p.sub);
   if (showVa && p.va) {
     const v = p.va.href ? el("a", "apl-va", c) : el("span", "apl-va apl-static", c);
     if (p.va.href) v.href = p.va.href;
@@ -771,25 +811,29 @@ function buildAnimeView() {
     const main = el("div", "apl-col-main", cols);
     const side = el("div", "apl-col-side", cols);
 
+    // ---- Colonne principale : Synopsis → Personnages/Staff → Recommandations ----
     const syn = card(main, "Synopsis", undefined, "apl-sec-synopsis");
     moveInto(d.synopsisNode, syn);
-
-    if (d.info.length) {
-      const body = card(main, "Informations", undefined, "apl-sec-infos");
-      const grid = el("dl", "apl-infos", body);
-      d.info.filter((r) => r.key !== "Type" && r.key !== "Status").forEach((r) => {
-        el("dt", null, grid, KEY_FR[r.key] || r.key);
-        const dd = el("dd", null, grid);
-        if (r.links.length) {
-          r.links.forEach((l, i) => {
-            if (i) dd.appendChild(document.createTextNode(", "));
-            const a = el("a", null, dd, l.label); a.href = l.href;
-          });
-          const rest = r.text;
-          if (rest && !r.links.some((l) => rest.includes(l.label))) dd.appendChild(document.createTextNode(" " + rest));
-        } else dd.textContent = r.text;
-      });
-    }
+    // Mention "[Written by MAL Rewrite" : nœud texte natif en fin de synopsis.
+    // Masquage discret via habillage <span class="apl-credit"> (CSS seule) :
+    // à la restauration, le span reste visible comme simple texte natif.
+    try {
+      const walker = document.createTreeWalker(syn, NodeFilter.SHOW_TEXT);
+      let tn = walker.nextNode(), target = null;
+      while (tn) { if (/\[Written by MAL Rewrite\]/.test(tn.nodeValue || "")) target = tn; tn = walker.nextNode(); }
+      if (target) {
+        const idx = target.nodeValue.indexOf("[Written by MAL Rewrite]");
+        const before = target.nodeValue.slice(0, idx).replace(/[\s<br>]*$/, "");
+        const credit = target.nodeValue.slice(idx).trim();
+        target.nodeValue = before;
+        if (credit) {
+          const sp = document.createElement("span");
+          sp.className = "apl-credit";
+          sp.textContent = (before ? " " : "") + credit;
+          target.parentNode.insertBefore(sp, target.nextSibling);
+        }
+      }
+    } catch { /* crédit conservé tel quel si l'habillage échoue */ }
 
     if (d.chars.length) {
       const body = card(main, d.isManga ? "Personnages" : "Personnages & doubleurs", d.charsMore || undefined, "apl-sec-chars");
@@ -803,15 +847,55 @@ function buildAnimeView() {
       d.staff.forEach((p) => personCard(grid, p, false));
     }
 
-    if (d.themesNode) {
-      const body = card(main, "Génériques");
-      moveInto(d.themesNode, body);
+    if (d.recs.length) {
+      const body = card(main, "Recommandations", d.recsMore || undefined, "apl-sec-recs");
+      const row = el("div", "apl-recs", body);
+      d.recs.forEach((rc) => {
+        const a = el("a", "apl-rec", row);
+        a.href = rc.href;
+        a.title = rc.title;
+        if (rc.img) { const im = el("img", null, a); im.src = rc.img; im.alt = ""; im.loading = "lazy"; }
+        el("span", null, a, rc.title);
+      });
     }
 
-    // ---- Latéral ----
+    // ---- Colonne latérale : Informations (tags) → Vidéo → Génériques → Liés ----
+    if (d.info.length || d.genreGroups.length) {
+      const body = card(side, "Informations", undefined, "apl-sec-infos");
+      if (d.info.length) {
+        const grid = el("dl", "apl-infos", body);
+        d.info.filter((r) => !CHIP_KEYS.has(r.key) && !STAT_KEYS.has(r.key) && KNOWN_INFO.has(r.key)).forEach((r) => {
+          el("dt", null, grid, KEY_FR[r.key] || r.key);
+          const dd = el("dd", null, grid);
+          // Statut de diffusion/publication traduit (badge du hero exclu de la grille)
+          const shown = r.key === "Status" ? (STATUS_FR[r.text] || r.text) : r.text;
+          if (r.links.length) {
+            r.links.forEach((l, i) => {
+              if (i) dd.appendChild(document.createTextNode(", "));
+              const a = el("a", null, dd, l.label); a.href = l.href;
+            });
+            const rest = shown;
+            if (rest && !r.links.some((l) => rest.includes(l.label))) dd.appendChild(document.createTextNode(" " + rest));
+          } else dd.textContent = shown;
+        });
+      }
+      d.genreGroups.forEach((g) => {
+        el("p", "apl-genre-type", body, g.type);
+        const pills = el("div", "apl-genre-pills", body);
+        g.items.forEach((l) => {
+          const a = el("a", "apl-genre-pill", pills, l.label);
+          a.href = l.href;
+        });
+      });
+    }
     if (d.trailerNode) {
       const body = card(side, "Vidéo");
       moveInto(d.trailerNode, body);
+    }
+
+    if (d.themesNode) {
+      const body = card(side, "Génériques");
+      moveInto(d.themesNode, body);
     }
 
     if (d.related.length) {
@@ -844,9 +928,10 @@ function buildAnimeView() {
     toc.setAttribute("aria-label", "Sections de la fiche");
     const tocLink = (href, label) => { const a = el("a", null, toc, label); a.href = href; };
     tocLink("#apl-sec-synopsis", "Synopsis");
-    if (d.info.length) tocLink("#apl-sec-infos", "Infos");
     if (d.chars.length) tocLink("#apl-sec-chars", "Personnages");
     if (d.staff.length) tocLink("#apl-sec-staff", "Staff");
+    if (d.recs.length) tocLink("#apl-sec-recs", "Recos");
+    if (d.info.length || d.genreGroups.length) tocLink("#apl-sec-infos", "Infos");
     if (d.related.length) tocLink("#apl-sec-related", "Œuvres liées");
     if (toc.children.length > 1) hero.after(toc);
 
