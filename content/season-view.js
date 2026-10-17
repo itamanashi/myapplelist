@@ -189,26 +189,92 @@ function renderFilters(view) {
 }
 
 function cardHTML(c) {
-  const genres = c.genres.slice(0, 4).map((g) =>
+  const genres = c.genres.slice(0, 3).map((g) =>
     g.href ? '<a class="apl-genre-pill" href="' + escapeHtml(g.href) + '">' + escapeHtml(g.label) + "</a>"
       : '<span class="apl-genre-pill">' + escapeHtml(g.label) + "</span>").join("");
   const studios = c.studios.map((s) =>
     s.href ? '<a href="' + escapeHtml(s.href) + '">' + escapeHtml(s.label) + "</a>" : escapeHtml(s.label)).join(", ");
   let h = '<div class="apl-season-poster"><a href="' + escapeHtml(c.href) + '" tabindex="-1" aria-hidden="true">';
   if (c.img) h += '<img src="' + escapeHtml(c.img) + '" alt="" loading="lazy">';
-  h += "</a></div>" + '<div class="apl-season-body">'
-    + '<h3 class="apl-season-title"><a href="' + escapeHtml(c.href) + '">' + escapeHtml(c.title) + "</a></h3>"
-    + '<div class="apl-season-meta"><span class="apl-score"><span class="apl-star" aria-hidden="true">★</span> '
-    + "<b>" + escapeHtml(fmtScore(c.score)) + "</b></span>";
-  if (c.members) h += '<span class="apl-muted">' + escapeHtml(c.members) + " membres</span>";
-  if (c.airDate) h += '<span class="apl-muted">' + escapeHtml(c.airDate) + "</span>";
-  h += "</div>";
+  h += "</a>"
+    + '<span class="apl-season-score"><span class="apl-star" aria-hidden="true">★</span> '
+    + "<b>" + escapeHtml(fmtScore(c.score)) + "</b></span></div>"
+    + '<div class="apl-season-body">'
+    + '<h3 class="apl-season-title"><a href="' + escapeHtml(c.href) + '">' + escapeHtml(c.title) + "</a></h3>";
+  const metaBits = [];
+  if (c.members) metaBits.push('<span class="apl-muted">' + escapeHtml(c.members) + "</span>");
+  if (c.airDate) metaBits.push('<span class="apl-muted">' + escapeHtml(c.airDate) + "</span>");
+  if (metaBits.length) h += '<div class="apl-season-meta">' + metaBits.join("") + "</div>";
   if (studios) h += '<p class="apl-season-studio">' + studios + "</p>";
   if (genres) h += '<div class="apl-season-genres">' + genres + "</div>";
   if (c.synopsis) h += '<p class="apl-season-syn">' + escapeHtml(c.synopsis) + "</p>";
   h += '<div class="apl-season-actions"></div></div>';
   return h;
 }
+
+/* ---------- toolbar unifiee (jump + toggles + panneaux natifs DEPLACES) ---------- */
+// La barre .navi-seasonal MAL (jump-to-season, My List, Filter, Sort, Kids,
+// R18+, broadcast) est DEPLACEE dans notre toolbar : handlers natifs intacts,
+// zero style MAL brut (tout est re-stylise via 80-season.css). Restauree au destroy.
+function renderToolbar(view) {
+  const navi = document.querySelector(".navi-seasonal");
+  const bar = el("div", "apl-toolbar", view);
+  bar.setAttribute("role", "toolbar");
+  bar.setAttribute("aria-label", "Recherche et filtres de saison");
+  if (!navi) return;
+  // 1. Jump-to-season (form natif POST) : deplace tel quel, re-stylise en CSS
+  const jumpForm = navi.querySelector('form[action*="/anime/season/jump"]');
+  if (jumpForm && !jumpForm.dataset.aplClaimed) {
+    const jump = el("div", "apl-jump", bar);
+    const lab = el("span", "apl-jump-label", jump, "Aller à");
+    lab.id = "apl-jump-label";
+    claim(jumpForm, jump);
+    jumpForm.setAttribute("aria-labelledby", "apl-jump-label");
+    const go = jumpForm.querySelector('input[type="submit"]');
+    if (go) go.value = "Go →";
+  }
+  // 2. Toggles natifs + declencheurs de panneaux : deplaces (handlers MAL intacts).
+  const row = navi.querySelector(".horiznav-nav-seasonal");
+  if (row) {
+    const tools = el("div", "apl-tools", bar);
+    [".js-btn-show-sort.genres", ".js-btn-show-sort.sort",
+      ".js-btn-show-kids", ".js-btn-show-r18", ".js-btn-show-broadcast"].forEach((sel) => {
+      const n = row.querySelector(sel);
+      if (n && !n.dataset.aplClaimed) {
+        n.classList.add("apl-tool");
+        claim(n, tools);
+      }
+    });
+    // Panneaux (mylist, genres, sort) : deplaces en bloc APRES leurs boutons,
+    // dans un conteneur popover (positionnes en CSS sous la toolbar).
+    const pops = el("div", "apl-pops", bar);
+    row.querySelectorAll(":scope > .seasonal-sort-order-block").forEach((p) => {
+      if (!p.dataset.aplClaimed) {
+        p.classList.add("apl-pop");
+        claim(p, pops);
+      }
+    });
+    // S'il reste des nœuds natifs orphelins (compteur Showing:, crédits),
+    // on les rapatrie dans un slot discret plutôt que les laisser flotter.
+    const rest = el("div", "apl-tools-rest", bar);
+    [...row.children].forEach((n) => {
+      if (!n.dataset.aplClaimed && T(n)) {
+        n.classList.add("apl-tool-rest");
+        claim(n, rest);
+      }
+    });
+    if (!rest.children.length) rest.remove();
+  }
+  // 3. Ecoute capture window pour nos pilules type (cf. renderFilters) :
+  // partagee ici pour aussi refermer les popovers au clic exterieur.
+  window.addEventListener("click", (e) => {
+    if (!view.isConnected) return;
+    if (!e.target?.closest?.("#myapple-season .apl-toolbar")) {
+      bar.querySelectorAll(".apl-pop.apl-open").forEach((p) => p.classList.remove("apl-open"));
+    }
+  }, true);
+}
+
 
 
 /* ---------- sync visibilite (filtre/tri natif MAL en AJAX) ---------- */
@@ -255,6 +321,7 @@ function buildSeasonView() {
     view.id = "myapple-season";
     renderHero(view, d);
     renderFilters(view);
+    renderToolbar(view);
     const count = el("p", "apl-season-count apl-muted", view, d.total + " affiches");
     count.setAttribute("aria-live", "polite");
     d.sections.forEach((sec) => {

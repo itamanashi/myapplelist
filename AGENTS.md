@@ -15,7 +15,9 @@ jamais masqués). En revanche on re-stylise le CSS MAL, on masque son chrome
 | `content/list-view.js` | Vue listes : animelist & mangalist (hero, KPIs, grille/table, modal) |
 | `content/profile.js` | Vue profil : readProfile() + hero/KPIs/favoris/timeline |
 | `content/anime-view.js` | Vue detail : readAnime() + hero/KPIs/infos/personnages/staff/liés (anime & manga) |
-| `content/css/*.css` | Source de vérité du style (8 modules 00→70). JAMAIS d'édition directe de `overlay.css` |
+| `content/season-view.js` | Vue saisons /anime/season : readSeason() + grille filtres |
+| `content/people-view.js` | Vue people /people/<id> : readPeople() + hero/KPIs/bio (nœud déplacé)/rôles voix/staff/published |
+| `content/css/*.css` | Source de vérité du style (10 modules 00→90). JAMAIS d'édition directe de `overlay.css` |
 | `content/overlay.css` | Bundle GÉNÉRÉ via `node tools/build-css.mjs` (manifest + scripts QA pointent ici) |
 | `popup/*` | Popup extension (état instantané, segments vue/densité, toggles) |
 | `background/service-worker.js` | Init state |
@@ -53,11 +55,22 @@ jamais masqués). En revanche on re-stylise le CSS MAL, on masque son chrome
 - Pas de `head`/`tail`/`sed` sous PowerShell Windows (utiliser `node -e`, `Select-Object`).
 - Avant chaque save mémoire : `ecc memory search` pour éviter les doublons.
 
+## Spec workflow (Pimzino/claude-code-spec-workflow)
+
+- Spec-driven (Requirements → Design → Tasks → Implementation) et bug-fix (Report → Analyze → Fix → Verify).
+- Slash commands opencode : `.opencode/command/spec-*.md`, `bug-*.md` (adaptées depuis `.claude/commands/`).
+- Subagents opencode : `.opencode/agent/spec-task-executor.md` (+ 3 validators).
+- Docs générées : `.claude/specs/<feature>/` (requirements/design/tasks), `.claude/steering/`, `.claude/templates/`.
+- CLI : `npx --yes @pimzino/claude-code-spec-workflow` (`setup`, `generate-task-commands`, `get-spec-context <spec>`, `get-tasks <spec>`).
+- Usage : `/spec-create <feature-name> "<description>"` puis `/spec-execute <task-id>` ; bugs : `/bug-create` → `/bug-verify`.
+- Le dashboard live utilise l'ancien package : `npx -p @pimzino/claude-code-spec-workflow claude-spec-dashboard` (optionnel).
+
 ## Vérifications (merge gate)
 
 - `node tools/build-css.mjs --check` OK après tout changement CSS (régénérer avec `node tools/build-css.mjs`)
-- `node --check content/content.js content/profile.js content/list-data.js content/list-view.js` OK
+- `node --check content/content.js content/profile.js content/list-data.js content/list-view.js content/anime-view.js content/season-view.js content/people-view.js` OK
 - `node tools/test-list-data.mjs` OK après tout changement de schéma liste
+- `node tools/test-anime-parse.mjs` + `node tools/test-people-parse.mjs` OK après changement du parseur anime/people (playwright)
 - Recharger l'extension (`chrome://extensions` → ⟳) + refresh MAL
 - Mémoire Vault à jour si découverte réutilisable (`ecc memory save`)
 

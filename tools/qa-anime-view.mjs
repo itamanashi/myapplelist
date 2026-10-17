@@ -33,6 +33,7 @@ page.on('pageerror', (e) => errors.push(String(e).slice(0, 160)));
 
 async function inject() {
   await page.addStyleTag({ path: path.join(root, 'content', 'overlay.css') });
+  await page.addScriptTag({ path: path.join(root, 'content', 'malsync.js') });
   await page.addScriptTag({ path: path.join(root, 'content', 'anime-view.js') });
   await page.addScriptTag({ path: path.join(root, 'content', 'content.js') });
   await sleep(2500);
@@ -247,6 +248,7 @@ try {
   p2.on('pageerror', (e) => errs2.push(String(e).slice(0, 160)));
   await p2.goto(CASES[0].url, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await p2.addStyleTag({ path: path.join(root, 'content', 'overlay.css') });
+  await p2.addScriptTag({ path: path.join(root, 'content', 'malsync.js') });
   await p2.addScriptTag({ path: path.join(root, 'content', 'anime-view.js') });
   await p2.addScriptTag({ path: path.join(root, 'content', 'content.js') });
   await sleep(2500);

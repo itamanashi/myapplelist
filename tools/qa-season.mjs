@@ -42,7 +42,19 @@ const r = await page.evaluate(() => {
     grille: cs("#myapple-season .apl-season-grid", "display"),
     posterRatio: cs("#myapple-season .apl-season-poster img", "aspectRatio"),
     starColor: cs("#myapple-season .apl-star", "color"),
-    scoreTabular: cs("#myapple-season .apl-score b", "fontVariantNumeric"),
+    scoreTabular: cs('#myapple-season .apl-season-score', 'fontVariantNumeric'),
+    // Toolbar unifiee (ajouts v2)
+    toolbar: !!document.querySelector('#myapple-season .apl-toolbar'),
+    naviMasque: cs('.navi-seasonal', 'display'),
+    jump: !!document.querySelector('#myapple-season .apl-jump form'),
+    jumpGo: document.querySelector("#myapple-season .apl-jump input[type='submit']")?.value ?? 'ABSENT',
+    tools: document.querySelectorAll('#myapple-season .apl-tool').length,
+    pops: document.querySelectorAll('#myapple-season .apl-pop').length,
+    toolbarSticky: cs('#myapple-season .apl-toolbar', 'position'),
+    carteDirection: cs('#myapple-season .apl-season-card', 'flexDirection'),
+    posterW: Math.round(document.querySelector('#myapple-season .apl-season-poster img')?.getBoundingClientRect().width ?? 0),
+    posterRadius: cs('#myapple-season .apl-season-poster img', 'borderRadius'),
+
     overflow: document.documentElement.scrollWidth - window.innerWidth,
   };
 });
@@ -56,6 +68,15 @@ ok(r.natifMasque === "none", "bloc natif masque (" + r.natifMasque + ")");
 ok(r.grille === "grid", "conteneur en grille (" + r.grille + ")");
 ok(r.carteRadius === "16px", "carte radius 16px (" + r.carteRadius + ")");
 ok(r.starColor === "rgb(245, 165, 36)", "etoile doree (" + r.starColor + ")");
+ok(r.carteDirection === "column", "carte verticale poster-first (" + r.carteDirection + ")");
+ok(r.posterW >= 150, "affiche valorisante (" + r.posterW + "px de large)");
+ok(r.posterRadius === "12px", "poster radius 12px (" + r.posterRadius + ")");
+ok(r.toolbar, "toolbar unifiee construite");
+ok(r.naviMasque === "none", "navi-seasonal natif masque (" + r.naviMasque + ")");
+ok(r.jump, "jump-to-season deplace dans la toolbar");
+ok(r.tools >= 4, "outils natifs deplaces (" + r.tools + " : Filter/Sort/Kids/R18+/broadcast)");
+ok(r.pops >= 2, "panneaux natifs en popovers (" + r.pops + ")");
+ok(r.toolbarSticky === "sticky", "toolbar sticky (" + r.toolbarSticky + ")");
 ok(r.overflow <= 1, "pas de debordement horizontal (+" + r.overflow + "px)");
 
 // Filtre : clic TV -> reflet visuel immediat + sync async du natif.
@@ -92,11 +113,19 @@ const d = await page.evaluate(() => ({
   vue: !!document.querySelector("#myapple-season"),
   natif: document.querySelectorAll(".js-categories-seasonal .seasonal-anime").length,
   btns: document.querySelectorAll(".js-categories-seasonal .information-item.buttons").length,
+  navi: !!document.querySelector(".navi-seasonal"),
+  naviRow: document.querySelectorAll(".navi-seasonal .horiznav-nav-seasonal > *").length,
+  jumpBack: !!document.querySelector(".navi-seasonal form[action*='/anime/season/jump']"),
+  toolsBack: document.querySelectorAll(".navi-seasonal .js-btn-show-sort, .navi-seasonal .js-btn-show-kids, .navi-seasonal .js-btn-show-r18, .navi-seasonal .js-btn-show-broadcast").length,
+  popsBack: document.querySelectorAll(".navi-seasonal .seasonal-sort-order-block").length,
 }));
 console.log(JSON.stringify(d));
 ok(!d.vue, "vue detruite");
 ok(d.natif > 0, "cartes natives restaurees (" + d.natif + ")");
 ok(d.btns > 0, "boutons natifs restaures (" + d.btns + ")");
+ok(d.navi && d.jumpBack, "toolbar native restauree (jump de retour)");
+ok(d.toolsBack >= 4, "outils natifs restaures (" + d.toolsBack + ")");
+ok(d.popsBack >= 2, "panneaux natifs restaures (" + d.popsBack + ")");
 
 // Desactivation : pas de rebuild si re-appel apres destroy sur autre page
 // Erreurs natives MAL (ex. getImageSize manquant en headless, prouvees sur

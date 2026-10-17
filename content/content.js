@@ -301,7 +301,7 @@
       applyPrefs(s); togglePanel(s.panelOpen);
       // Désactivation : retirer la vue reconstruite et RESTAURER les nœuds MAL
       // déplacés (sinon la fiche reste custom avec du contenu natif incomplet).
-      if (!s.enabled) { window.__myappleAnime?.destroyAnimeView?.(); window.__myappleSeason?.destroySeasonView?.(); }
+      if (!s.enabled) { window.__myappleAnime?.destroyAnimeView?.(); window.__myappleSeason?.destroySeasonView?.(); window.__myapplePeople?.destroyPeopleView?.(); }
       const bar = document.getElementById("myapple-topbar");
       if (bar) bar.style.display = s.enabled ? "flex" : "none";
     }
@@ -336,6 +336,7 @@
     window.__myappleListView?.buildListView();
     window.__myappleAnime?.buildAnimeView();
     window.__myappleSeason?.buildSeasonView();
+    window.__myapplePeople?.buildPeopleView();
     autoHideBar();
     // DOM MAL dynamique (lazyload, AJAX) : observer debouncé via rAF, jamais de
     // layout-forçant dans le callback (cf. AGENTS.md). revealContent est idempotent.

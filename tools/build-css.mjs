@@ -21,6 +21,7 @@ const MODULES = [
   "60-lists.css",
   "70-anime-detail.css",
   "80-season.css",
+   "90-people.css",
 ];
 
 const HEADER =

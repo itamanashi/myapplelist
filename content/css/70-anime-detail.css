@@ -721,7 +721,7 @@ html.mal-dark #myapple-anime .apl-list-widget-save { border-color: var(--apl-acc
   color: var(--apl-muted) !important;
   margin: 0 !important;
 }
-/* Statut courant : pastille LIVE (tokens --apl-st-*, classes qualifiées) + libellé */
+/* Statut courant : libelle LIVE teinte, sans pastille (tokens --apl-st-*, classes qualifiées) + libellé */
 #myapple-anime .apl-manage-current {
   display: inline-flex !important;
   align-items: center !important;
@@ -731,18 +731,14 @@ html.mal-dark #myapple-anime .apl-list-widget-save { border-color: var(--apl-acc
   color: var(--apl-ink) !important;
   margin: 0 !important;
 }
-#myapple-anime .apl-status-dot {
-  width: 9px !important;
-  height: 9px !important;
-  border-radius: 50% !important;
-  flex: 0 0 9px !important;
-  background: var(--apl-st-6) !important;
+#myapple-anime .apl-manage-status {
+  font-weight: 700 !important;
 }
-#myapple-anime .apl-status-dot.st-1 { background: var(--apl-st-1) !important; box-shadow: 0 0 8px var(--apl-st-1) !important; }
-#myapple-anime .apl-status-dot.st-2 { background: var(--apl-st-2) !important; box-shadow: 0 0 8px var(--apl-st-2) !important; }
-#myapple-anime .apl-status-dot.st-3 { background: var(--apl-st-3) !important; box-shadow: 0 0 8px var(--apl-st-3) !important; }
-#myapple-anime .apl-status-dot.st-4 { background: var(--apl-st-4) !important; box-shadow: 0 0 8px var(--apl-st-4) !important; }
-#myapple-anime .apl-status-dot.st-6 { background: var(--apl-st-6) !important; }
+#myapple-anime .apl-manage-status.st-1 { color: var(--apl-st-1) !important; }
+#myapple-anime .apl-manage-status.st-2 { color: var(--apl-st-2) !important; }
+#myapple-anime .apl-manage-status.st-3 { color: var(--apl-st-3) !important; }
+#myapple-anime .apl-manage-status.st-4 { color: var(--apl-st-4) !important; }
+#myapple-anime .apl-manage-status.st-6 { color: var(--apl-muted) !important; }
 #myapple-anime .apl-manage-grid {
   display: grid !important;
   grid-template-columns: 1fr 1.35fr 1.15fr !important;

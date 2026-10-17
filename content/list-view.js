@@ -685,9 +685,7 @@ class ListView {
     // Badge Note (bouton d'édition rapide sur sa propre liste, simple pastille sinon)
     poster.appendChild(this.scoreBadgeNode(item));
 
-    // Pastille Statut
-    const statusDot = el("span", `apl-status-dot st-${item.statut}`, poster);
-    statusDot.title = statusText;
+    poster.title = statusText;
 
     // Bouton d'édition rapide (seulement sur sa propre liste)
     if (this.canEdit()) {

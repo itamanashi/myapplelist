@@ -200,19 +200,14 @@ html.mal-custom body.myapple-list footer {
 }
 
 /* ===== 7.3 Statuts : fonds pleins réservés aux points, jamais de .st-N nu ===== */
-html.mal-custom .apl-status-dot.st-1,
 html.mal-custom .apl-status-pill.st-1,
 html.mal-custom .apl-modal-status-badge.st-1 { background: var(--apl-st-1) !important; }
-html.mal-custom .apl-status-dot.st-2,
 html.mal-custom .apl-status-pill.st-2,
 html.mal-custom .apl-modal-status-badge.st-2 { background: var(--apl-st-2) !important; }
-html.mal-custom .apl-status-dot.st-3,
 html.mal-custom .apl-status-pill.st-3,
 html.mal-custom .apl-modal-status-badge.st-3 { background: var(--apl-st-3) !important; }
-html.mal-custom .apl-status-dot.st-4,
 html.mal-custom .apl-status-pill.st-4,
 html.mal-custom .apl-modal-status-badge.st-4 { background: var(--apl-st-4) !important; }
-html.mal-custom .apl-status-dot.st-6,
 html.mal-custom .apl-status-pill.st-6,
 html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !important; }
 
@@ -481,7 +476,9 @@ html.mal-custom .apl-modal-status-badge.st-6 { background: var(--apl-st-6) !impo
   color: var(--apl-star);
 }
 /* Pastille statut : anneau qui la détache de l'affiche */
-.apl-status-dot {
+/* Badge statut grille : supprime (dots retires partout) — le statut reste via
+   la barre de progression teintee st-N + le title de l'affiche. */
+.apl-status-dot-gone {
   position: absolute;
   top: 10px;
   left: 10px;

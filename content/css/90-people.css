@@ -1,0 +1,580 @@
+/* MyAppleList — §11 vue People #myapple-people : socle tokens + hero + KPI +
+   masquage du chrome natif people. Module 90-people.css. Jamais de `.st-N` nu,
+   statuts via tokens. ================================================ */
+
+/* ===== 11.1 Chrome MAL masqué sur les pages people (jamais les racines) ===== */
+/* Barre titre native (.h1.edit-info + "Edit Person Information") : le hero
+   affiche déjà le nom — masquée via :has sur le wrapper du contentWrapper. */
+html.mal-custom body.myapple-people div#myanimelist div#contentWrapper > div:has(> .h1.edit-info),
+html.mal-custom body.myapple-people div#myanimelist div#contentWrapper > .h1.edit-info,
+html.mal-custom body.myapple-people div#myanimelist div#content .normal_header,
+html.mal-custom body.myapple-people div#myanimelist div#content .people-updates-bookmark,
+html.mal-custom body.myapple-people div#myanimelist div#content table.js-table-people-character,
+html.mal-custom body.myapple-people div#myanimelist div#content table.js-table-people-staff {
+  display: none !important;
+}
+/* Le layout-table MAL natif (portrait + détails) : masqué, la vue le reconstruit
+   — jamais #content lui-même. */
+html.mal-custom body.myapple-people div#myanimelist #content > table {
+  display: none !important;
+}
+/* Bio natif : DÉPLACÉ dans notre card (pas dupliqué) → rien à masquer ici. */
+html.mal-dark body.myapple-people {
+  background: #0b0e14 !important;
+}
+
+/* ===== 11.2 Racine vue ===== */
+#myapple-people {
+  width: 100% !important;
+  max-width: 1400px !important;
+  margin: 0 auto 60px auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 18px !important;
+  color: var(--apl-ink) !important;
+}
+
+/* ===== 11.3 Hero (portrait + identité + KPIs) ===== */
+#myapple-people .apl-hero {
+  background: var(--apl-card) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: var(--apl-radius-m) !important;
+  padding: 22px !important;
+}
+#myapple-people .apl-hero-main {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 22px !important;
+  align-items: flex-start !important;
+}
+#myapple-people .apl-poster {
+  flex: 0 0 232px !important;
+  max-width: 232px !important;
+}
+#myapple-people .apl-poster img {
+  width: 100% !important;
+  border-radius: var(--apl-radius-s) !important;
+  border: 1px solid var(--apl-border) !important;
+  box-shadow: var(--apl-shadow-small) !important;
+  background: var(--apl-surface) !important;
+}
+#myapple-people .apl-who {
+  flex: 1 1 300px !important;
+  min-width: 0 !important;
+}
+#myapple-people .apl-kind {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  color: var(--apl-accent) !important;
+  margin: 0 0 2px 0 !important;
+}
+#myapple-people .apl-who h1 {
+  font-size: clamp(1.5rem, 1rem + 2vw, 2rem) !important;
+  font-weight: 750 !important;
+  letter-spacing: -.02em !important;
+  margin: 0 !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-people .apl-alt {
+  margin: 4px 0 0 0 !important;
+  font-size: 14px !important;
+  color: var(--apl-text-secondary) !important;
+}
+#myapple-people .apl-kpis {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  row-gap: 8px !important;
+  margin-top: 16px !important;
+}
+#myapple-people .apl-kpi {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  min-width: 0 !important;
+  padding: 0 20px !important;
+  border-left: 1px solid var(--apl-border) !important;
+}
+#myapple-people .apl-kpi:first-child {
+  padding-left: 0 !important;
+  border-left: 0 !important;
+}
+#myapple-people .apl-kpi > b {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: var(--apl-ink) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+#myapple-people .apl-kpi > span {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .07em !important;
+  color: var(--apl-muted) !important;
+}
+
+/* ===== 11.4 Sommaire sticky (segmented control, gabarit vue anime) ===== */
+#myapple-people .apl-toc {
+  position: sticky !important;
+  top: 66px !important;
+  z-index: 5 !important;
+  display: flex !important;
+  gap: 2px !important;
+  padding: 4px !important;
+  overflow-x: auto !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--apl-shadow-small) !important;
+  scrollbar-width: none !important;
+}
+#myapple-people .apl-toc::-webkit-scrollbar { display: none !important; }
+#myapple-people .apl-toc a {
+  flex: 0 0 auto !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  color: var(--apl-muted) !important;
+  padding: 8px 16px !important;
+  border-radius: 10px !important;
+  white-space: nowrap !important;
+}
+#myapple-people .apl-toc a:hover { color: var(--apl-ink) !important; }
+#myapple-people .apl-toc a.active { background: var(--apl-ink) !important; color: var(--apl-bg) !important; }
+
+/* ===== 11.5 Panneau du hero (bio + infos, scrollable) + cards d'œuvres ===== */
+/* Sous les KPIs : hauteur fixe + scrollbar quand le contenu déborde. */
+#myapple-people .apl-hero-panel {
+  margin-top: 18px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid var(--apl-border) !important;
+  max-height: 260px !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--apl-border-strong) transparent !important;
+}
+#myapple-people .apl-hero-panel::-webkit-scrollbar { width: 10px !important; }
+#myapple-people .apl-hero-panel::-webkit-scrollbar-track { background: transparent !important; }
+#myapple-people .apl-hero-panel::-webkit-scrollbar-thumb {
+  background: var(--apl-border-strong) !important;
+  border-radius: 999px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+}
+#myapple-people .apl-panel-block + .apl-panel-block { margin-top: 18px !important; }
+#myapple-people .apl-panel-block > h3 {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .08em !important;
+  color: var(--apl-muted) !important;
+  margin: 0 0 6px 0 !important;
+}
+#myapple-people .apl-panel-body {
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+  color: var(--apl-text-secondary) !important;
+}
+#myapple-people .apl-card {
+  background: var(--apl-card) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: var(--apl-radius-m) !important;
+  overflow: hidden !important;
+  scroll-margin-top: 130px !important;
+}
+/* Bio : bloc natif déplacé — on neutralise le wrap MAL hérité */
+#myapple-people .apl-sec-bio .people-informantion-more,
+#myapple-people .apl-sec-bio .people-shared {
+  margin: 0 !important;
+  max-height: none !important;
+}
+#myapple-people .apl-card > header {
+  padding: 16px 18px 10px 18px !important;
+}
+#myapple-people .apl-card h2 {
+  font-size: 1.05rem !important;
+  font-weight: 750 !important;
+  margin: 0 !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-people .apl-card-body {
+  padding: 4px 18px 16px 18px !important;
+}
+#myapple-people .apl-card-soft {
+  background: var(--apl-surface) !important;
+}
+#myapple-people .apl-card-soft > header {
+  padding: 12px 16px 0 16px !important;
+}
+#myapple-people .apl-card-soft .apl-card-body {
+  padding: 6px 16px 12px 16px !important;
+}
+
+/* ===== 11.6 Grille d'œuvres (Voix / Staff / Published) ===== */
+/* Barre filtre + tri (affichée seulement au-delà de WORKS_BAR_MIN items) */
+#myapple-people .apl-works-bar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin: 0 0 12px 0 !important;
+}
+#myapple-people .apl-works-search {
+  flex: 1 1 200px !important;
+  min-width: 0 !important;
+  min-height: 36px !important;
+  padding: 7px 11px !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 9px !important;
+  background: var(--apl-surface) !important;
+  color: var(--apl-ink) !important;
+  font-size: 13px !important;
+  font-family: inherit !important;
+  outline: 0 !important;
+  transition: border-color 140ms, box-shadow 140ms !important;
+}
+#myapple-people .apl-works-search::placeholder { color: var(--apl-muted) !important; }
+#myapple-people .apl-works-search:focus {
+  border-color: var(--apl-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--apl-accent) 22%, transparent) !important;
+}
+#myapple-people .apl-works-sort {
+  flex: 0 0 auto !important;
+  min-height: 36px !important;
+  padding: 7px 30px 7px 11px !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 9px !important;
+  background-color: var(--apl-surface) !important;
+  color: var(--apl-ink) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238b94a3' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  transition: border-color 140ms, box-shadow 140ms !important;
+}
+#myapple-people .apl-works-sort:focus {
+  border-color: var(--apl-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--apl-accent) 22%, transparent) !important;
+}
+#myapple-people .apl-works-sort > option { background: var(--apl-card) !important; color: var(--apl-ink) !important; }
+#myapple-people .apl-works-empty {
+  font-size: 13px !important;
+  color: var(--apl-muted) !important;
+  margin: 4px 0 0 0 !important;
+}
+#myapple-people .apl-works {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+  gap: 14px !important;
+}
+/* Carte-affiche : vignette en haut, nom + liste de rôles dessous. */
+#myapple-people .apl-work {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: var(--apl-radius-s) !important;
+  color: inherit !important;
+  min-width: 0 !important;
+  transition: transform 200ms ease, border-color 140ms ease !important;
+}
+/* La carte survolée passe AU-DESSUS des voisines : la liste de rôles peut déborder
+   sans refluer la grille (cf. .apl-work-roles, positionnée en absolu). */
+#myapple-people .apl-work:hover,
+#myapple-people .apl-work:focus-within {
+  z-index: 20 !important;
+}
+#myapple-people .apl-work:hover {
+  transform: translateY(-2px) !important;
+  border-color: var(--apl-accent) !important;
+}
+/* Vignette : ratio affiche ; support du badge statut et du volet au survol. */
+#myapple-people .apl-work-media {
+  position: relative !important;
+  aspect-ratio: 2 / 3 !important;
+  background: var(--apl-card) !important;
+  overflow: hidden !important;
+  border-radius: var(--apl-radius-s) var(--apl-radius-s) 0 0 !important;
+}
+#myapple-people .apl-work-thumb-link {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  z-index: 1 !important;
+}
+#myapple-people .apl-work-thumb {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+/* Statut de liste : badge libellé seul (sans pastille ronde), teinté par le statut. */
+#myapple-people .apl-work-status {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  z-index: 4 !important;
+  max-width: calc(100% - 16px) !important;
+  padding: 4px 9px !important;
+  border-radius: 999px !important;
+  background: rgba(0,0,0,.62) !important;
+  color: #fff !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  pointer-events: none !important;
+}
+#myapple-people .apl-work-status.st-1 { background: color-mix(in srgb, var(--apl-st-1) 80%, #0b0b0b) !important; }
+#myapple-people .apl-work-status.st-2 { background: color-mix(in srgb, var(--apl-st-2) 80%, #0b0b0b) !important; }
+#myapple-people .apl-work-status.st-3 { background: color-mix(in srgb, var(--apl-st-3) 84%, #0b0b0b) !important; }
+#myapple-people .apl-work-status.st-4 { background: color-mix(in srgb, var(--apl-st-4) 80%, #0b0b0b) !important; }
+#myapple-people .apl-work-status.st-6 { background: color-mix(in srgb, var(--apl-st-6) 80%, #0b0b0b) !important; }
+/* Reste des infos : volet révélé au survol / focus ; laisse passer le clic. */
+#myapple-people .apl-work-more {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 3 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  padding: 10px !important;
+  background: linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.55) 55%, rgba(0,0,0,0) 100%) !important;
+  color: #fff !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 180ms ease !important;
+}
+#myapple-people .apl-work:hover .apl-work-more,
+#myapple-people .apl-work:focus-within .apl-work-more { opacity: 1 !important; }
+#myapple-people .apl-work-more a { pointer-events: auto !important; }
+#myapple-people .apl-work-meta {
+  font-style: normal !important;
+  font-size: 12px !important;
+  color: rgba(255,255,255,.82) !important;
+}
+#myapple-people .apl-work-tag {
+  align-self: flex-start !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #fff !important;
+  background: rgba(255,255,255,.18) !important;
+  border-radius: 999px !important;
+  padding: 2px 8px !important;
+  white-space: nowrap !important;
+}
+/* Corps : titre + liste de rôles. Reserve en bas la place de 2 lignes de rôles. */
+#myapple-people .apl-work-body {
+  flex: 1 1 auto !important;
+  padding: 7px 11px 44px 11px !important;
+  min-width: 0 !important;
+}
+/* Ancrage de la liste de rôles : juste sous le titre (contexte de positionnement). */
+#myapple-people .apl-work-head {
+  position: relative !important;
+  min-width: 0 !important;
+}
+#myapple-people .apl-work-title {
+  font-size: 13.5px !important;
+  font-weight: 650 !important;
+  line-height: 1.3 !important;
+  color: var(--apl-ink) !important;
+  text-decoration: none !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+#myapple-people .apl-work-title:hover { color: var(--apl-accent) !important; }
+/* Cartes personnages (doublage) : face perso par defaut, face anime au survol/focus.
+   Swap 100 % CSS (opacity uniquement, compositor). Titres superposes en grille
+   (zero vide : une seule hauteur), roles colles sous le titre. */
+#myapple-people .apl-voice .apl-work-head {
+  display: grid !important;
+  gap: 0 !important;
+}
+#myapple-people .apl-voice .apl-work-title {
+  grid-area: 1 / 1 !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+  min-height: 0 !important;
+}
+/* Role sans portrait : affiche anime d office, pas de swap. */
+#myapple-people .apl-work.apl-voice.no-char-img .apl-work-thumb-link.is-char,
+#myapple-people .apl-work.apl-voice.no-char-img .apl-work-title.is-char {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+#myapple-people .apl-work.apl-voice.no-char-img .apl-work-thumb-link.is-anime,
+#myapple-people .apl-work.apl-voice.no-char-img .apl-work-title.is-anime {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+#myapple-people .apl-voice .apl-work-thumb-link.is-anime,
+#myapple-people .apl-voice .apl-work-title.is-anime {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+#myapple-people .apl-voice .apl-work-thumb-link.is-char,
+#myapple-people .apl-voice .apl-work-title.is-char {
+  opacity: 1 !important;
+}
+#myapple-people .apl-voice:hover .apl-work-thumb-link.is-char,
+#myapple-people .apl-voice:focus-within .apl-work-thumb-link.is-char,
+#myapple-people .apl-voice:hover .apl-work-title.is-char,
+#myapple-people .apl-voice:focus-within .apl-work-title.is-char {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+#myapple-people .apl-voice:hover .apl-work-thumb-link.is-anime,
+#myapple-people .apl-voice:focus-within .apl-work-thumb-link.is-anime,
+#myapple-people .apl-voice:hover .apl-work-title.is-anime,
+#myapple-people .apl-voice:focus-within .apl-work-title.is-anime {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+#myapple-people .apl-voice .apl-work-thumb-link,
+#myapple-people .apl-voice .apl-work-title {
+  transition: opacity 170ms ease !important;
+}
+#myapple-people .apl-voice .apl-work-body {
+  padding-top: 5px !important;
+  padding-bottom: 8px !important;
+}
+#myapple-people .apl-voice .apl-work-roles {
+  grid-area: 2 / 1 !important;
+  position: static !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  background: none !important;
+}
+#myapple-people .apl-voice .apl-work-role-item {
+  height: auto !important;
+  min-height: 0 !important;
+  line-height: 1.25 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  #myapple-people .apl-voice .apl-work-thumb-link,
+  #myapple-people .apl-voice .apl-work-title {
+    transition: none !important;
+  }
+}
+/* Liste de rôles : 2 lignes visibles ; déploiement au survol, en absolu (la carte
+   survolée monte en z-index) → elle passe AU-DESSUS des cartes du dessous. */
+#myapple-people .apl-work-roles {
+  position: absolute !important;
+  left: -11px !important;
+  right: -11px !important;
+  top: 100% !important;
+  z-index: 5 !important;
+  margin-top: 1px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  padding: 3px 11px 8px 11px !important;
+  max-height: 42px !important;
+  overflow: hidden !important;
+  background: var(--apl-surface) !important;
+  border-radius: 0 0 var(--apl-radius-s) var(--apl-radius-s) !important;
+  transition: max-height 170ms ease, box-shadow 170ms ease !important;
+}
+#myapple-people .apl-work:hover .apl-work-roles,
+#myapple-people .apl-work:focus-within .apl-work-roles {
+  max-height: 640px !important;
+  box-shadow: 0 16px 32px rgba(0,0,0,.24) !important;
+}
+#myapple-people .apl-work-role-item {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  height: 17px !important;
+  line-height: 17px !important;
+  font-size: 12px !important;
+}
+#myapple-people .apl-role-text,
+#myapple-people .apl-char-link {
+  color: var(--apl-text-secondary) !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+#myapple-people .apl-char-link:hover { color: var(--apl-accent) !important; text-decoration: underline !important; }
+#myapple-people .apl-role-kind {
+  flex: 0 0 auto !important;
+  font-style: normal !important;
+  font-size: 10px !important;
+  font-weight: 650 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  color: var(--apl-muted) !important;
+}
+
+/* ===== 11.7 Colonne Informations (dl gabarit §5/§7) ===== */
+#myapple-people dl.apl-infos {
+  display: grid !important;
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr) !important;
+  gap: 6px 12px !important;
+  margin: 0 !important;
+  align-items: baseline !important;
+}
+#myapple-people dl.apl-infos dt {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--apl-muted) !important;
+}
+#myapple-people dl.apl-infos dd {
+  margin: 0 !important;
+  font-size: 14px !important;
+  overflow-wrap: anywhere !important;
+  color: var(--apl-ink) !important;
+}
+/* ===== 11.8 Responsive + a11y ===== */
+@media (max-width: 640px) {
+  #myapple-people .apl-hero { padding: 16px !important; }
+  #myapple-people .apl-poster { flex-basis: 140px !important; max-width: 140px !important; }
+  #myapple-people .apl-kpi { padding: 0 12px !important; }
+  #myapple-people .apl-hero-panel { max-height: 200px !important; }
+  #myapple-people .apl-card > header { padding: 12px 14px 8px 14px !important; }
+  #myapple-people .apl-card-body { padding: 2px 14px 12px 14px !important; }
+  #myapple-people .apl-works { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important; gap: 10px !important; }
+}
+@media (max-width: 980px) {
+  #myapple-people .apl-toc { top: 60px !important; }
+}
+#myapple-people .apl-toc a:focus-visible,
+#myapple-people .apl-work-title:focus-visible,
+#myapple-people .apl-char-link:focus-visible,
+#myapple-people .apl-works-search:focus-visible,
+#myapple-people .apl-works-sort:focus-visible,
+#myapple-people .apl-infos a:focus-visible,
+#myapple-people .apl-card h2 a:focus-visible {
+  outline: 2px solid var(--apl-accent) !important;
+  outline-offset: 2px !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  #myapple-people .apl-work,
+  #myapple-people .apl-card,
+  #myapple-people .apl-work-more {
+    transition: none !important;
+  }
+  #myapple-people .apl-work:hover {
+    transform: none !important;
+  }
+}

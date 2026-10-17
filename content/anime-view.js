@@ -1,12 +1,22 @@
 // Vue Anime/Manga Detail : EXTRACTION + RECONSTRUCTION (même niveau que profil/listes).
 // readAnime() extrait les données du DOM MAL ; buildAnimeView() reconstruit :
-// hero (bannière floue + affiche + titre + badges + genres + KPIs + actions MAL déplacées),
-// colonne principale (synopsis, informations, personnages, staff, thèmes),
-// colonne latérale (bande-annonce, œuvres liées, navigation).
+// hero (affiche + titre + badges + KPIs + actions MAL déplacées),
+// colonne principale (synopsis, personnages/staff, recommandations),
+// colonne latérale (streaming, informations, vidéo, génériques, liés).
 // Les nœuds interactifs MAL (Add to My List, favoris, vidéo, thèmes) sont DÉPLACÉS, jamais dupliqués.
+// Intégration MAL-Sync DÉLÉGUÉE à content/malsync.js (window.__myappleMalSync,
+// chargé avant ce fichier) : interception, normalisation, filtrage, rendu,
+// cycle de vie de l'observer. Ici : titre AniList + balayage.
 // Appel : window.__myappleAnime?.buildAnimeView() depuis content.js
 (() => {
 "use strict";
+
+// Adaptateur MAL-Sync (module dédié). Référence résolue à l'appel (fonction
+// MS()) pour rester testable par injection de script dans l'ordre du manifest.
+const MS = () => window.__myappleMalSync || null;
+// Helpers de construction fournis aux rendus de l'adaptateur (déclarations
+// fonction hoistées : référençables dès ici).
+const VH = () => ({ card, el, moveInto });
 
 const T = (el) => (el?.textContent || "").replace(/\s+/g, " ").trim();
 const IMG = (im) => im?.getAttribute("data-src") || im?.getAttribute("src") || im?.src || "";
@@ -77,212 +87,28 @@ function readListStatus(content) {
   };
 }
 
-// ---------- Intégration MAL-Sync (streaming & liens externes) ----------
-// MAL-Sync, SI installé, injecte de façon asynchrone sur les fiches (source :
-// MALSync/MALSync src/myanimelist/myanimelistClass.ts) :
-//  - malToKiss : h2.mal_links#<Nom>Links (favicon + .remove-mal-sync [x]) puis
-//    div.mal_links > a (liens) puis br.mal_links, devant le h2 "Information" ;
-//  - streamingUI : #mal-sync-stream-div (reprise + flèches) dans .breadcrumb ;
-//  - pageRelation : <li><a title><img></a></li> (AniList…) dans #horiznav_nav.
-// Nœuds DÉPLACÉS (jamais clonés : les handlers MAL-Sync suivent, dont le [x]
-// qui recharge la page), jamais reconstruits. Absent → rien : aucune carte
-// vide, aucune erreur. Les badges de statut que MAL-Sync ajoute dans les
-// liens liés sont exclus de nos libellés (labelOf).
-// Verrou strict anti-réinjection : tout nœud source déplacé ou écarté (doublon)
-// reçoit data-apl-processed="true" (dataset.aplClaimed conservé pour compat).
-// Le watcher ignore en outre tout nœud à l'intérieur du wrapper #myapple-anime.
-function markProcessed(node) {
-  if (!node || !node.setAttribute) return;
-  try {
-    node.setAttribute("data-apl-processed", "true");
-    node.dataset.aplClaimed = "1";
-  } catch { /* nœud détaché : marquage ignoré */ }
-}
-function isProcessed(node) {
-  return !!(node?.dataset?.aplClaimed || node?.getAttribute?.("data-apl-processed") === "true");
-}
-
-// Identifiant fournisseur : id du h2 ("Voir-AnimeLinks" → "voiranime"),
-// sinon ?domain= de la favicon, sinon hostname du 1er lien.
-// Normalisé (minuscules, alphanum) : deux injections MAL-Sync du même
-// service donnent la même clé → une seule carte conservée.
-function providerKey(head, nodes) {
-  const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-  const idKey = norm((head?.id || head?.getAttribute?.("id") || "").replace(/links?$/i, ""));
-  if (idKey) return idKey;
-  const fav = head?.querySelector?.("img")?.getAttribute?.("src") || "";
-  const dm = fav.match(/[?&]domain=([^&]+)/i);
-  if (dm) {
-    try { return norm(decodeURIComponent(dm[1]).split(":")[0]); } catch { return norm(dm[1]); }
-  }
-  for (const n of nodes || []) {
-    const a = n.querySelector?.("a[href]");
-    const href = a?.getAttribute?.("href") || "";
-    const host = href.match(/https?:\/\/([^/]+)/i);
-    if (host) return norm(host[1].replace(/^www\./i, ""));
-    if (href) return norm(href.slice(0, 48));
-  }
-  const label = norm(head?.textContent || "");
-  return label || "";
-}
-
-function malsyncGroups(content) {
-  const groups = [];
-  const seen = new Set();
-  content.querySelectorAll("h2.mal_links").forEach((h) => {
-    // Ignorer tout nœud déjà à l'intérieur de notre wrapper (boucle de ré-injection)
-    if (h.closest?.("#myapple-anime")) return;
-    if (isProcessed(h)) return;
-    const nodes = [];
-    let n = h.nextElementSibling;
-    while (n && !(n.tagName === "H2" && n.classList.contains("mal_links"))) {
-      const cur = n;
-      n = n.nextElementSibling;
-      if (cur.matches?.("div.mal_links, br.mal_links")) {
-        if (cur.closest?.("#myapple-anime")) continue;
-        nodes.push(cur);
-      }
-    }
-    const key = providerKey(h, nodes);
-    if (key) {
-      if (seen.has(key)) {
-        // Doublon du même fournisseur dans le même balayage : verrouiller
-        // la source pour ne jamais la réinjecter.
-        markProcessed(h);
-        nodes.forEach(markProcessed);
-        return;
-      }
-      seen.add(key);
-    }
-    groups.push({ head: h, nodes, key });
-  });
-  return groups;
-}
-
-// Icônes de suivi : liens img-only avec title (natifs = texte, jamais d'image
-// seule). Inclut la reprise MAL-Sync du fil d'Ariane (styles inline neutralisés
-// en CSS, handlers inexistants : recréés à neuf, aucun risque).
-// Déduplication par href (un seul lien par cible), verrou strict, wrapper ignoré.
-function malsyncExtLinks(content) {
-  const out = [];
-  const seenHref = new Set();
-  const push = (a, fallbackName) => {
-    if (!a || isProcessed(a) || a.closest?.("#myapple-anime")) return;
-    const href = a.getAttribute("href") || "";
-    if (!href || seenHref.has(href)) return;
-    const img = a.querySelector("img");
-    const name = a.getAttribute("title") || fallbackName || "";
-    if (!href || !name) return;
-    seenHref.add(href);
-    out.push({ src: a, name, href, icon: img?.getAttribute("src") || "" });
-  };
-  content.querySelectorAll("#horiznav_nav > ul > li > a[title]").forEach((a) => {
-    if (T(a)) return;
-    const img = a.querySelector("img");
-    if (!img) return;
-    push(a);
-  });
-  content.querySelectorAll("#mal-sync-stream-div a[href]").forEach((a) => push(a, "Reprendre"));
-  return out.filter((l) => l.href && l.name);
-}
-
-// Libellé d'un lien lié : clone + retrait des enfants (badges de statut
-// MAL-Sync), jamais le texte brut pollué. Repli : alt de la miniature.
-function relatedLabel(a, imgEl) {
-  if (a) {
-    const c = a.cloneNode(true);
-    c.querySelectorAll("span, img, i, em, strong").forEach((n) => n.remove());
-    const t = T(c);
-    if (t) return t;
-  }
-  return T(a) || imgEl?.getAttribute("alt") || "";
-}
-
-// Carte Streaming latérale (créée à la demande, après la carte Infos si présente).
-// Retourne le body ou null. Marque les sources réclamées (pas de doublon au
-// re-balayage de l'observer).
-function renderStreamCard(side, groups) {
-  if (!groups.length) return null;
-  let sec = document.getElementById("apl-sec-stream");
-  let body = sec?.querySelector(":scope > .apl-card-body") || null;
-  if (!sec) {
-    body = card(side, "Streaming", undefined, "apl-sec-stream");
-    sec = body.parentElement;
-    // Carte Streaming immédiatement APRÈS Informations (jamais devant) :
-    // Informations reste le premier bloc de la sidebar. Recherche scopée à
-    // `side` (document.getElementById ignore la vue tant qu'elle est détachée).
-    // Sans carte Infos (cas limite), repli en tête de colonne.
-    const infos = side.querySelector(":scope > #apl-sec-infos");
-    if (infos) infos.insertAdjacentElement("afterend", sec);
-    else if (side.firstChild && side.firstChild !== sec) side.insertBefore(sec, side.firstChild);
-  }
-  // Fournisseurs déjà affichés : une seule carte par service, même si
-  // MAL-Sync réinjecte le même h2 en async après notre premier rendu.
-  const rendered = new Set();
-  sec.querySelectorAll("h2.mal_links").forEach((h) => {
-    const k = providerKey(h, []);
-    if (k) rendered.add(k);
-  });
-  let added = 0;
-  groups.forEach((g) => {
-    const key = g.key || providerKey(g.head, g.nodes);
-    if (key && rendered.has(key)) {
-      // Réinjection async du même fournisseur : verrouiller la source,
-      // ne rien afficher en double.
-      markProcessed(g.head);
-      g.nodes.forEach(markProcessed);
-      return;
-    }
-    if (key) rendered.add(key);
-    const box = el("div", "apl-ms-group", body);
-    box.setAttribute("data-apl-provider", key || "");
-    moveInto(g.head, box);
-    markProcessed(g.head);
-    const links = el("div", "apl-ms-links", box);
-    g.nodes.forEach((n) => { moveInto(n, links); markProcessed(n); });
-    added++;
-  });
-  if (!added) return body;
-  return body;
-}
-
-// Rangée de liens externes 24px dans le hero (créée à la demande).
-// Déduplication par href : un seul lien par cible, verrou strict.
-function renderExtRow(who, links) {
-  if (!links.length) return null;
-  let row = who.querySelector(":scope > .apl-ext");
-  if (!row) {
-    row = el("div", "apl-ext", who);
-    row.setAttribute("role", "group");
-    row.setAttribute("aria-label", "Liens externes");
-  }
-  const existing = new Set([...row.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")));
-  links.forEach((l) => {
-    if (existing.has(l.href)) { markProcessed(l.src); return; }
-    existing.add(l.href);
-    const a = el("a", null, row);
-    a.href = l.href;
-    a.target = "_blank";
-    a.rel = "noopener";
-    a.title = l.name;
-    if (l.icon) { const im = el("img", null, a); im.src = l.icon; im.alt = ""; im.loading = "lazy"; }
-    else a.textContent = l.name.slice(0, 2);
-    markProcessed(l.src);
-  });
-  return row;
-}
-
-// Observateur MAL-Sync : balayage ciblé + debouncé (150 ms), jamais de
-// travail layout-forçant. Déconnecté à la destruction de la vue.
-let msObserver = null;
-let msTimer = 0;
-// AniList : pas d'icône dans le hero. Le lien injecté par MAL-Sync est
-// consommé pour rendre le titre principal cliquable (nouvel onglet) ;
-// sa source est verrouillée pour ne jamais réapparaître en balayage.
+// ---------- Intégration MAL-Sync : partie vue (l'adaptateur fait le reste) ----------
+// Interception, normalisation, filtrage, rendu et cycle de vie de l'observer :
+// content/malsync.js (window.__myappleMalSync). Ici subsistent le lien AniList
+// → titre cliquable et le balayage reliant adaptateur et vue.
+// L'observer est DÉMARRÉ à la fin du build et ARRÊTÉ systématiquement au
+// démontage (destroyAnimeView) comme à l'échec de build : aucune fuite mémoire
+// (la vue détachée n'est plus retenue), aucun balayage fantôme en arrière-plan.
+// Wrappers fins DÉLÉGUANT à l'adaptateur (logique pure isolée, testable via
+// window.__myappleMalSync ; ces wrappers gardent les crochets de test
+// historiques A._malsyncGroups… opérationnels même sans adaptateur).
+function malsyncGroups(content) { try { return MS()?.malsyncGroups(content) ?? []; } catch { return []; } }
+function malsyncExtLinks(content) { try { return MS()?.malsyncExtLinks(content) ?? []; } catch { return []; } }
+function providerKey(head, nodes) { try { return MS()?.providerKey(head, nodes) ?? ""; } catch { return ""; } }
+function markProcessed(node) { try { MS()?.markProcessed(node); } catch { /* verrou non bloquant */ } }
+function isProcessed(node) { try { return MS()?.isProcessed(node) ?? false; } catch { return false; } }
+function relatedLabel(a, imgEl) { try { return MS()?.relatedLabel(a, imgEl) ?? ""; } catch { return ""; } }
+function isAniListLink(l) { try { return MS()?.isAniListLink(l) ?? false; } catch { return false; } }
+function renderStreamCard(side, groups, h) { try { return MS()?.renderStreamCard(side, groups, h || VH()) ?? null; } catch { return null; } }
+function renderExtRow(who, links, elFn) { try { return MS()?.renderExtRow(who, links, elFn || el) ?? null; } catch { return null; } }
+function watchMalSync(content, side, who) { try { MS()?.watch(content, () => sweepMalSync(content, side, who)); } catch { /* observer non bloquant */ } }
+function unwatchMalSync() { try { MS()?.unwatch(); } catch { /* destroy non bloquant */ } }
 let heroTitleEl = null;
-function isAniListLink(l) {
-  return /anilist\.co/i.test(l?.href || "") || /^anilist$/i.test((l?.name || "").trim());
-}
 function linkifyTitle(href) {
   // Pas d'exigence isConnected : l'interception précoce lie le titre AVANT
   // l'insertion de la vue (le nœud est muté puis inséré) ; le flag aplLinked
@@ -303,45 +129,21 @@ function linkifyTitle(href) {
 }
 // Dispatche les liens externes : AniList → titre, le reste → rangée 24px.
 function consumeExtLinks(links, who) {
-  const rest = [];
-  (links || []).forEach((l) => {
-    if (isProcessed(l.src)) return;
-    if (isAniListLink(l)) {
-      markProcessed(l.src);
-      if (l.href) linkifyTitle(l.href);
-    } else rest.push(l);
-  });
-  if (rest.length && who?.isConnected) renderExtRow(who, rest);
+  const ms = MS();
+  if (!ms) return;
+  const { anilist, rest } = ms.partitionExtLinks(links);
+  anilist.forEach((l) => { if (l.href) linkifyTitle(l.href); });
+  if (rest.length && who?.isConnected) ms.renderExtRow(who, rest, el);
 }
 
 function sweepMalSync(content, side, who) {
-  if (!document.getElementById("myapple-anime")) return;
+  const ms = MS();
+  if (!ms || !document.getElementById("myapple-anime")) return;
   try {
-    const fresh = malsyncGroups(content).filter((g) => !isProcessed(g.head));
-    if (fresh.length && side?.isConnected) renderStreamCard(side, fresh);
-    if (who?.isConnected) consumeExtLinks(malsyncExtLinks(content), who);
+    const fresh = ms.malsyncGroups(content).filter((g) => !ms.isProcessed(g.head));
+    if (fresh.length && side?.isConnected) ms.renderStreamCard(side, fresh, VH());
+    if (who?.isConnected) consumeExtLinks(ms.malsyncExtLinks(content), who);
   } catch { /* intégration tierce non bloquante */ }
-}
-function watchMalSync(content, side, who) {
-  if (msObserver) msObserver.disconnect();
-  msObserver = new MutationObserver((mutations) => {
-    // Verrou : ignorer nos propres déplacements — toute mutation dont la
-    // cible ou les nœuds ajoutés vivent dans le wrapper MyAppleList.
-    const ours = mutations.every((m) => {
-      if (m.target?.closest?.("#myapple-anime")) return true;
-      const added = [...(m.addedNodes || [])];
-      if (added.length && added.every((n) => n.closest?.("#myapple-anime") || (n.parentNode?.closest?.("#myapple-anime")))) return true;
-      return false;
-    });
-    if (ours) return;
-    clearTimeout(msTimer);
-    msTimer = setTimeout(() => sweepMalSync(content, side, who), 150);
-  });
-  msObserver.observe(content, { childList: true, subtree: true });
-}
-function unwatchMalSync() {
-  if (msObserver) { msObserver.disconnect(); msObserver = null; }
-  clearTimeout(msTimer);
 }
 
 // Totaux servis par le bloc natif (manga : span#totalChaps/#totalVols[data-num]).
@@ -778,18 +580,16 @@ function buildListWidget(parent, ctx) {
     return null;
   }
 
-  // En-tête du panneau : titre + pastille de statut LIVE (tokens --apl-st-*,
-  // classes qualifiées .apl-status-dot.st-N). La pastille reflète le <select>,
+  // En-tête du panneau : titre + statut LIVE (libelle teinte) (tokens --apl-st-*,
+  // classes qualifiées .apl-manage-status.st-N). Le libelle reflète le <select>,
   // pas la valeur lue : jamais de divergence affichée.
   const head = el("div", "apl-manage-head", parent);
   el("p", "apl-manage-title", head, isInList ? "Ma liste" : "Ajouter à ma liste");
   const curWrap = el("p", "apl-manage-current", head);
-  const dot = el("span", "apl-status-dot st-6", curWrap);
-  dot.setAttribute("aria-hidden", "true");
-  const curLabel = el("span", null, curWrap, "");
+  const curLabel = el("span", "apl-manage-status st-6", curWrap, "");
   const syncHead = () => {
     const id = parseInt(statusSelect.value, 10) || 6;
-    dot.className = `apl-status-dot st-${id}`;
+    curLabel.className = `apl-manage-status st-${id}`;
     curLabel.textContent = optLabel(id);
   };
 
@@ -974,10 +774,13 @@ function buildAnimeView() {
   // en absorber aucun) ; la carte Streaming est rendue juste après Infos.
   let earlyGroups = [];
   let earlyExt = [];
-  try {
-    earlyGroups = malsyncGroups(content);
-    earlyExt = malsyncExtLinks(content);
-  } catch { /* intégration tierce non bloquante */ }
+  const msEarly = MS();
+  if (msEarly) {
+    try {
+      earlyGroups = msEarly.malsyncGroups(content);
+      earlyExt = msEarly.malsyncExtLinks(content);
+    } catch { /* intégration tierce non bloquante */ }
+  }
 
   try {
     const view = el("div", null, null);

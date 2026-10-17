@@ -6,7 +6,8 @@ html.mal-custom body.myapple-season div#myanimelist div#contentWrapper > div:has
 html.mal-custom body.myapple-season div#myanimelist div#contentWrapper > div:has(> h1.h1),
 html.mal-custom body.myapple-season div#myanimelist div#content .js-categories-seasonal,
 html.mal-custom body.myapple-season div#myanimelist div#content .btn-seasonal,
-html.mal-custom body.myapple-season div#myanimelist div#content .seasonal-nav {
+html.mal-custom body.myapple-season div#myanimelist div#content .seasonal-nav,
+html.mal-custom body.myapple-season div#myanimelist div#content .navi-seasonal {
   display: none !important;
 }
 html.mal-dark body.myapple-season {
@@ -78,15 +79,12 @@ html.mal-dark body.myapple-season {
   outline-offset: 2px !important;
 }
 
-/* ---- Filtres formats (pilules) ---- */
+/* ---- Filtres formats (pilules, dans le flux — la toolbar est le seul sticky) ---- */
 #myapple-season .apl-season-filters {
   display: flex !important;
   flex-wrap: wrap !important;
   gap: 8px !important;
-  position: sticky !important;
-  top: 56px !important;
-  z-index: 5 !important;
-  padding: 8px 0 !important;
+  padding: 2px 0 !important;
 }
 #myapple-season .apl-season-pill {
   font: inherit !important;
@@ -121,36 +119,55 @@ html.mal-dark body.myapple-season {
 }
 #myapple-season .apl-season-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
-  gap: 16px !important;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  gap: 20px !important;
 }
 
-/* ---- Carte saison ---- */
+/* ---- Carte saison : poster vertical mis en avant ---- */
 #myapple-season .apl-season-card {
   display: flex !important;
-  gap: 14px !important;
+  flex-direction: column !important;
+  gap: 0 !important;
   background: var(--apl-card) !important;
   border: 1px solid var(--apl-border) !important;
   border-radius: 16px !important;
-  padding: 16px !important;
+  padding: 12px !important;
   min-width: 0 !important;
   transition: transform 200ms ease !important;
 }
 #myapple-season .apl-season-card:hover { transform: translateY(-2px) !important; }
-#myapple-season .apl-season-poster { flex: 0 0 96px !important; }
+#myapple-season .apl-season-poster { position: relative !important; }
 #myapple-season .apl-season-poster img {
-  width: 96px !important;
+  width: 100% !important;
   aspect-ratio: 2/3 !important;
   object-fit: cover !important;
-  border-radius: 10px !important;
+  border-radius: 12px !important;
   display: block !important;
 }
+/* Badge score incruste sur l'affiche */
+#myapple-season .apl-season-score {
+  position: absolute !important;
+  left: 8px !important;
+  bottom: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  background: rgba(0,0,0,.62) !important;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  font-variant-numeric: tabular-nums !important;
+}
+#myapple-season .apl-season-score .apl-star { color: var(--apl-star) !important; }
 #myapple-season .apl-season-body {
   flex: 1 !important;
   min-width: 0 !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 6px !important;
+  padding: 12px 4px 4px 4px !important;
 }
 #myapple-season .apl-season-title { margin: 0 !important; font-size: 15px !important; line-height: 1.3 !important; }
 #myapple-season .apl-season-title a { color: var(--apl-ink) !important; text-decoration: none !important; }
@@ -195,6 +212,139 @@ html.mal-dark body.myapple-season {
   font-weight: 600 !important;
   border-radius: 999px !important;
   padding: 6px 14px !important;
+}
+
+/* ---- Toolbar unifiee (jump + outils natifs DEPLACES, re-stylises) ---- */
+#myapple-season .apl-toolbar {
+  position: sticky !important;
+  top: 56px !important;
+  z-index: 6 !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 10px 14px !important;
+  background: var(--apl-card) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: var(--apl-radius-m) !important;
+  padding: 12px 16px !important;
+}
+/* Jump-to-season : form natif re-stylise Apple */
+#myapple-season .apl-jump {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+#myapple-season .apl-jump-label { font-size: 12.5px !important; font-weight: 600 !important; color: var(--apl-muted) !important; }
+#myapple-season .apl-jump form {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+#myapple-season .apl-jump form .di-ib { display: none !important; }
+#myapple-season .apl-jump select,
+#myapple-season .apl-jump input[type="text"] {
+  font: inherit !important;
+  font-size: 13px !important;
+  color: var(--apl-ink) !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 8px !important;
+  padding: 7px 10px !important;
+  margin: 0 !important;
+  width: auto !important;
+}
+#myapple-season .apl-jump input[type="text"] { width: 72px !important; }
+#myapple-season .apl-jump input[type="submit"] {
+  font: inherit !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  background: var(--apl-accent) !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  padding: 7px 14px !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+}
+/* Outils natifs deplaces : pills Apple (handlers jQuery MAL intacts) */
+#myapple-season .apl-tools {
+  display: inline-flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-left: auto !important;
+}
+#myapple-season .apl-tool {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: var(--apl-text-secondary) !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 999px !important;
+  padding: 7px 14px !important;
+  margin: 0 !important;
+  float: none !important;
+  width: auto !important;
+  cursor: pointer !important;
+  transition: transform 200ms ease, border-color 140ms ease !important;
+}
+#myapple-season .apl-tool:hover {
+  transform: scale(1.02) !important;
+  border-color: var(--apl-accent) !important;
+  color: var(--apl-accent) !important;
+}
+#myapple-season .apl-tool i { margin: 0 !important; }
+/* Popovers : panneaux natifs en menus epures ancres sous la toolbar */
+#myapple-season .apl-pops { position: relative !important; flex-basis: 100% !important; }
+#myapple-season .apl-pop {
+  background: var(--apl-card) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: var(--apl-radius-m) !important;
+  box-shadow: var(--apl-shadow-small) !important;
+  padding: 14px 16px !important;
+  margin: 4px 0 0 0 !important;
+  max-height: 320px !important;
+  overflow: auto !important;
+}
+#myapple-season .apl-pop .sort-order-list {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+#myapple-season .apl-pop .btn-sort-order {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: var(--apl-text-secondary) !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  margin: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  cursor: pointer !important;
+}
+#myapple-season .apl-pop .btn-close {
+  color: var(--apl-muted) !important;
+  cursor: pointer !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  margin: 0 0 8px auto !important;
+}
+#myapple-season .apl-tools-rest { display: none !important; }
+#myapple-season .apl-jump select:focus-visible,
+#myapple-season .apl-jump input:focus-visible,
+#myapple-season .apl-tool:focus-visible,
+#myapple-season .apl-pop .btn-sort-order:focus-visible {
+  outline: 2px solid var(--apl-accent) !important;
+  outline-offset: 2px !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

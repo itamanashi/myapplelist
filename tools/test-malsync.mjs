@@ -34,19 +34,32 @@ await page.setContent(`<body><div id="fx">
 </div>
 <div id="side"></div><div id="who"></div><div id="empty"></div>
 </div></body>`);
+await page.addScriptTag({ path: path.join(root, "content", "malsync.js") });
 await page.addScriptTag({ path: path.join(root, "content", "anime-view.js") });
 
 const r = await page.evaluate(() => {
   const A = window.__myappleAnime;
+  const MS = window.__myappleMalSync;
   const g = (id) => document.getElementById(id);
   const content = g("content");
+  // 0. Module isolé présent : API claire exposée, vue déléguante
+  const api = ["markProcessed", "isProcessed", "providerKey", "isAniListLink",
+    "malsyncGroups", "malsyncExtLinks", "partitionExtLinks", "relatedLabel",
+    "renderStreamCard", "renderExtRow", "watch", "unwatch", "isWatching"];
+  const out = {
+    api: api.every((k) => typeof MS?.[k] === "function"),
+  };
   const groups = A._malsyncGroups(content);
   const ext = A._malsyncExt(content);
-  const out = {
+  Object.assign(out, {
     groups: groups.map((x) => ({ head: x.head.textContent.replace(/\s+/g, " ").trim(), nodes: x.nodes.map((n) => n.tagName) })),
     ext: ext.map((l) => ({ name: l.name, href: l.href.slice(0, 40), icon: l.icon.slice(0, 45) })),
     label: A._relatedLabel(content.querySelector(".related-entries a"), content.querySelector(".related-entries img")),
-  };
+    // API directe du module : mêmes résultats que via les wrappers de la vue
+    directGroups: MS.malsyncGroups(content).length,
+    directExt: MS.malsyncExtLinks(content).length,
+    directLabel: MS.relatedLabel(content.querySelector(".related-entries a"), content.querySelector(".related-entries img")),
+  });
   // Handler direct façon MAL-Sync (jQuery .click) AVANT déplacement
   let clicks = 0;
   content.querySelectorAll(".remove-mal-sync").forEach((x) => x.addEventListener("click", () => { clicks++; }));
@@ -69,8 +82,21 @@ const r = await page.evaluate(() => {
   out.absentGroups = A._malsyncGroups(g("empty")).length;
   out.absentExt = A._malsyncExt(g("empty")).length;
   out.absentCard = A._renderStream(g("side"), []);
+  // Cycle de vie : watch() actif, unwatch() déconnecte (aucune fuite au destroy)
+  let sweeps = 0;
+  MS.watch(content, () => { sweeps++; });
+  out.watching = MS.isWatching();
+  MS.unwatch();
+  out.unwatched = !MS.isWatching();
+  out.sweepsBeforeAsync = sweeps;
   return out;
 });
+
+// 0. Module isolé : API claire exposée, wrappers de la vue paritaires
+assert.equal(r.api, true);
+assert.equal(r.directGroups, 2);
+assert.equal(r.directExt, 2);
+assert.equal(r.directLabel, r.label);
 
 // 1. Deux groupes détectés (Voir-Anime : 2 liens + br ; ADKami : 1 lien + br)
 assert.equal(r.groups.length, 2);
@@ -98,6 +124,84 @@ assert.deepEqual(r.extRow, ["AniList|_blank", "voir-anime.com|_blank"]);
 assert.equal(r.absentGroups, 0);
 assert.equal(r.absentExt, 0);
 assert.equal(r.absentCard, null);
+// 9. Cycle de vie : observer actif au watch, déconnecté au destroy
+assert.equal(r.watching, true);
+assert.equal(r.unwatched, true);
+assert.equal(r.sweepsBeforeAsync, 0);
+
+// 10. Injection async différée (500ms–2s) : capturée sans doublon, ordre intact.
+// Fixture fragmentée façon MAL-Sync réel : h2 seul d'abord, liens après.
+const late = await page.evaluate(async () => {
+  const MS = window.__myappleMalSync;
+  const content = document.getElementById("content");
+  const side = document.getElementById("side");
+  const left = content.querySelector(".leftside");
+  let sweeps = 0;
+  const seenProviders = () =>
+    [...document.querySelectorAll("#apl-sec-stream [data-apl-provider]")]
+      .map((b) => b.getAttribute("data-apl-provider"));
+  MS.watch(content, () => {
+    sweeps++;
+    const fresh = MS.malsyncGroups(content).filter((g) => !MS.isProcessed(g.head));
+    if (fresh.length) MS.renderStreamCard(side, fresh, {
+      card: (p, t, m, id) => {
+        const s = document.createElement("section"); if (id) s.id = id;
+        const h = document.createElement("header"); s.appendChild(h);
+        const h2 = document.createElement("h2"); h2.textContent = t; h.appendChild(h2);
+        const b = document.createElement("div"); b.className = "apl-card-body"; s.appendChild(b);
+        p.appendChild(s); return b;
+      },
+      el: (tag, cls, parent, text) => {
+        const e = document.createElement(tag);
+        if (cls) e.className = cls; if (text != null) e.textContent = text;
+        if (parent) parent.appendChild(e); return e;
+      },
+      moveInto: (n, d) => { if (n && d) d.appendChild(n); },
+    });
+  });
+  // t+0ms : h2 orphelin (fragment 1) ; t+600ms : liens (fragment 2) ;
+  // t+1200ms : réinjection du même fournisseur (doublon async MAL-Sync).
+  const h = document.createElement("h2");
+  h.id = "LateToonLinks"; h.className = "mal_links"; h.textContent = "LateToon";
+  left.appendChild(h);
+  await new Promise((res) => setTimeout(res, 600));
+  const d = document.createElement("div");
+  d.className = "mal_links";
+  const a = document.createElement("a");
+  a.target = "_blank"; a.href = "https://latetoon.example/late-ep";
+  a.textContent = "Late Ep"; d.appendChild(a);
+  left.appendChild(d);
+  const br = document.createElement("br"); br.className = "mal_links";
+  left.appendChild(br);
+  await new Promise((res) => setTimeout(res, 600));
+  // Réinjection MAL-Sync du même fournisseur : nœud FRAIS (aucun marqueur),
+  // même id — doit être verrouillé sur place, jamais réinjecté en carte.
+  const dup = document.createElement("h2");
+  dup.id = "LateToonLinks"; dup.className = "mal_links"; dup.textContent = "LateToon";
+  left.appendChild(dup);
+  await new Promise((res) => setTimeout(res, 800));
+  MS.unwatch();
+  return {
+    sweeps, providers: seenProviders(),
+    watching: MS.isWatching(),
+    lateMoved: document.querySelectorAll("#apl-sec-stream h2.mal_links").length,
+    // Doublon async : verrouillé sur place (processed), jamais réinjecté —
+    // seul un résidu NON verrouillé serait une fuite.
+    leftLate: [...content.querySelectorAll(".leftside h2.mal_links")]
+      .filter((x) => /latetoon/i.test(x.id || x.textContent)
+        && !x.hasAttribute("data-apl-processed")).length,
+    dupLocked: !!content.querySelector('.leftside h2.mal_links[data-apl-processed="true"]'),
+  };
+});
+assert.ok(late.sweeps >= 1, "observer : injection différée capturée (" + late.sweeps + ")");
+assert.ok(late.providers.includes("latetoon"), "async : fournisseur tardif rendu");
+assert.equal(
+  late.providers.filter((p) => p === "latetoon").length, 1,
+  "async : aucun doublon après réinjection",
+);
+assert.equal(late.leftLate, 0, "async : source tardive déplacée, pas de résidu");
+assert.equal(late.dupLocked, true, "async : doublon verrouillé sur place, jamais réinjecté");
+assert.equal(late.watching, false, "lifecycle : observer déconnecté après destroy");
 
 await browser.close();
-console.log("OK — MAL-Sync : 8 cas (groupes, externes, libellé, déplacement+clic, doublons, rangée, absent).");
+console.log("OK — MAL-Sync : 11 cas (module, groupes, externes, libellé, déplacement+clic, doublons, rangée, absent, lifecycle, async).");

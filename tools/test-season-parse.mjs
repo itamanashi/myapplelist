@@ -31,11 +31,13 @@ const full = card(1, '<div><div class="title"><div class="title-text">'
   + '<div class="information"><div class="information-item scormem"><div class="scormem-container">'
   + '<div class="scormem-item score score-label score-8">8.66</div>'
   + '<div class="scormem-item member">201K</div></div></div></div>');
-await page.setContent("<body><div id=\"fx\">"
+await page.goto("https://myanimelist.net/anime/season/2026/fall", { waitUntil: "domcontentloaded" });
+await page.setContent("<body><div id=\"content\"><div id=\"fx\">"
   + '<div class="js-categories-seasonal">'
   + '<div class="seasonal-anime-list"><div class="anime-header">TV (New)</div>' + full + "</div>"
-  + "</div></div></body>");
+  + "</div></div></div></body>");
 await page.addScriptTag({ path: path.join(root, "content", "season-view.js") });
+await page.addStyleTag({ path: path.join(root, "content", "overlay.css") });
 
 const r = await page.evaluate(() => {
   const S = window.__myappleSeason;
@@ -53,6 +55,13 @@ const r = await page.evaluate(() => {
   out.meta = [S.seasonFromPath("/anime/season"), S.seasonFromPath("/anime/season/2026/fall"), S.seasonFromPath("/anime/1/x")];
   out.read = S.readSeason(document);
   out.readEmpty = S.readSeason(document.createElement("div"));
+  // v2 : build en fixture (content + path simule via history sur page http)
+  out.built = (() => { try { S.buildSeasonView(); return !!document.querySelector("#myapple-season"); } catch { return false; } })();
+  out.cardDir = getComputedStyle(document.querySelector("#myapple-season .apl-season-card") || document.body).flexDirection;
+  out.badge = !!document.querySelector("#myapple-season .apl-season-score b");
+  out.toolbarEmpty = !document.querySelector("#myapple-season .apl-toolbar .apl-jump form");
+  S.destroySeasonView();
+  out.destroyed = !document.querySelector("#myapple-season");
   return out;
 });
 
@@ -75,6 +84,12 @@ assert.equal(r.meta[2], null);
 assert.equal(r.read.total, 1);
 assert.equal(r.read.sections[0].label, "TV (New)");
 assert.equal(r.readEmpty, null);
+// v2 : build carte verticale + toolbar absente en fixture (navi manquant)
+assert.ok(r.built, "vue construite en fixture");
+assert.equal(r.cardDir, "column");
+assert.ok(r.badge, "badge score incruste sur le poster");
+assert.equal(r.toolbarEmpty, true);
+assert.ok(r.destroyed, "vue detruite en fixture");
 
 await browser.close();
-console.log("OK — parse saison : carte complete, rejets, detection, sections.");
+console.log("OK — parse saison : carte complete, rejets, detection, sections, carte verticale.");
