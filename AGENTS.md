@@ -17,7 +17,10 @@ jamais masqués). En revanche on re-stylise le CSS MAL, on masque son chrome
 | `content/anime-view.js` | Vue detail : readAnime() + hero/KPIs/infos/personnages/staff/liés (anime & manga) |
 | `content/season-view.js` | Vue saisons /anime/season : readSeason() + grille filtres |
 | `content/people-view.js` | Vue people /people/<id> : readPeople() + hero/KPIs/bio (nœud déplacé)/rôles voix/staff/published |
-| `content/css/*.css` | Source de vérité du style (10 modules 00→90). JAMAIS d'édition directe de `overlay.css` |
+| `content/producer-view.js` | Vue producteur/studio /anime/producer & /studio : readProducer() + hero/KPIs/œuvres (grille-table)/actualités |
+| `content/genre-view.js` | Vue genre /anime/genre/<id> : readGenre() + hero/KPIs/répartition/filtres/pagination |
+| `content/malsync.js` | Adaptateur MAL-Sync : liens streaming et badges **déplacés**, jamais clonés |
+| `content/css/*.css` | Source de vérité du style (12 modules 00→92). JAMAIS d'édition directe de `overlay.css` |
 | `content/overlay.css` | Bundle GÉNÉRÉ via `node tools/build-css.mjs` (manifest + scripts QA pointent ici) |
 | `popup/*` | Popup extension (état instantané, segments vue/densité, toggles) |
 | `background/service-worker.js` | Init state |
@@ -68,9 +71,9 @@ jamais masqués). En revanche on re-stylise le CSS MAL, on masque son chrome
 ## Vérifications (merge gate)
 
 - `node tools/build-css.mjs --check` OK après tout changement CSS (régénérer avec `node tools/build-css.mjs`)
-- `node --check content/content.js content/profile.js content/list-data.js content/list-view.js content/anime-view.js content/season-view.js content/people-view.js` OK
+- `node --check content/content.js content/profile.js content/list-data.js content/list-view.js content/anime-view.js content/season-view.js content/people-view.js content/producer-view.js content/genre-view.js content/malsync.js` OK
 - `node tools/test-list-data.mjs` OK après tout changement de schéma liste
-- `node tools/test-anime-parse.mjs` + `node tools/test-people-parse.mjs` OK après changement du parseur anime/people (playwright)
+- `node tools/test-anime-parse.mjs` + `node tools/test-people-parse.mjs` + `node tools/test-season-parse.mjs` + `node tools/test-producer-parse.mjs` + `node tools/test-genre-parse.mjs` OK après changement d'un parseur (playwright)
 - Recharger l'extension (`chrome://extensions` → ⟳) + refresh MAL
 - Mémoire Vault à jour si découverte réutilisable (`ecc memory save`)
 

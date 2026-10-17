@@ -23,6 +23,7 @@ const MODULES = [
   "80-season.css",
    "90-people.css",
    "91-producer.css",
+   "92-genre.css",
  ];
 
 const HEADER =

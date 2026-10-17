@@ -4686,14 +4686,20 @@ html.mal-dark body.myapple-people {
   }
 }
 
-/* MyAppleList — §12 vue Producer/Studio #myapple-producer : hero + KPIs +
-   grille d'œuvres associés, chrome MAL masqué. Module 91-producer.css.
-   Jamais de `.st-N` nu. ================================================ */
+/* MyAppleList — §12 vue Producer/Studio #myapple-producer : hero (logo/identité/
+   KPIs/répartition), panneau bio+infos, filtres par type, grille + tableau,
+   actualités, sommaire sticky. Module 91-producer.css.
+   Jamais de `.st-N` nu ; statuts via tokens de 00-tokens.css. ============ */
 
 /* ===== 12.1 Chrome MAL masqué sur les pages producer/studio ===== */
-html.mal-custom body.myapple-producer div#myanimelist div#content > table { display: none !important; }
-html.mal-custom body.myapple-producer div#myanimelist div#content .normal_header { display: none !important; }
-html.mal-dark body.myapple-producer { background: #0b0e14 !important; }
+/* En-tête natif (titre + Edit) et colonnes natives : la vue les reconstruit.
+   #myanimelist / .wrapper / #contentWrapper / #content ne sont JAMAIS masqués. */
+html.mal-custom body.myapple-producer div#myanimelist div#contentWrapper > div:has(> .h1.edit-info),
+html.mal-custom body.myapple-producer div#myanimelist div#contentWrapper > .h1.edit-info,
+html.mal-custom body.myapple-producer div#myanimelist div#content .content-left,
+html.mal-custom body.myapple-producer div#myanimelist div#content .content-right {
+  display: none !important;
+}
 
 /* ===== 12.2 Racine vue ===== */
 #myapple-producer {
@@ -4706,81 +4712,207 @@ html.mal-dark body.myapple-producer { background: #0b0e14 !important; }
   color: var(--apl-ink) !important;
 }
 
-/* ===== 12.3 Hero (logo + identité + KPIs) — réutilise les tokens gens ===== */
+/* ===== 12.3 Hero (logo + identité + KPIs) ===== */
 #myapple-producer .apl-hero {
   background: var(--apl-card) !important;
   border: 1px solid var(--apl-border) !important;
-  border-radius: var(--apl-radius-m) !important;
-  padding: 22px !important;
+  border-radius: var(--apl-radius-l) !important;
+  box-shadow: none !important;
+  padding: 24px !important;
 }
 #myapple-producer .apl-hero-main {
   display: flex !important;
   flex-wrap: wrap !important;
-  gap: 22px !important;
+  gap: 24px !important;
   align-items: flex-start !important;
+  min-width: 0 !important;
 }
-#myapple-producer .apl-poster { flex: 0 0 200px !important; max-width: 200px !important; }
+#myapple-producer .apl-poster {
+  flex: 0 0 208px !important;
+  max-width: 208px !important;
+}
+/* Les logos MAL sont carrés : contain sur une dalle pour éviter le rognage. */
 #myapple-producer .apl-poster img {
   width: 100% !important;
-  border-radius: var(--apl-radius-s) !important;
+  aspect-ratio: 1 / 1 !important;
+  height: auto !important;
+  object-fit: contain !important;
+  box-sizing: border-box !important;
+  padding: 16px !important;
+  border-radius: var(--apl-radius-m) !important;
   border: 1px solid var(--apl-border) !important;
-  box-shadow: var(--apl-shadow-small) !important;
   background: var(--apl-surface) !important;
+  box-shadow: var(--apl-shadow-small) !important;
 }
-#myapple-producer .apl-who { flex: 1 1 300px !important; min-width: 0 !important; }
+#myapple-producer .apl-who {
+  flex: 1 1 320px !important;
+  min-width: 0 !important;
+}
 #myapple-producer .apl-kind {
-  font-size: 12px !important;
+  font-size: 11.5px !important;
   font-weight: 700 !important;
   letter-spacing: .12em !important;
   text-transform: uppercase !important;
   color: var(--apl-accent) !important;
-  margin: 0 0 2px 0 !important;
+  margin: 0 0 4px 0 !important;
 }
 #myapple-producer .apl-who h1 {
-  font-size: clamp(1.5rem, 1rem + 2vw, 2rem) !important;
+  font-size: clamp(1.7rem, 1.2rem + 2.2vw, 2.4rem) !important;
   font-weight: 750 !important;
-  letter-spacing: -.02em !important;
+  letter-spacing: -.025em !important;
+  line-height: 1.08 !important;
   margin: 0 !important;
   color: var(--apl-ink) !important;
 }
+#myapple-producer .apl-alt {
+  margin: 5px 0 0 0 !important;
+  font-size: 14px !important;
+  color: var(--apl-text-secondary) !important;
+}
+/* Puces du hero (site officiel) */
+#myapple-producer .apl-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin-top: 12px !important;
+}
+#myapple-producer .apl-meta-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 5px 12px !important;
+  border-radius: 999px !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid transparent !important;
+  color: var(--apl-muted) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  transition: background 140ms, color 140ms, border-color 140ms !important;
+}
+#myapple-producer .apl-meta-link:hover {
+  background: var(--apl-surface-hover) !important;
+  border-color: var(--apl-border) !important;
+  color: var(--apl-ink) !important;
+}
+/* Chiffres clés : bandeau à séparateurs, style profil */
 #myapple-producer .apl-kpis {
   display: flex !important;
   flex-wrap: wrap !important;
-  row-gap: 8px !important;
-  margin-top: 16px !important;
+  row-gap: 10px !important;
+  margin-top: 18px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid var(--apl-border) !important;
 }
 #myapple-producer .apl-kpi {
   display: flex !important;
   flex-direction: column !important;
   gap: 1px !important;
   min-width: 0 !important;
-  padding: 0 20px !important;
+  padding: 0 24px !important;
   border-left: 1px solid var(--apl-border) !important;
 }
-#myapple-producer .apl-kpi:first-child { padding-left: 0 !important; border-left: 0 !important; }
+#myapple-producer .apl-kpi:first-child {
+  padding-left: 0 !important;
+  border-left: 0 !important;
+}
 #myapple-producer .apl-kpi > b {
-  font-size: 18px !important;
-  font-weight: 700 !important;
+  font-size: 28px !important;
+  font-weight: 750 !important;
+  letter-spacing: -.022em !important;
+  line-height: 1.12 !important;
   color: var(--apl-ink) !important;
   font-variant-numeric: tabular-nums !important;
 }
 #myapple-producer .apl-kpi > span {
-  font-size: 11px !important;
-  font-weight: 600 !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: .07em !important;
   color: var(--apl-muted) !important;
 }
 
-/* ===== 12.4 Panneau infos (dl) sous le hero ===== */
+/* ===== 12.4 Répartition par type (barre + légende, style stats profil) ===== */
+#myapple-producer .apl-typebar {
+  display: flex !important;
+  gap: 2px !important;
+  height: 8px !important;
+  margin-top: 18px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  background: var(--apl-track) !important;
+}
+#myapple-producer .apl-typebar-seg {
+  display: block !important;
+  height: 100% !important;
+  min-width: 3px !important;
+}
+#myapple-producer .seg-tv { background: var(--apl-accent) !important; }
+#myapple-producer .seg-movie { background: color-mix(in srgb, var(--apl-accent) 55%, var(--apl-muted)) !important; }
+#myapple-producer .seg-ova { background: var(--apl-muted) !important; }
+#myapple-producer .seg-ona { background: color-mix(in srgb, var(--apl-muted) 42%, var(--apl-track)) !important; }
+#myapple-producer .seg-other { background: var(--apl-border-strong) !important; }
+#myapple-producer .apl-typebar-legend {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px 18px !important;
+  margin-top: 10px !important;
+}
+#myapple-producer .apl-legend-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 11.5px !important;
+  color: var(--apl-muted) !important;
+}
+#myapple-producer .apl-legend-dot {
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  flex: none !important;
+}
+#myapple-producer .apl-legend-label { font-weight: 600 !important; }
+#myapple-producer .apl-legend-num {
+  color: var(--apl-ink) !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* ===== 12.5 Panneau du hero (bio + infos, scrollable) ===== */
+#myapple-producer .apl-hero-panel {
+  margin-top: 18px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid var(--apl-border) !important;
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--apl-border-strong) transparent !important;
+}
+#myapple-producer .apl-hero-panel::-webkit-scrollbar { width: 10px !important; }
+#myapple-producer .apl-hero-panel::-webkit-scrollbar-track { background: transparent !important; }
+#myapple-producer .apl-hero-panel::-webkit-scrollbar-thumb {
+  background: var(--apl-border-strong) !important;
+  border-radius: 999px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+}
+#myapple-producer .apl-panel-block + .apl-panel-block { margin-top: 18px !important; }
 #myapple-producer .apl-panel-block > h3 {
-  font-size: 12px !important;
+  font-size: 11.5px !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: .08em !important;
   color: var(--apl-muted) !important;
   margin: 0 0 6px 0 !important;
 }
+#myapple-producer .apl-panel-body {
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+  color: var(--apl-text-secondary) !important;
+}
+#myapple-producer .apl-panel-body > span { display: block !important; }
 #myapple-producer dl.apl-infos {
   display: grid !important;
   grid-template-columns: minmax(96px, auto) minmax(0, 1fr) !important;
@@ -4800,33 +4932,122 @@ html.mal-dark body.myapple-producer { background: #0b0e14 !important; }
   color: var(--apl-ink) !important;
 }
 
-/* ===== 12.5 Cards d'œuvres (réutilise apl-card / apl-work) ===== */
+/* ===== 12.6 Sommaire sticky (segmented control, gabarit vue people) ===== */
+#myapple-producer .apl-toc {
+  position: sticky !important;
+  top: 66px !important;
+  z-index: 5 !important;
+  display: flex !important;
+  gap: 2px !important;
+  padding: 4px !important;
+  overflow-x: auto !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--apl-shadow-small) !important;
+  scrollbar-width: none !important;
+}
+#myapple-producer .apl-toc::-webkit-scrollbar { display: none !important; }
+#myapple-producer .apl-toc a {
+  flex: 0 0 auto !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  color: var(--apl-muted) !important;
+  padding: 8px 16px !important;
+  border-radius: 10px !important;
+  white-space: nowrap !important;
+}
+#myapple-producer .apl-toc a:hover { color: var(--apl-ink) !important; }
+#myapple-producer .apl-toc a.active {
+  background: var(--apl-ink) !important;
+  color: var(--apl-bg) !important;
+}
+
+/* ===== 12.7 Cards de section ===== */
 #myapple-producer .apl-card {
   background: var(--apl-card) !important;
   border: 1px solid var(--apl-border) !important;
-  border-radius: var(--apl-radius-m) !important;
+  border-radius: var(--apl-radius-l) !important;
+  box-shadow: none !important;
   overflow: hidden !important;
   scroll-margin-top: 130px !important;
 }
 #myapple-producer .apl-card > header {
-  padding: 16px 18px 10px 18px !important;
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 10px !important;
+  padding: 18px 20px 10px 20px !important;
 }
 #myapple-producer .apl-card h2 {
   font-size: 1.05rem !important;
   font-weight: 750 !important;
+  letter-spacing: -.015em !important;
   margin: 0 !important;
   color: var(--apl-ink) !important;
 }
-#myapple-producer .apl-card-body { padding: 4px 18px 16px 18px !important; }
+#myapple-producer .apl-card-count {
+  margin-left: auto !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--apl-muted) !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+#myapple-producer .apl-card-body { padding: 4px 20px 20px 20px !important; }
 
+/* ===== 12.8 Outils : filtres type + recherche + tri + vue ===== */
+#myapple-producer .apl-works-tools {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin-bottom: 16px !important;
+}
+#myapple-producer .apl-type-chips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+#myapple-producer .apl-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 12px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--apl-border) !important;
+  background: var(--apl-surface) !important;
+  color: var(--apl-muted) !important;
+  font-family: inherit !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  cursor: pointer !important;
+  transition: background 140ms, color 140ms, border-color 140ms !important;
+}
+#myapple-producer .apl-chip > b {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  opacity: .72 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+#myapple-producer .apl-chip:hover {
+  background: var(--apl-surface-hover) !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-producer .apl-chip[aria-pressed="true"] {
+  background: var(--apl-ink) !important;
+  border-color: var(--apl-ink) !important;
+  color: var(--apl-bg) !important;
+  font-weight: 700 !important;
+}
 #myapple-producer .apl-works-bar {
   display: flex !important;
   flex-wrap: wrap !important;
+  align-items: center !important;
   gap: 8px !important;
-  margin: 0 0 12px 0 !important;
 }
 #myapple-producer .apl-works-search {
-  flex: 1 1 200px !important;
+  flex: 1 1 220px !important;
   min-width: 0 !important;
   min-height: 36px !important;
   padding: 7px 11px !important;
@@ -4839,6 +5060,7 @@ html.mal-dark body.myapple-producer { background: #0b0e14 !important; }
   outline: 0 !important;
   transition: border-color 140ms, box-shadow 140ms !important;
 }
+#myapple-producer .apl-works-search::placeholder { color: var(--apl-muted) !important; }
 #myapple-producer .apl-works-search:focus {
   border-color: var(--apl-accent) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--apl-accent) 22%, transparent) !important;
@@ -4857,54 +5079,160 @@ html.mal-dark body.myapple-producer { background: #0b0e14 !important; }
   cursor: pointer !important;
   appearance: none !important;
   -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238b94a3' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
   transition: border-color 140ms, box-shadow 140ms !important;
 }
 #myapple-producer .apl-works-sort:focus {
   border-color: var(--apl-accent) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--apl-accent) 22%, transparent) !important;
 }
+#myapple-producer .apl-works-sort > option {
+  background: var(--apl-card) !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-producer .apl-view-toggle {
+  display: inline-flex !important;
+  gap: 2px !important;
+  padding: 3px !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 10px !important;
+}
+#myapple-producer .apl-view-btn {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--apl-muted) !important;
+  font-family: inherit !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  padding: 5px 12px !important;
+  border-radius: 7px !important;
+  cursor: pointer !important;
+  transition: background 140ms, color 140ms !important;
+}
+#myapple-producer .apl-view-btn:hover { color: var(--apl-ink) !important; }
+#myapple-producer .apl-view-btn[aria-pressed="true"] {
+  background: var(--apl-card) !important;
+  color: var(--apl-ink) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.14) !important;
+}
 #myapple-producer .apl-works-empty {
   font-size: 13px !important;
   color: var(--apl-muted) !important;
-  margin: 4px 0 0 0 !important;
+  margin: 6px 0 0 0 !important;
 }
+
+/* ===== 12.9 Grille d'œuvres (affiches + note + statut) ===== */
 #myapple-producer .apl-works {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)) !important;
   gap: 14px !important;
 }
 #myapple-producer .apl-work {
   position: relative !important;
-  z-index: 1 !important;
   display: flex !important;
   flex-direction: column !important;
   background: var(--apl-surface) !important;
   border: 1px solid var(--apl-border) !important;
-  border-radius: var(--apl-radius-s) !important;
-  color: inherit !important;
+  border-radius: var(--apl-radius-m) !important;
+  overflow: hidden !important;
   min-width: 0 !important;
-  transition: transform 200ms ease, border-color 140ms ease !important;
+  color: inherit !important;
+  transition: transform 200ms var(--apl-spring), border-color 140ms ease !important;
 }
-#myapple-producer .apl-work:hover { transform: translateY(-2px) !important; border-color: var(--apl-accent) !important; }
+#myapple-producer .apl-work:hover,
+#myapple-producer .apl-work:focus-within {
+  transform: translateY(-2px) !important;
+  border-color: var(--apl-accent) !important;
+}
 #myapple-producer .apl-work-media {
   position: relative !important;
   aspect-ratio: 2 / 3 !important;
   background: var(--apl-card) !important;
   overflow: hidden !important;
-  border-radius: var(--apl-radius-s) var(--apl-radius-s) 0 0 !important;
 }
-#myapple-producer .apl-work-thumb-link { position: absolute !important; inset: 0 !important; display: block !important; z-index: 1 !important; }
-#myapple-producer .apl-work-thumb { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
+#myapple-producer .apl-work-thumb-link {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  z-index: 1 !important;
+}
+#myapple-producer .apl-work-thumb {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: transform 260ms var(--apl-spring) !important;
+}
+#myapple-producer .apl-work:hover .apl-work-thumb {
+  transform: scale(1.035) !important;
+}
+/* Note : pastille incrustée, toujours visible (colonne clé des pages studio). */
+#myapple-producer .apl-work-score {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 4 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  background: rgba(0,0,0,.66) !important;
+  color: #fff !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums !important;
+  pointer-events: none !important;
+}
+#myapple-producer .apl-work-star {
+  font-style: normal !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  color: var(--apl-star) !important;
+}
+/* Statut de liste : libellé seul, teinté par le statut (jamais de pastille nue). */
+#myapple-producer .apl-work-status {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  z-index: 4 !important;
+  max-width: calc(100% - 76px) !important;
+  padding: 4px 9px !important;
+  border-radius: 999px !important;
+  background: rgba(0,0,0,.62) !important;
+  color: #fff !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  pointer-events: none !important;
+}
+#myapple-producer .apl-work-status.st-1 { background: color-mix(in srgb, var(--apl-st-1) 80%, #0b0b0b) !important; }
+#myapple-producer .apl-work-status.st-2 { background: color-mix(in srgb, var(--apl-st-2) 80%, #0b0b0b) !important; }
+#myapple-producer .apl-work-status.st-3 { background: color-mix(in srgb, var(--apl-st-3) 84%, #0b0b0b) !important; }
+#myapple-producer .apl-work-status.st-4 { background: color-mix(in srgb, var(--apl-st-4) 80%, #0b0b0b) !important; }
+#myapple-producer .apl-work-status.st-6 { background: color-mix(in srgb, var(--apl-st-6) 80%, #0b0b0b) !important; }
 #myapple-producer .apl-work-body {
   flex: 1 1 auto !important;
-  padding: 7px 11px 44px 11px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  padding: 9px 11px 11px 11px !important;
   min-width: 0 !important;
 }
-#myapple-producer .apl-work-head { position: relative !important; min-width: 0 !important; }
 #myapple-producer .apl-work-title {
   font-size: 13.5px !important;
   font-weight: 650 !important;
-  line-height: 1.3 !important;
+  line-height: 1.32 !important;
   color: var(--apl-ink) !important;
   text-decoration: none !important;
   display: -webkit-box !important;
@@ -4913,36 +5241,1028 @@ html.mal-dark body.myapple-producer { background: #0b0e14 !important; }
   overflow: hidden !important;
 }
 #myapple-producer .apl-work-title:hover { color: var(--apl-accent) !important; }
-#myapple-producer .apl-work-meta { font-style: normal !important; font-size: 12px !important; color: var(--apl-text-secondary) !important; }
-#myapple-producer .apl-work-tag {
-  align-self: flex-start !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  color: #fff !important;
-  background: rgba(255,255,255,.18) !important;
+#myapple-producer .apl-work-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 4px 8px !important;
+  font-size: 11.5px !important;
+  color: var(--apl-muted) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+#myapple-producer .apl-work-rel {
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .05em !important;
+  color: var(--apl-accent) !important;
+  background: color-mix(in srgb, var(--apl-accent) 12%, transparent) !important;
+  padding: 1px 6px !important;
   border-radius: 999px !important;
-  padding: 2px 8px !important;
-  white-space: nowrap !important;
+}
+#myapple-producer .apl-work-foot {
+  margin-top: auto !important;
+  font-size: 11.5px !important;
+  color: var(--apl-muted) !important;
+  font-variant-numeric: tabular-nums !important;
 }
 
-/* ===== 12.6 Focus visible ===== */
+/* ===== 12.10 Tableau (mode liste, colonnes MAL) ===== */
+#myapple-producer .apl-table-wrap {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+#myapple-producer .apl-works-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 13px !important;
+}
+#myapple-producer .apl-works-table th {
+  text-align: left !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .06em !important;
+  color: var(--apl-muted) !important;
+  padding: 0 10px 8px 10px !important;
+  border-bottom: 1px solid var(--apl-border) !important;
+  white-space: nowrap !important;
+}
+#myapple-producer .apl-works-table td {
+  padding: 8px 10px !important;
+  border-bottom: 1px solid var(--apl-border) !important;
+  vertical-align: middle !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-producer .apl-works-table tbody tr:last-child td { border-bottom: 0 !important; }
+#myapple-producer .apl-works-table tbody tr { transition: background 120ms !important; }
+#myapple-producer .apl-works-table tbody tr:hover { background: var(--apl-surface) !important; }
+#myapple-producer .apl-row-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 190px !important;
+  color: var(--apl-ink) !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+}
+#myapple-producer .apl-row-thumb {
+  width: 30px !important;
+  height: 42px !important;
+  object-fit: cover !important;
+  border-radius: 6px !important;
+  flex: none !important;
+  background: var(--apl-surface) !important;
+}
+#myapple-producer .apl-row-title {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+#myapple-producer .apl-row-link:hover .apl-row-title { color: var(--apl-accent) !important; }
+#myapple-producer .apl-col-idx {
+  width: 34px !important;
+  color: var(--apl-muted) !important;
+  font-size: 12px !important;
+  font-variant-numeric: tabular-nums !important;
+}
+#myapple-producer .apl-works-table th.apl-col-score,
+#myapple-producer .apl-works-table th.apl-col-members,
+#myapple-producer .apl-works-table td.apl-col-score,
+#myapple-producer .apl-works-table td.apl-col-members {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+#myapple-producer .apl-col-year,
+#myapple-producer .apl-col-type,
+#myapple-producer .apl-col-rel {
+  white-space: nowrap !important;
+  color: var(--apl-text-secondary) !important;
+}
+#myapple-producer .apl-status-badge {
+  display: inline-block !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  color: #fff !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+#myapple-producer .apl-status-badge.st-1 { background: color-mix(in srgb, var(--apl-st-1) 80%, #0b0b0b) !important; }
+#myapple-producer .apl-status-badge.st-2 { background: color-mix(in srgb, var(--apl-st-2) 80%, #0b0b0b) !important; }
+#myapple-producer .apl-status-badge.st-3 { background: color-mix(in srgb, var(--apl-st-3) 84%, #0b0b0b) !important; }
+#myapple-producer .apl-status-badge.st-4 { background: color-mix(in srgb, var(--apl-st-4) 80%, #0b0b0b) !important; }
+#myapple-producer .apl-status-badge.st-6 { background: color-mix(in srgb, var(--apl-st-6) 80%, #0b0b0b) !important; }
+#myapple-producer .apl-dash { color: var(--apl-muted) !important; }
+#myapple-producer .apl-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* ===== 12.11 Actualités (gabarit timeline/updates du profil) ===== */
+#myapple-producer .apl-news {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+#myapple-producer .apl-news-item {
+  display: flex !important;
+  gap: 14px !important;
+  padding: 14px 0 !important;
+  border-top: 1px solid var(--apl-border) !important;
+  min-width: 0 !important;
+}
+#myapple-producer .apl-news-item:first-child {
+  border-top: 0 !important;
+  padding-top: 2px !important;
+}
+#myapple-producer .apl-news-thumb {
+  flex: 0 0 104px !important;
+  width: 104px !important;
+  border-radius: 9px !important;
+  overflow: hidden !important;
+  background: var(--apl-surface) !important;
+  align-self: flex-start !important;
+}
+#myapple-producer .apl-news-thumb img {
+  width: 104px !important;
+  height: 66px !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+#myapple-producer .apl-news-main {
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+#myapple-producer .apl-news-title {
+  margin: 0 !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  letter-spacing: -.01em !important;
+}
+#myapple-producer .apl-news-title a {
+  color: var(--apl-ink) !important;
+  text-decoration: none !important;
+}
+#myapple-producer .apl-news-title a:hover { color: var(--apl-accent) !important; }
+#myapple-producer .apl-news-text {
+  margin: 0 !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  color: var(--apl-text-secondary) !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+#myapple-producer .apl-news-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 5px 10px !important;
+  font-size: 11.5px !important;
+  color: var(--apl-muted) !important;
+}
+#myapple-producer .apl-news-tags {
+  display: inline-flex !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+}
+#myapple-producer .apl-news-tag {
+  background: var(--apl-surface) !important;
+  border-radius: 999px !important;
+  padding: 2px 8px !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  color: var(--apl-muted) !important;
+}
+#myapple-producer .apl-news-comments { font-variant-numeric: tabular-nums !important; }
+
+/* ===== 12.12 Responsive ===== */
+@media (max-width: 900px) {
+  #myapple-producer .apl-hero-main { gap: 18px !important; }
+  #myapple-producer .apl-poster { flex-basis: 164px !important; max-width: 164px !important; }
+  #myapple-producer .apl-toc { top: 60px !important; }
+  #myapple-producer .apl-col-rel,
+  #myapple-producer .apl-col-year { display: none !important; }
+}
+@media (max-width: 640px) {
+  #myapple-producer .apl-hero { padding: 16px !important; }
+  #myapple-producer .apl-poster { flex-basis: 132px !important; max-width: 132px !important; }
+  #myapple-producer .apl-kpi { padding: 0 14px !important; }
+  #myapple-producer .apl-kpi > b { font-size: 24px !important; }
+  #myapple-producer .apl-hero-panel { max-height: 220px !important; }
+  #myapple-producer .apl-card > header { padding: 14px 14px 8px 14px !important; }
+  #myapple-producer .apl-card-body { padding: 2px 14px 14px 14px !important; }
+  #myapple-producer .apl-works { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)) !important; gap: 10px !important; }
+  #myapple-producer .apl-col-members,
+  #myapple-producer .apl-col-idx { display: none !important; }
+  #myapple-producer .apl-news-thumb { flex-basis: 76px !important; width: 76px !important; }
+  #myapple-producer .apl-news-thumb img { width: 76px !important; height: 54px !important; }
+  #myapple-producer .apl-works-bar { gap: 6px !important; }
+}
+@media (max-width: 460px) {
+  #myapple-producer .apl-col-status { display: none !important; }
+}
+
+/* ===== 12.13 Focus visible + reduced-motion ===== */
+#myapple-producer .apl-toc a:focus-visible,
 #myapple-producer .apl-work-title:focus-visible,
+#myapple-producer .apl-row-link:focus-visible,
+#myapple-producer .apl-chip:focus-visible,
+#myapple-producer .apl-view-btn:focus-visible,
 #myapple-producer .apl-works-search:focus-visible,
-#myapple-producer .apl-works-sort:focus-visible {
+#myapple-producer .apl-works-sort:focus-visible,
+#myapple-producer .apl-meta-link:focus-visible,
+#myapple-producer .apl-news-title a:focus-visible {
+  outline: 2px solid var(--apl-accent) !important;
+  outline-offset: 2px !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  #myapple-producer .apl-work,
+  #myapple-producer .apl-work-thumb,
+  #myapple-producer .apl-chip,
+  #myapple-producer .apl-view-btn,
+  #myapple-producer .apl-meta-chip,
+  #myapple-producer .apl-works-table tbody tr {
+    transition: none !important;
+  }
+  #myapple-producer .apl-work:hover { transform: none !important; }
+  #myapple-producer .apl-work:hover .apl-work-thumb { transform: none !important; }
+}
+
+/* MyAppleList — §13 vue Genre #myapple-genre (/anime/genre/<id>/<nom>) :
+   hero + KPIs + répartition, description déplacée, filtres, grille/tableau,
+   pagination. Module 92-genre.css. Jamais de `.st-N` nu ; statuts via tokens. */
+
+/* ===== 13.1 Chrome MAL masqué sur les pages genre ===== */
+/* Bandeau h1 natif, fil d'Ariane, nav A-Z, formulaire de recherche avancée,
+   en-tête de liste, tuiles natives et pagination : la vue les reconstruit.
+   #myanimelist / .wrapper / #contentWrapper / #content ne sont JAMAIS masqués. */
+html.mal-custom body.myapple-genre div#myanimelist div#contentWrapper > div:has(> h1.h1),
+html.mal-custom body.myapple-genre div#myanimelist div#contentWrapper > .h1,
+html.mal-custom body.myapple-genre div#myanimelist div#content .breadcrumb,
+html.mal-custom body.myapple-genre div#myanimelist div#content #horiznav_nav,
+html.mal-custom body.myapple-genre div#myanimelist div#content #advancedsearch,
+html.mal-custom body.myapple-genre div#myanimelist div#content .normal_header,
+html.mal-custom body.myapple-genre div#myanimelist div#content .js-categories-seasonal,
+html.mal-custom body.myapple-genre div#myanimelist div#content .pagination {
+  display: none !important;
+}
+
+/* ===== 13.2 Racine vue ===== */
+#myapple-genre {
+  width: 100% !important;
+  max-width: 1400px !important;
+  margin: 0 auto 60px auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 18px !important;
+  color: var(--apl-ink) !important;
+}
+
+/* ===== 13.3 Hero (identité + KPIs) ===== */
+#myapple-genre .apl-hero {
+  background: var(--apl-card) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: var(--apl-radius-l) !important;
+  box-shadow: none !important;
+  padding: 26px !important;
+}
+#myapple-genre .apl-hero-main {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 22px !important;
+  align-items: flex-start !important;
+  min-width: 0 !important;
+}
+#myapple-genre .apl-who {
+  flex: 1 1 320px !important;
+  min-width: 0 !important;
+}
+#myapple-genre .apl-kind {
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  color: var(--apl-accent) !important;
+  margin: 0 0 4px 0 !important;
+}
+#myapple-genre .apl-who h1 {
+  font-size: clamp(1.9rem, 1.3rem + 2.6vw, 2.7rem) !important;
+  font-weight: 750 !important;
+  letter-spacing: -.028em !important;
+  line-height: 1.05 !important;
+  margin: 0 !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-genre .apl-alt {
+  margin: 6px 0 0 0 !important;
+  font-size: 14px !important;
+  color: var(--apl-text-secondary) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+/* Chiffres clés : bandeau à séparateurs, style profil */
+#myapple-genre .apl-kpis {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  row-gap: 10px !important;
+  margin-top: 18px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid var(--apl-border) !important;
+}
+#myapple-genre .apl-kpi {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  min-width: 0 !important;
+  padding: 0 24px !important;
+  border-left: 1px solid var(--apl-border) !important;
+}
+#myapple-genre .apl-kpi:first-child {
+  padding-left: 0 !important;
+  border-left: 0 !important;
+}
+#myapple-genre .apl-kpi > b {
+  font-size: 26px !important;
+  font-weight: 750 !important;
+  letter-spacing: -.022em !important;
+  line-height: 1.12 !important;
+  color: var(--apl-ink) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+#myapple-genre .apl-kpi > span {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .07em !important;
+  color: var(--apl-muted) !important;
+}
+
+/* ===== 13.4 Répartition par type (barre + légende) ===== */
+#myapple-genre .apl-typebar {
+  display: flex !important;
+  gap: 2px !important;
+  height: 8px !important;
+  margin-top: 18px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  background: var(--apl-track) !important;
+}
+#myapple-genre .apl-typebar-seg {
+  display: block !important;
+  height: 100% !important;
+  min-width: 3px !important;
+}
+#myapple-genre .seg-tv { background: var(--apl-accent) !important; }
+#myapple-genre .seg-movie { background: color-mix(in srgb, var(--apl-accent) 55%, var(--apl-muted)) !important; }
+#myapple-genre .seg-ova { background: var(--apl-muted) !important; }
+#myapple-genre .seg-ona { background: color-mix(in srgb, var(--apl-muted) 42%, var(--apl-track)) !important; }
+#myapple-genre .seg-other { background: var(--apl-border-strong) !important; }
+#myapple-genre .apl-typebar-legend {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px 18px !important;
+  margin-top: 10px !important;
+}
+#myapple-genre .apl-legend-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 11.5px !important;
+  color: var(--apl-muted) !important;
+}
+#myapple-genre .apl-legend-dot {
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  flex: none !important;
+}
+#myapple-genre .apl-legend-label { font-weight: 600 !important; }
+#myapple-genre .apl-legend-num {
+  color: var(--apl-ink) !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* ===== 13.5 Panneau « À propos » (description native déplacée) ===== */
+#myapple-genre .apl-hero-panel {
+  margin-top: 18px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid var(--apl-border) !important;
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--apl-border-strong) transparent !important;
+}
+#myapple-genre .apl-hero-panel::-webkit-scrollbar { width: 10px !important; }
+#myapple-genre .apl-hero-panel::-webkit-scrollbar-track { background: transparent !important; }
+#myapple-genre .apl-hero-panel::-webkit-scrollbar-thumb {
+  background: var(--apl-border-strong) !important;
+  border-radius: 999px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+}
+#myapple-genre .apl-panel-block > h3 {
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .08em !important;
+  color: var(--apl-muted) !important;
+  margin: 0 0 6px 0 !important;
+}
+#myapple-genre .apl-panel-body {
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+  color: var(--apl-text-secondary) !important;
+}
+/* Description : on neutralise le wrap natif MAL (fond + padding). */
+#myapple-genre .apl-sec-desc .genre-description {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--apl-text-secondary) !important;
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+}
+
+/* ===== 13.6 Carte de section ===== */
+#myapple-genre .apl-card {
+  background: var(--apl-card) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: var(--apl-radius-l) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  scroll-margin-top: 130px !important;
+}
+#myapple-genre .apl-card > header {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 10px !important;
+  padding: 18px 20px 10px 20px !important;
+}
+#myapple-genre .apl-card h2 {
+  font-size: 1.05rem !important;
+  font-weight: 750 !important;
+  letter-spacing: -.015em !important;
+  margin: 0 !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-genre .apl-card-count {
+  margin-left: auto !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--apl-muted) !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+#myapple-genre .apl-card-body { padding: 4px 20px 20px 20px !important; }
+
+/* ===== 13.7 Outils : filtres type + recherche + tri + ma liste + vue ===== */
+#myapple-genre .apl-works-tools {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin-bottom: 16px !important;
+}
+#myapple-genre .apl-type-chips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+#myapple-genre .apl-chip,
+#myapple-genre .apl-mine-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 12px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--apl-border) !important;
+  background: var(--apl-surface) !important;
+  color: var(--apl-muted) !important;
+  font-family: inherit !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  cursor: pointer !important;
+  transition: background 140ms, color 140ms, border-color 140ms !important;
+}
+#myapple-genre .apl-chip > b,
+#myapple-genre .apl-mine-btn > b {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  opacity: .72 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+#myapple-genre .apl-chip:hover,
+#myapple-genre .apl-mine-btn:hover {
+  background: var(--apl-surface-hover) !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-genre .apl-chip[aria-pressed="true"] {
+  background: var(--apl-ink) !important;
+  border-color: var(--apl-ink) !important;
+  color: var(--apl-bg) !important;
+  font-weight: 700 !important;
+}
+#myapple-genre .apl-mine-btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--apl-accent) 16%, transparent) !important;
+  border-color: var(--apl-accent) !important;
+  color: var(--apl-accent) !important;
+  font-weight: 700 !important;
+}
+#myapple-genre .apl-works-bar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+#myapple-genre .apl-works-search {
+  flex: 1 1 220px !important;
+  min-width: 0 !important;
+  min-height: 36px !important;
+  padding: 7px 11px !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 9px !important;
+  background: var(--apl-surface) !important;
+  color: var(--apl-ink) !important;
+  font-size: 13px !important;
+  font-family: inherit !important;
+  outline: 0 !important;
+  transition: border-color 140ms, box-shadow 140ms !important;
+}
+#myapple-genre .apl-works-search::placeholder { color: var(--apl-muted) !important; }
+#myapple-genre .apl-works-search:focus {
+  border-color: var(--apl-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--apl-accent) 22%, transparent) !important;
+}
+#myapple-genre .apl-works-sort {
+  flex: 0 0 auto !important;
+  min-height: 36px !important;
+  padding: 7px 30px 7px 11px !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 9px !important;
+  background-color: var(--apl-surface) !important;
+  color: var(--apl-ink) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238b94a3' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  transition: border-color 140ms, box-shadow 140ms !important;
+}
+#myapple-genre .apl-works-sort:focus {
+  border-color: var(--apl-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--apl-accent) 22%, transparent) !important;
+}
+#myapple-genre .apl-works-sort > option {
+  background: var(--apl-card) !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-genre .apl-view-toggle {
+  display: inline-flex !important;
+  gap: 2px !important;
+  padding: 3px !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: 10px !important;
+}
+#myapple-genre .apl-view-btn {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--apl-muted) !important;
+  font-family: inherit !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  padding: 5px 12px !important;
+  border-radius: 7px !important;
+  cursor: pointer !important;
+  transition: background 140ms, color 140ms !important;
+}
+#myapple-genre .apl-view-btn:hover { color: var(--apl-ink) !important; }
+#myapple-genre .apl-view-btn[aria-pressed="true"] {
+  background: var(--apl-card) !important;
+  color: var(--apl-ink) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.14) !important;
+}
+#myapple-genre .apl-works-empty {
+  font-size: 13px !important;
+  color: var(--apl-muted) !important;
+  margin: 6px 0 0 0 !important;
+}
+
+/* ===== 13.8 Grille de titres ===== */
+#myapple-genre .apl-works {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)) !important;
+  gap: 14px !important;
+}
+#myapple-genre .apl-work {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--apl-surface) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: var(--apl-radius-m) !important;
+  overflow: hidden !important;
+  min-width: 0 !important;
+  color: inherit !important;
+  transition: transform 200ms var(--apl-spring), border-color 140ms ease !important;
+}
+#myapple-genre .apl-work:hover,
+#myapple-genre .apl-work:focus-within {
+  transform: translateY(-2px) !important;
+  border-color: var(--apl-accent) !important;
+}
+#myapple-genre .apl-work-media {
+  position: relative !important;
+  aspect-ratio: 2 / 3 !important;
+  background: var(--apl-card) !important;
+  overflow: hidden !important;
+}
+#myapple-genre .apl-work-thumb-link {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  z-index: 1 !important;
+}
+#myapple-genre .apl-work-thumb {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: transform 260ms var(--apl-spring) !important;
+}
+#myapple-genre .apl-work:hover .apl-work-thumb { transform: scale(1.035) !important; }
+#myapple-genre .apl-work-score {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 4 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  background: rgba(0,0,0,.66) !important;
+  color: #fff !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums !important;
+  pointer-events: none !important;
+}
+#myapple-genre .apl-work-star {
+  font-style: normal !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  color: var(--apl-star) !important;
+}
+#myapple-genre .apl-work-status {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  z-index: 4 !important;
+  max-width: calc(100% - 76px) !important;
+  padding: 4px 9px !important;
+  border-radius: 999px !important;
+  background: rgba(0,0,0,.62) !important;
+  color: #fff !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  pointer-events: none !important;
+}
+#myapple-genre .apl-work-status.st-1 { background: color-mix(in srgb, var(--apl-st-1) 80%, #0b0b0b) !important; }
+#myapple-genre .apl-work-status.st-2 { background: color-mix(in srgb, var(--apl-st-2) 80%, #0b0b0b) !important; }
+#myapple-genre .apl-work-status.st-3 { background: color-mix(in srgb, var(--apl-st-3) 84%, #0b0b0b) !important; }
+#myapple-genre .apl-work-status.st-4 { background: color-mix(in srgb, var(--apl-st-4) 80%, #0b0b0b) !important; }
+#myapple-genre .apl-work-status.st-6 { background: color-mix(in srgb, var(--apl-st-6) 80%, #0b0b0b) !important; }
+#myapple-genre .apl-work-body {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  padding: 9px 11px 11px 11px !important;
+  min-width: 0 !important;
+}
+#myapple-genre .apl-work-title {
+  font-size: 13.5px !important;
+  font-weight: 650 !important;
+  line-height: 1.32 !important;
+  color: var(--apl-ink) !important;
+  text-decoration: none !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+#myapple-genre .apl-work-title:hover { color: var(--apl-accent) !important; }
+#myapple-genre .apl-work-subtitle {
+  margin: 0 !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+  color: var(--apl-muted) !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 1 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+#myapple-genre .apl-work-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 3px 8px !important;
+  font-size: 11.5px !important;
+  color: var(--apl-muted) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+#myapple-genre .apl-work-studio {
+  color: var(--apl-text-secondary) !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+}
+#myapple-genre a.apl-work-studio:hover { color: var(--apl-accent) !important; }
+#myapple-genre .apl-work-foot {
+  margin-top: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 11.5px !important;
+  color: var(--apl-muted) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+#myapple-genre .apl-work-own {
+  margin-left: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  color: var(--apl-accent) !important;
+  font-weight: 700 !important;
+}
+#myapple-genre .apl-work-own > i {
+  font-style: normal !important;
+  font-size: 10px !important;
+  color: var(--apl-star) !important;
+}
+/* Le thème dark global force les <p> en blanc : on rétablit la hiérarchie
+   secondaire pour le sous-titre et la ligne d'identité du hero. */
+html.mal-dark #myapple-genre .apl-alt,
+html.mal-dark #myapple-genre .apl-work-subtitle {
+  color: var(--apl-muted) !important;
+}
+
+/* ===== 13.9 Tableau ===== */
+#myapple-genre .apl-table-wrap {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+#myapple-genre .apl-works-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 13px !important;
+}
+#myapple-genre .apl-works-table th {
+  text-align: left !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .06em !important;
+  color: var(--apl-muted) !important;
+  padding: 0 10px 8px 10px !important;
+  border-bottom: 1px solid var(--apl-border) !important;
+  white-space: nowrap !important;
+}
+#myapple-genre .apl-works-table td {
+  padding: 8px 10px !important;
+  border-bottom: 1px solid var(--apl-border) !important;
+  vertical-align: middle !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-genre .apl-works-table tbody tr:last-child td { border-bottom: 0 !important; }
+#myapple-genre .apl-works-table tbody tr { transition: background 120ms !important; }
+#myapple-genre .apl-works-table tbody tr:hover { background: var(--apl-surface) !important; }
+#myapple-genre .apl-row-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 200px !important;
+  color: var(--apl-ink) !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+}
+#myapple-genre .apl-row-thumb {
+  width: 30px !important;
+  height: 42px !important;
+  object-fit: cover !important;
+  border-radius: 6px !important;
+  flex: none !important;
+  background: var(--apl-surface) !important;
+}
+#myapple-genre .apl-row-titles {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  min-width: 0 !important;
+}
+#myapple-genre .apl-row-title {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+#myapple-genre .apl-row-subtitle {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: var(--apl-muted) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+#myapple-genre .apl-row-link:hover .apl-row-title { color: var(--apl-accent) !important; }
+#myapple-genre .apl-col-idx {
+  width: 34px !important;
+  color: var(--apl-muted) !important;
+  font-size: 12px !important;
+  font-variant-numeric: tabular-nums !important;
+}
+#myapple-genre .apl-works-table th.apl-col-score,
+#myapple-genre .apl-works-table th.apl-col-members,
+#myapple-genre .apl-works-table td.apl-col-score,
+#myapple-genre .apl-works-table td.apl-col-members {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+#myapple-genre .apl-col-year,
+#myapple-genre .apl-col-type { white-space: nowrap !important; color: var(--apl-text-secondary) !important; }
+#myapple-genre .apl-col-studio {
+  max-width: 190px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  color: var(--apl-text-secondary) !important;
+}
+#myapple-genre .apl-col-studio a {
+  color: var(--apl-text-secondary) !important;
+  text-decoration: none !important;
+}
+#myapple-genre .apl-col-studio a:hover { color: var(--apl-accent) !important; }
+#myapple-genre .apl-status-badge {
+  display: inline-block !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  color: #fff !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+#myapple-genre .apl-status-badge.st-1 { background: color-mix(in srgb, var(--apl-st-1) 80%, #0b0b0b) !important; }
+#myapple-genre .apl-status-badge.st-2 { background: color-mix(in srgb, var(--apl-st-2) 80%, #0b0b0b) !important; }
+#myapple-genre .apl-status-badge.st-3 { background: color-mix(in srgb, var(--apl-st-3) 84%, #0b0b0b) !important; }
+#myapple-genre .apl-status-badge.st-4 { background: color-mix(in srgb, var(--apl-st-4) 80%, #0b0b0b) !important; }
+#myapple-genre .apl-status-badge.st-6 { background: color-mix(in srgb, var(--apl-st-6) 80%, #0b0b0b) !important; }
+#myapple-genre .apl-dash { color: var(--apl-muted) !important; }
+#myapple-genre .apl-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* ===== 13.10 Pagination ===== */
+#myapple-genre .apl-pager {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 12px 14px !important;
+  background: var(--apl-card) !important;
+  border: 1px solid var(--apl-border) !important;
+  border-radius: var(--apl-radius-m) !important;
+}
+#myapple-genre .apl-pager-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  color: var(--apl-muted) !important;
+  margin-right: 4px !important;
+}
+#myapple-genre .apl-pager-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 5px 11px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--apl-border) !important;
+  background: var(--apl-surface) !important;
+  color: var(--apl-muted) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  font-variant-numeric: tabular-nums !important;
+  transition: background 140ms, color 140ms, border-color 140ms !important;
+}
+#myapple-genre .apl-pager-link:hover {
+  background: var(--apl-surface-hover) !important;
+  color: var(--apl-ink) !important;
+}
+#myapple-genre .apl-pager-link[aria-current="page"] {
+  background: var(--apl-ink) !important;
+  border-color: var(--apl-ink) !important;
+  color: var(--apl-bg) !important;
+  font-weight: 700 !important;
+}
+
+/* ===== 13.11 Focus visible ===== */
+#myapple-genre .apl-work-title:focus-visible,
+#myapple-genre .apl-row-link:focus-visible,
+#myapple-genre .apl-chip:focus-visible,
+#myapple-genre .apl-mine-btn:focus-visible,
+#myapple-genre .apl-view-btn:focus-visible,
+#myapple-genre .apl-works-search:focus-visible,
+#myapple-genre .apl-works-sort:focus-visible,
+#myapple-genre .apl-pager-link:focus-visible,
+#myapple-genre a.apl-work-studio:focus-visible,
+#myapple-genre .apl-col-studio a:focus-visible {
   outline: 2px solid var(--apl-accent) !important;
   outline-offset: 2px !important;
 }
 
-/* ===== 12.7 Responsive + reduced-motion ===== */
-@media (max-width: 640px) {
-  #myapple-producer .apl-hero { padding: 16px !important; }
-  #myapple-producer .apl-poster { flex-basis: 140px !important; max-width: 140px !important; }
-  #myapple-producer .apl-kpi { padding: 0 12px !important; }
-  #myapple-producer .apl-card > header { padding: 12px 14px 8px 14px !important; }
-  #myapple-producer .apl-card-body { padding: 2px 14px 12px 14px !important; }
-  #myapple-producer .apl-works { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important; gap: 10px !important; }
+/* ===== 13.12 Responsive ===== */
+@media (max-width: 900px) {
+  #myapple-genre .apl-col-year,
+  #myapple-genre .apl-col-studio { display: none !important; }
 }
+@media (max-width: 640px) {
+  #myapple-genre .apl-hero { padding: 18px !important; }
+  #myapple-genre .apl-kpi { padding: 0 14px !important; }
+  #myapple-genre .apl-kpi > b { font-size: 22px !important; }
+  #myapple-genre .apl-hero-panel { max-height: 220px !important; }
+  #myapple-genre .apl-card > header { padding: 14px 14px 8px 14px !important; }
+  #myapple-genre .apl-card-body { padding: 2px 14px 14px 14px !important; }
+  #myapple-genre .apl-works { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)) !important; gap: 10px !important; }
+  #myapple-genre .apl-col-members,
+  #myapple-genre .apl-col-idx { display: none !important; }
+  #myapple-genre .apl-works-bar { gap: 6px !important; }
+  #myapple-genre .apl-pager { padding: 10px 12px !important; }
+}
+@media (max-width: 460px) {
+  #myapple-genre .apl-col-status { display: none !important; }
+}
+
+/* ===== 13.13 Reduced motion ===== */
 @media (prefers-reduced-motion: reduce) {
-  #myapple-producer .apl-work { transition: none !important; }
-  #myapple-producer .apl-work:hover { transform: none !important; }
+  #myapple-genre .apl-work,
+  #myapple-genre .apl-work-thumb,
+  #myapple-genre .apl-chip,
+  #myapple-genre .apl-mine-btn,
+  #myapple-genre .apl-view-btn,
+  #myapple-genre .apl-pager-link,
+  #myapple-genre .apl-works-table tbody tr {
+    transition: none !important;
+  }
+  #myapple-genre .apl-work:hover { transform: none !important; }
+  #myapple-genre .apl-work:hover .apl-work-thumb { transform: none !important; }
 }
