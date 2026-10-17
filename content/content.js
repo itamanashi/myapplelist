@@ -122,7 +122,7 @@
     bar.setAttribute("role", "navigation");
     bar.setAttribute("aria-label", "Navigation MyAppleList");
     bar.innerHTML = `
-      <div class="logo" aria-hidden="true">myapple<span>list</span></div>
+      <a href="https://myanimelist.net" class="logo" aria-label="Accueil MyAnimeList">myapple<span>list</span></a>
       <button id="myapple-burger" aria-expanded="false" aria-controls="myapple-nav" aria-label="Menu">☰</button>
       <nav id="myapple-nav" aria-label="Sections MyAnimeList">
         <div class="menu"><a href="https://myanimelist.net/anime.php">Anime</a><div class="drop">
