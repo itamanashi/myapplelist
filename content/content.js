@@ -337,6 +337,7 @@
     window.__myappleAnime?.buildAnimeView();
     window.__myappleSeason?.buildSeasonView();
     window.__myapplePeople?.buildPeopleView();
+    window.__myappleProducer?.buildProducerView();
     autoHideBar();
     // DOM MAL dynamique (lazyload, AJAX) : observer debouncé via rAF, jamais de
     // layout-forçant dans le callback (cf. AGENTS.md). revealContent est idempotent.

@@ -22,7 +22,8 @@ const MODULES = [
   "70-anime-detail.css",
   "80-season.css",
    "90-people.css",
-];
+   "91-producer.css",
+ ];
 
 const HEADER =
   "/* MyAppleList — bundle GENERE. Ne pas editer : modifier content/css/*.css puis `node tools/build-css.mjs`. */\n";
